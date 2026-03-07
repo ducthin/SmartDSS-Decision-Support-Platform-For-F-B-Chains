@@ -92,6 +92,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/weather/**").hasAnyRole("ADMIN", "MANAGER")
 
+                        // Events - GET: authenticated, CUD: ADMIN/MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
+
+                        // Holidays - GET: authenticated, CUD: ADMIN/MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/holidays/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
+
                         .anyRequest().authenticated()
                 );
 

@@ -212,3 +212,56 @@ export interface WeatherData {
   city: string;
   createdAt: string;
 }
+
+// Event
+export type EventType = 'FESTIVAL' | 'HOLIDAY' | 'CONCERT' | 'SPORT' | 'PROMOTION' | 'CONFERENCE' | 'OTHER';
+export type ImpactLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface Event {
+  id: number;
+  name: string;
+  description: string;
+  eventType: EventType;
+  startDate: string;
+  endDate: string;
+  location: string;
+  expectedImpact: ImpactLevel;
+  notes: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventForm {
+  name: string;
+  description: string;
+  eventType: EventType;
+  startDate: string;
+  endDate: string;
+  location: string;
+  expectedImpact: ImpactLevel;
+  notes: string;
+  active: boolean;
+}
+
+// Holiday Calendar
+export type HolidayType = 'PUBLIC_HOLIDAY' | 'CULTURAL' | 'RELIGIOUS' | 'SCHOOL' | 'COMPANY' | 'OTHER';
+
+export interface HolidayCalendar {
+  id: number;
+  name: string;
+  holidayDate: string;
+  holidayType: HolidayType;
+  recurring: boolean;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HolidayCalendarForm {
+  name: string;
+  holidayDate: string;
+  holidayType: HolidayType;
+  recurring: boolean;
+  description: string;
+}

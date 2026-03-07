@@ -12,6 +12,7 @@ import InventoryPage from '@/pages/InventoryPage';
 import ReportsPage from '@/pages/ReportsPage';
 import UsersPage from '@/pages/UsersPage';
 import RecipesPage from '@/pages/RecipesPage';
+import ExternalFactorsPage from '@/pages/ExternalFactorsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/inventory" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InventoryPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ReportsPage /></ProtectedRoute>} />
+            <Route path="/external-factors" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
