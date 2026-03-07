@@ -196,3 +196,19 @@ export interface LowStockItem {
   minimumStock: number;
   unit: string;
 }
+
+// Weather
+export interface WeatherData {
+  id: number;
+  recordDate: string;
+  temperature: number;
+  feelsLike: number;
+  humidity: number;
+  condition: string;
+  description: string;
+  icon: string;
+  windSpeed: number;
+  rainfall: number;
+  city: string;
+  createdAt: string;
+}

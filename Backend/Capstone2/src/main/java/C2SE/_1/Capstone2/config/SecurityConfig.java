@@ -88,6 +88,10 @@ public class SecurityConfig {
                         // Reports - ADMIN, MANAGER
                         .requestMatchers("/api/v1/reports/**").hasAnyRole("ADMIN", "MANAGER")
 
+                        // Weather - GET: authenticated, POST: ADMIN/MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/weather/**").hasAnyRole("ADMIN", "MANAGER")
+
                         .anyRequest().authenticated()
                 );
 

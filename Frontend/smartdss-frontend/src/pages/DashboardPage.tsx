@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ShoppingCart, DollarSign, Package, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, DollarSign, Package, AlertTriangle, Cloud, Droplets, Wind, Thermometer } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleKey } from '@/utils/helpers';
 import { orderService } from '@/services/orderService';
 import { reportService } from '@/services/reportService';
 import { inventoryService } from '@/services/inventoryService';
-import type { Order, DailySalesReport, Inventory } from '@/types';
+import { weatherService } from '@/services/weatherService';
+import type { Order, DailySalesReport, Inventory, WeatherData } from '@/types';
 import { ORDER_STATUS, ORDER_STATUS_LABELS, ORDER_STATUS_STYLES } from '@/utils/constants';
 
 function StatCard({ title, value, icon: Icon, color }: { title: string; value: string; icon: React.ElementType; color: string }) {
@@ -31,11 +32,13 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [dailySales, setDailySales] = useState<DailySalesReport[]>([]);
   const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const promises: Promise<unknown>[] = [
       orderService.getAll(0, 50).catch(() => ({ data: { data: { content: [] } } })),
+      weatherService.getToday().catch(() => ({ data: { data: null } })),
     ];
     if (isManagerOrAdmin) {
       promises.push(
@@ -45,10 +48,12 @@ export default function DashboardPage() {
     }
     Promise.all(promises).then((results) => {
       const ordersRes = results[0] as { data: { data: { content: Order[] } } };
+      const weatherRes = results[1] as { data: { data: WeatherData | null } };
       setOrders(ordersRes.data.data.content || []);
+      setWeather(weatherRes.data.data);
       if (isManagerOrAdmin) {
-        const salesRes = results[1] as { data: { data: DailySalesReport[] } };
-        const invRes = results[2] as { data: { data: { content: Inventory[] } } };
+        const salesRes = results[2] as { data: { data: DailySalesReport[] } };
+        const invRes = results[3] as { data: { data: { content: Inventory[] } } };
         setDailySales(salesRes.data.data || []);
         setInventory(invRes.data.data.content || []);
       }
@@ -85,6 +90,44 @@ export default function DashboardPage() {
         <StatCard title="Đơn đang xử lý" value={String(pendingOrders.length)} icon={Package} color="bg-yellow-100 text-yellow-600" />
         {isManagerOrAdmin && <StatCard title="Nguyên liệu sắp hết" value={String(lowStockCount)} icon={AlertTriangle} color="bg-red-100 text-red-600" />}
       </div>
+
+      {/* Weather Widget */}
+      {weather && (
+        <div className="bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Cloud size={20} /> Thời tiết {weather.city}
+              </h2>
+              <p className="text-3xl font-bold mt-2">{weather.temperature.toFixed(1)}°C</p>
+              <p className="text-white/80 capitalize">{weather.description}</p>
+            </div>
+            <img
+              src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+              alt={weather.description}
+              className="w-20 h-20"
+            />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
+            <div className="flex items-center gap-2">
+              <Thermometer size={16} />
+              <span className="text-sm">Cảm giác: {weather.feelsLike.toFixed(1)}°C</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Droplets size={16} />
+              <span className="text-sm">Độ ẩm: {weather.humidity}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Wind size={16} />
+              <span className="text-sm">Gió: {weather.windSpeed} m/s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Cloud size={16} />
+              <span className="text-sm">Mưa: {weather.rainfall} mm</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recent Orders */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
