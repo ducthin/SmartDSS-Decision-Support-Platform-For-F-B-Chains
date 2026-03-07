@@ -2,6 +2,7 @@ package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.OrderDTO;
 import C2SE._1.Capstone2.dto.OrderItemDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.*;
 import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.InsufficientStockException;
@@ -10,6 +11,9 @@ import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
 import C2SE._1.Capstone2.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,26 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getAllOrders(Pageable pageable) {
+        Page<Order> page = orderRepository.findAll(pageable);
+        return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable) {
+        OrderStatus orderStatus;
+        try {
+            orderStatus = OrderStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid order status: " + status);
+        }
+        Page<Order> page = orderRepository.findByStatus(orderStatus, pageable);
+        return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public OrderDTO getOrderById(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
@@ -47,8 +71,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO createOrder(OrderDTO orderDTO) {
-        User user = userRepository.findById(orderDTO.getCreatedById())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", orderDTO.getCreatedById()));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         Order order = Order.builder()
                 .status(OrderStatus.PENDING)

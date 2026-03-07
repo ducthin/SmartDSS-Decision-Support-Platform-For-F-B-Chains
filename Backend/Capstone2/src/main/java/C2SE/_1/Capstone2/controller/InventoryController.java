@@ -3,8 +3,12 @@ package C2SE._1.Capstone2.controller;
 import C2SE._1.Capstone2.dto.ApiResponse;
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.service.InventoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,17 +22,26 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<InventoryDTO>>> getAllInventory() {
-        return ResponseEntity.ok(ApiResponse.success(inventoryService.getAllInventory()));
+    public ResponseEntity<ApiResponse<PageResponse<InventoryDTO>>> getAllInventory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean lowStock) {
+        var pageable = PageRequest.of(page, size, Sort.by("ingredient.name").ascending());
+        if (keyword != null || lowStock != null) {
+            return ResponseEntity.ok(ApiResponse.success(
+                    inventoryService.searchInventory(keyword, lowStock, pageable)));
+        }
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getAllInventory(pageable)));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<ApiResponse<InventoryDTO>> addStock(@RequestBody InventoryTransactionDTO dto) {
+    public ResponseEntity<ApiResponse<InventoryDTO>> addStock(@Valid @RequestBody InventoryTransactionDTO dto) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.addStock(dto)));
     }
 
     @PostMapping("/deduct")
-    public ResponseEntity<ApiResponse<InventoryDTO>> deductStock(@RequestBody InventoryTransactionDTO dto) {
+    public ResponseEntity<ApiResponse<InventoryDTO>> deductStock(@Valid @RequestBody InventoryTransactionDTO dto) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.deductStock(dto)));
     }
 }

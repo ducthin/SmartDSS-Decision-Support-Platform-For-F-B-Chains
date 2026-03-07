@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.UserDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Role;
 import C2SE._1.Capstone2.entity.RoleName;
 import C2SE._1.Capstone2.entity.User;
@@ -11,6 +12,8 @@ import C2SE._1.Capstone2.repository.RoleRepository;
 import C2SE._1.Capstone2.repository.UserRepository;
 import C2SE._1.Capstone2.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,20 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userMapper.toDTOList(userRepository.findAll());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<UserDTO> getAllUsers(Pageable pageable) {
+        Page<User> page = userRepository.findAll(pageable);
+        return PageResponse.of(page, userMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<UserDTO> searchUsers(String keyword, Pageable pageable) {
+        Page<User> page = userRepository.search(keyword, pageable);
+        return PageResponse.of(page, userMapper.toDTOList(page.getContent()));
     }
 
     @Override

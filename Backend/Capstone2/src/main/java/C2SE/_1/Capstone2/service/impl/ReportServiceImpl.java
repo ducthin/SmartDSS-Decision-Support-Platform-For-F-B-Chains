@@ -91,6 +91,7 @@ public class ReportServiceImpl implements ReportService {
                         .menuItemId((Long) row[0])
                         .menuItemName((String) row[1])
                         .totalQuantitySold((Long) row[2])
+                        .totalRevenue((BigDecimal) row[3])
                         .build())
                 .collect(Collectors.toList());
     }

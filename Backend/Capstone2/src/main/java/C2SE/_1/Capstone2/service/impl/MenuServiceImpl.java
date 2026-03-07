@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.MenuItemDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Category;
 import C2SE._1.Capstone2.entity.MenuItem;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
@@ -9,6 +10,8 @@ import C2SE._1.Capstone2.repository.CategoryRepository;
 import C2SE._1.Capstone2.repository.MenuItemRepository;
 import C2SE._1.Capstone2.service.MenuService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,20 @@ public class MenuServiceImpl implements MenuService {
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getAllMenuItems() {
         return menuItemMapper.toDTOList(menuItemRepository.findAll());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<MenuItemDTO> getAllMenuItems(Pageable pageable) {
+        Page<MenuItem> page = menuItemRepository.findAll(pageable);
+        return PageResponse.of(page, menuItemMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<MenuItemDTO> searchMenuItems(String keyword, Long categoryId, Boolean available, Pageable pageable) {
+        Page<MenuItem> page = menuItemRepository.search(keyword, categoryId, available, pageable);
+        return PageResponse.of(page, menuItemMapper.toDTOList(page.getContent()));
     }
 
     @Override

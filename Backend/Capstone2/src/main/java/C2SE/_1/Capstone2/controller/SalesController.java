@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.controller;
 import C2SE._1.Capstone2.dto.ApiResponse;
 import C2SE._1.Capstone2.dto.SalesDTO;
 import C2SE._1.Capstone2.service.SalesService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,7 @@ public class SalesController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<SalesDTO>> createSale(@RequestBody SalesDTO salesDTO) {
+    public ResponseEntity<ApiResponse<SalesDTO>> createSale(@Valid @RequestBody SalesDTO salesDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(salesService.createSale(salesDTO)));
     }

@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.CategoryDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Category;
 import C2SE._1.Capstone2.exception.DuplicateResourceException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
@@ -8,6 +9,8 @@ import C2SE._1.Capstone2.mapper.CategoryMapper;
 import C2SE._1.Capstone2.repository.CategoryRepository;
 import C2SE._1.Capstone2.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,20 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryDTO> getAllCategories() {
         return categoryMapper.toDTOList(categoryRepository.findAll());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CategoryDTO> getAllCategories(Pageable pageable) {
+        Page<Category> page = categoryRepository.findAll(pageable);
+        return PageResponse.of(page, categoryMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CategoryDTO> searchCategories(String keyword, Pageable pageable) {
+        Page<Category> page = categoryRepository.findByNameContainingIgnoreCase(keyword, pageable);
+        return PageResponse.of(page, categoryMapper.toDTOList(page.getContent()));
     }
 
     @Override

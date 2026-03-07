@@ -1,0 +1,246 @@
+import { useEffect, useState } from 'react';
+import { menuService } from '@/services/menuService';
+import { orderService } from '@/services/orderService';
+import type { MenuItem, OrderForm, PageResponse } from '@/types';
+import { ShoppingCart, Plus, Minus, Trash2, Send, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { StatusBadge } from './DashboardPage';
+import type { Order } from '@/types';
+import { ORDER_STATUS } from '@/utils/constants';
+import { getApiErrorMessage } from '@/utils/helpers';
+import Pagination from '@/components/ui/Pagination';
+
+interface CartItem {
+  menuItem: MenuItem;
+  quantity: number;
+}
+
+export default function OrdersPage() {
+  const [tab, setTab] = useState<'pos' | 'list'>('pos');
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold">Đơn hàng</h1>
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button onClick={() => setTab('pos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pos' ? 'bg-white shadow' : ''}`}>POS</button>
+          <button onClick={() => setTab('list')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'list' ? 'bg-white shadow' : ''}`}>Danh sách</button>
+        </div>
+      </div>
+      {tab === 'pos' ? <POSView /> : <OrderListView />}
+    </div>
+  );
+}
+
+function POSView() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    menuService.getAllNoPaging()
+      .then((res) => setMenuItems((res.data.data || []).filter((m: MenuItem) => m.available)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const addToCart = (item: MenuItem) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.menuItem.id === item.id);
+      if (existing) return prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+      return [...prev, { menuItem: item, quantity: 1 }];
+    });
+  };
+
+  const updateQty = (id: number, delta: number) => {
+    setCart((prev) => prev.map((c) => c.menuItem.id === id ? { ...c, quantity: Math.max(1, c.quantity + delta) } : c));
+  };
+
+  const removeFromCart = (id: number) => setCart((prev) => prev.filter((c) => c.menuItem.id !== id));
+
+  const total = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
+  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  const placeOrder = async () => {
+    if (cart.length === 0) return toast.error('Giỏ hàng trống');
+    setSubmitting(true);
+    const orderForm: OrderForm = {
+      orderItems: cart.map((c) => ({ menuItemId: c.menuItem.id, quantity: c.quantity })),
+    };
+    try {
+      await orderService.create(orderForm);
+      toast.success('Đặt hàng thành công!');
+      setCart([]);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Lỗi đặt hàng'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Menu */}
+      <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {menuItems.map((item) => (
+            <button key={item.id} onClick={() => addToCart(item)}
+              className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md hover:border-blue-300 transition">
+              <div className="text-2xl mb-2">☕</div>
+              <h3 className="font-medium text-sm truncate">{item.name}</h3>
+              <p className="text-blue-600 font-bold text-sm mt-1">{formatCurrency(item.price)}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Cart */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 h-fit sticky top-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingCart size={20} className="text-blue-600" />
+          <h2 className="font-semibold">Giỏ hàng ({cart.length})</h2>
+        </div>
+
+        {cart.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">Chọn món để thêm vào giỏ</p>
+        ) : (
+          <div className="space-y-3">
+            {cart.map((c) => (
+              <div key={c.menuItem.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{c.menuItem.name}</p>
+                  <p className="text-xs text-gray-500">{formatCurrency(c.menuItem.price)}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateQty(c.menuItem.id, -1)} className="p-1 rounded hover:bg-gray-200"><Minus size={14} /></button>
+                  <span className="w-8 text-center text-sm font-medium">{c.quantity}</span>
+                  <button onClick={() => updateQty(c.menuItem.id, 1)} className="p-1 rounded hover:bg-gray-200"><Plus size={14} /></button>
+                </div>
+                <button onClick={() => removeFromCart(c.menuItem.id)} className="p-1 rounded hover:bg-red-50 text-red-500"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="border-t border-gray-200 mt-4 pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium">Tổng cộng</span>
+            <span className="text-xl font-bold text-blue-600">{formatCurrency(total)}</span>
+          </div>
+          <button onClick={placeOrder} disabled={cart.length === 0 || submitting}
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+            <Send size={18} /> {submitting ? 'Đang xử lý...' : 'Đặt hàng'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderListView() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageData, setPageData] = useState<PageResponse<Order> | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    orderService.getAll(page, 10, statusFilter || undefined)
+      .then((res) => {
+        const data = res.data.data;
+        setOrders(data.content);
+        setPageData(data);
+      })
+      .catch(() => toast.error('Lỗi tải đơn hàng'))
+      .finally(() => setLoading(false));
+  }, [page, statusFilter]);
+
+  const reload = () => {
+    setLoading(true);
+    orderService.getAll(page, 10, statusFilter || undefined)
+      .then((res) => {
+        const data = res.data.data;
+        setOrders(data.content);
+        setPageData(data);
+      })
+      .catch(() => toast.error('Lỗi tải đơn hàng'))
+      .finally(() => setLoading(false));
+  };
+
+  const updateStatus = async (id: number, status: string) => {
+    try {
+      await orderService.updateStatus(id, status);
+      toast.success('Cập nhật thành công');
+      reload();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Lỗi cập nhật'));
+    }
+  };
+
+  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Filter */}
+      <div className="flex items-center gap-3">
+        <Search size={18} className="text-gray-400" />
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ xử lý</option>
+          <option value="PREPARING">Đang pha chế</option>
+          <option value="COMPLETED">Hoàn thành</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-500">Món</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-500">Tổng tiền</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-500">Thời gian</th>
+            <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((order) => (
+            <tr key={order.id} className="border-t border-gray-100">
+              <td className="py-3 px-4">{order.id}</td>
+              <td className="py-3 px-4 text-gray-600">
+                {order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}
+              </td>
+              <td className="py-3 px-4 font-medium">{formatCurrency(order.totalAmount)}</td>
+              <td className="py-3 px-4"><StatusBadge status={order.status} /></td>
+              <td className="py-3 px-4 text-gray-500">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
+              <td className="py-3 px-4 text-right space-x-1">
+                {order.status === ORDER_STATUS.PENDING && (
+                  <>
+                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
+                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
+                  </>
+                )}
+                {order.status === ORDER_STATUS.PREPARING && (
+                  <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
+                )}
+              </td>
+            </tr>
+          ))}
+          {orders.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có đơn hàng</td></tr>}
+        </tbody>
+      </table>
+      {pageData && (
+        <div className="px-4 pb-4">
+          <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
+        </div>
+      )}
+    </div>
+    </div>
+  );
+}

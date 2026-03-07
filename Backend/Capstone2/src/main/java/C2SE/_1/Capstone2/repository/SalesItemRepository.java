@@ -14,7 +14,7 @@ public interface SalesItemRepository extends JpaRepository<SalesItem, Long> {
 
     List<SalesItem> findBySalesTransactionId(Long salesTransactionId);
 
-    @Query("SELECT si.menuItem.id, si.menuItem.name, SUM(si.quantity) as totalQty " +
+    @Query("SELECT si.menuItem.id, si.menuItem.name, SUM(si.quantity) as totalQty, SUM(si.subtotal) as totalRev " +
            "FROM SalesItem si " +
            "WHERE si.salesTransaction.createdAt BETWEEN :start AND :end " +
            "GROUP BY si.menuItem.id, si.menuItem.name " +

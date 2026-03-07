@@ -2,6 +2,7 @@ package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Inventory;
 import C2SE._1.Capstone2.entity.InventoryTransaction;
 import C2SE._1.Capstone2.entity.TransactionType;
@@ -12,6 +13,8 @@ import C2SE._1.Capstone2.repository.InventoryRepository;
 import C2SE._1.Capstone2.repository.InventoryTransactionRepository;
 import C2SE._1.Capstone2.service.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,20 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional(readOnly = true)
     public List<InventoryDTO> getAllInventory() {
         return inventoryMapper.toDTOList(inventoryRepository.findAll());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<InventoryDTO> getAllInventory(Pageable pageable) {
+        Page<Inventory> page = inventoryRepository.findAll(pageable);
+        return PageResponse.of(page, inventoryMapper.toDTOList(page.getContent()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<InventoryDTO> searchInventory(String keyword, Boolean lowStock, Pageable pageable) {
+        Page<Inventory> page = inventoryRepository.search(keyword, lowStock, pageable);
+        return PageResponse.of(page, inventoryMapper.toDTOList(page.getContent()));
     }
 
     @Override
