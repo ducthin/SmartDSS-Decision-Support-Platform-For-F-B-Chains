@@ -31,8 +31,11 @@ public class Order extends BaseEntity {
     @Column(length = 500)
     private String note;
 
+    @Column(length = 50)
+    private String tableNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by")
     private User createdBy;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

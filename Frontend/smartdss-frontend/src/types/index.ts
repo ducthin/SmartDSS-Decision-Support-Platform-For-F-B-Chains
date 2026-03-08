@@ -128,9 +128,9 @@ export interface Inventory {
 }
 
 export interface InventoryTransactionForm {
-  ingredientId: number;
+  inventoryId: number;
   quantity: number;
-  note: string;
+  reason: string;
 }
 
 // Order
@@ -150,12 +150,34 @@ export interface Order {
   orderItems: OrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  tableNumber?: string;
   createdByName: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface OrderForm {
+  orderItems: { menuItemId: number; quantity: number }[];
+}
+
+// Dining Table
+export interface DiningTable {
+  id: number;
+  name: string;
+  qrToken: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiningTableForm {
+  name: string;
+  active: boolean;
+}
+
+// QR Order
+export interface QrOrderForm {
+  note?: string;
   orderItems: { menuItemId: number; quantity: number }[];
 }
 

@@ -23,9 +23,5 @@ public interface HolidayCalendarService {
 
     void deleteHoliday(Long id);
 
-    int syncFromNagerDate(int year);
-
-    int seedVietnameseHolidays(int year);
-
-    int syncFromGoogleCalendar(int year);
+    int syncFromCalendarific(int year);
 }

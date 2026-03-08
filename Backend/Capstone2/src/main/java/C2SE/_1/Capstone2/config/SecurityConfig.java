@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // User management - ADMIN only
@@ -78,6 +79,12 @@ public class SecurityConfig {
 
                         // Orders - all authenticated users (STAFF can create/view)
                         .requestMatchers("/api/v1/orders/**").authenticated()
+
+                        // Dining Tables - GET: authenticated, CUD: ADMIN/MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/tables/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
 
                         // Sales - all authenticated users
                         .requestMatchers("/api/v1/sales/**").authenticated()

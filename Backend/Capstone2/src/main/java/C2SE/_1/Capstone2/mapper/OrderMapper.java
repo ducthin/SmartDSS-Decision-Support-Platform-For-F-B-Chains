@@ -11,9 +11,10 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
 
-    @Mapping(source = "createdBy.id", target = "createdById")
-    @Mapping(source = "createdBy.fullName", target = "createdByName")
+    @Mapping(target = "createdById", expression = "java(order.getCreatedBy() != null ? order.getCreatedBy().getId() : null)")
+    @Mapping(target = "createdByName", expression = "java(order.getCreatedBy() != null ? order.getCreatedBy().getFullName() : null)")
     @Mapping(source = "status", target = "status")
+    @Mapping(source = "tableNumber", target = "tableNumber")
     OrderDTO toDTO(Order order);
 
     List<OrderDTO> toDTOList(List<Order> orders);

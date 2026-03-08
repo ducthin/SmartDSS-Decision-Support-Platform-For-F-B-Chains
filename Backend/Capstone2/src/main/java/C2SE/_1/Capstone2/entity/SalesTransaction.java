@@ -32,7 +32,7 @@ public class SalesTransaction extends BaseEntity {
     private String paymentMethod;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cashier_id", nullable = false)
+    @JoinColumn(name = "cashier_id")
     private User cashier;
 
     @OneToMany(mappedBy = "salesTransaction", cascade = CascadeType.ALL, orphanRemoval = true)

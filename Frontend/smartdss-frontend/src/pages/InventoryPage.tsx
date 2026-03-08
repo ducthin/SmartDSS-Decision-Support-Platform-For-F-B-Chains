@@ -13,7 +13,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'add' | 'deduct'>('add');
-  const [form, setForm] = useState<InventoryTransactionForm>({ ingredientId: 0, quantity: 0, note: '' });
+  const [form, setForm] = useState<InventoryTransactionForm>({ inventoryId: 0, quantity: 0, reason: '' });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [pageData, setPageData] = useState<PageResponse<Inventory> | null>(null);
@@ -41,7 +41,7 @@ export default function InventoryPage() {
 
   const openModal = (type: 'add' | 'deduct', inv: Inventory) => {
     setModalType(type);
-    setForm({ ingredientId: inv.ingredientId, quantity: 0, note: '' });
+    setForm({ inventoryId: inv.id, quantity: 0, reason: '' });
     setShowModal(true);
   };
 
@@ -144,12 +144,12 @@ export default function InventoryPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng <span className="text-red-500">*</span></label>
-            <input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+            <input type="number" value={form.quantity || ''} onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? 0 : Number(e.target.value) })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" min={1} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-            <input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })}
+            <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
           <div className="flex gap-3 justify-end">

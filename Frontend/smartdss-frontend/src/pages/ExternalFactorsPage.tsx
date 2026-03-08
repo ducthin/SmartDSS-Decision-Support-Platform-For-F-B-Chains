@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   Cloud, Droplets, Wind, Thermometer, Plus, Edit2, Trash2,
-  Calendar, MapPin, PartyPopper, X, RefreshCw,
+  Calendar, MapPin, X, RefreshCw,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -231,10 +231,8 @@ export default function ExternalFactorsPage() {
   const syncHolidays = async () => {
     setSyncing(true);
     try {
-      const googleRes = await holidayService.syncGoogle(calYear).catch(() => ({ data: { data: 0 } }));
-      const nagerRes = await holidayService.sync(calYear).catch(() => ({ data: { data: 0 } }));
-      const seedRes = await holidayService.seedVietnamese(calYear).catch(() => ({ data: { data: 0 } }));
-      const total = (googleRes.data.data || 0) + (nagerRes.data.data || 0) + (seedRes.data.data || 0);
+      const res = await holidayService.sync(calYear);
+      const total = res.data.data || 0;
       toast.success(`Đã thêm ${total} ngày lễ mới cho năm ${calYear}`);
       setCalRefresh(n => n + 1);
     } catch { toast.error('Lỗi đồng bộ ngày lễ'); }

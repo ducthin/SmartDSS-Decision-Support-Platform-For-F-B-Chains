@@ -12,7 +12,5 @@ export const holidayService = {
   create: (data: HolidayCalendarForm) => api.post<ApiResponse<HolidayCalendar>>('/holidays', data),
   update: (id: number, data: HolidayCalendarForm) => api.put<ApiResponse<HolidayCalendar>>(`/holidays/${id}`, data),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/holidays/${id}`),
-  sync: (year?: number) => api.post<ApiResponse<number>>('/holidays/sync', null, { params: year ? { year } : {} }),
-  seedVietnamese: (year?: number) => api.post<ApiResponse<number>>('/holidays/seed-vietnamese', null, { params: year ? { year } : {} }),
-  syncGoogle: (year?: number) => api.post<ApiResponse<number>>('/holidays/sync-google', null, { params: year ? { year } : {} }),
+  sync: (year?: number) => api.post<ApiResponse<number>>('/holidays/sync-calendarific', null, { params: year ? { year } : {} }),
 };

@@ -64,33 +64,13 @@ public class HolidayCalendarController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    @PostMapping("/sync")
-    public ResponseEntity<ApiResponse<Integer>> syncFromNagerDate(
+    @PostMapping("/sync-calendarific")
+    public ResponseEntity<ApiResponse<Integer>> syncFromCalendarific(
             @RequestParam(defaultValue = "0") int year) {
         if (year <= 0) {
             year = java.time.LocalDate.now().getYear();
         }
-        int count = holidayCalendarService.syncFromNagerDate(year);
-        return ResponseEntity.ok(ApiResponse.success(count, "Đã đồng bộ " + count + " ngày lễ mới từ Nager.Date"));
-    }
-
-    @PostMapping("/seed-vietnamese")
-    public ResponseEntity<ApiResponse<Integer>> seedVietnameseHolidays(
-            @RequestParam(defaultValue = "0") int year) {
-        if (year <= 0) {
-            year = java.time.LocalDate.now().getYear();
-        }
-        int count = holidayCalendarService.seedVietnameseHolidays(year);
-        return ResponseEntity.ok(ApiResponse.success(count, "Đã thêm " + count + " ngày lễ Việt Nam mới"));
-    }
-
-    @PostMapping("/sync-google")
-    public ResponseEntity<ApiResponse<Integer>> syncFromGoogleCalendar(
-            @RequestParam(defaultValue = "0") int year) {
-        if (year <= 0) {
-            year = java.time.LocalDate.now().getYear();
-        }
-        int count = holidayCalendarService.syncFromGoogleCalendar(year);
-        return ResponseEntity.ok(ApiResponse.success(count, "Đã đồng bộ " + count + " ngày lễ từ Google Calendar"));
+        int count = holidayCalendarService.syncFromCalendarific(year);
+        return ResponseEntity.ok(ApiResponse.success(count, "Đã đồng bộ " + count + " ngày lễ từ Calendarific"));
     }
 }
