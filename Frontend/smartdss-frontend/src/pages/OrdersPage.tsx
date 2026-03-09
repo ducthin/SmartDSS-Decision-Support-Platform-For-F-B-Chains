@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { menuService } from '@/services/menuService';
+import { useEffect, useState, useCallback } from 'react';
+import { menuService, categoryService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
-import type { MenuItem, OrderForm, PageResponse } from '@/types';
+import type { MenuItem, OrderForm, PageResponse, Category } from '@/types';
 import { ShoppingCart, Plus, Minus, Trash2, Send, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StatusBadge } from './DashboardPage';
@@ -9,6 +9,11 @@ import type { Order } from '@/types';
 import { ORDER_STATUS } from '@/utils/constants';
 import { getApiErrorMessage } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
+import { useOrderSocket } from '@/hooks/useOrderSocket';
+
+const CATEGORY_ICONS: Record<string, string> = {
+  'Cà phê': '☕', 'Trà': '🍵', 'Sinh tố': '🥤', 'Nước ép': '🧃', 'Bánh ngọt': '🍰',
+};
 
 interface CartItem {
   menuItem: MenuItem;
@@ -33,15 +38,23 @@ export default function OrdersPage() {
 
 function POSView() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    menuService.getAllNoPaging()
-      .then((res) => setMenuItems((res.data.data || []).filter((m: MenuItem) => m.available)))
-      .finally(() => setLoading(false));
+    Promise.all([
+      menuService.getAllNoPaging(),
+      categoryService.getAllNoPaging(),
+    ]).then(([menuRes, catRes]) => {
+      setMenuItems((menuRes.data.data || []).filter((m: MenuItem) => m.available));
+      setCategories(catRes.data.data || []);
+    }).finally(() => setLoading(false));
   }, []);
+
+  const filteredItems = selectedCat ? menuItems.filter((m) => m.categoryId === selectedCat) : menuItems;
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
@@ -83,15 +96,33 @@ function POSView() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Menu */}
       <div className="lg:col-span-2 space-y-4">
+        {/* Category filter */}
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setSelectedCat(null)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === null ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+            Tất cả
+          </button>
+          {categories.map((cat) => (
+            <button key={cat.id} onClick={() => setSelectedCat(cat.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === cat.id ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+              {CATEGORY_ICONS[cat.name] || '🍽️'} {cat.name}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {menuItems.map((item) => (
+          {filteredItems.map((item) => (
             <button key={item.id} onClick={() => addToCart(item)}
               className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md hover:border-blue-300 transition">
-              <div className="text-2xl mb-2">☕</div>
+              <div className="text-2xl mb-2">{CATEGORY_ICONS[item.categoryName] || '🍽️'}</div>
               <h3 className="font-medium text-sm truncate">{item.name}</h3>
+              <p className="text-xs text-gray-400 truncate">{item.categoryName}</p>
               <p className="text-blue-600 font-bold text-sm mt-1">{formatCurrency(item.price)}</p>
             </button>
           ))}
+          {filteredItems.length === 0 && (
+            <p className="col-span-full text-center text-gray-400 py-8">Không có món nào</p>
+          )}
         </div>
       </div>
 
@@ -145,7 +176,7 @@ function OrderListView() {
   const [pageData, setPageData] = useState<PageResponse<Order> | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
     orderService.getAll(page, 10, statusFilter || undefined)
       .then((res) => {
         const data = res.data.data;
@@ -156,23 +187,14 @@ function OrderListView() {
       .finally(() => setLoading(false));
   }, [page, statusFilter]);
 
-  const reload = () => {
-    setLoading(true);
-    orderService.getAll(page, 10, statusFilter || undefined)
-      .then((res) => {
-        const data = res.data.data;
-        setOrders(data.content);
-        setPageData(data);
-      })
-      .catch(() => toast.error('Lỗi tải đơn hàng'))
-      .finally(() => setLoading(false));
-  };
+  useEffect(() => { loadOrders(); }, [loadOrders]);
+  useOrderSocket(loadOrders);
 
   const updateStatus = async (id: number, status: string) => {
     try {
       await orderService.updateStatus(id, status);
       toast.success('Cập nhật thành công');
-      reload();
+      loadOrders();
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Lỗi cập nhật'));
     }

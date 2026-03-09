@@ -19,4 +19,14 @@ public interface SalesTransactionRepository extends JpaRepository<SalesTransacti
 
     @Query("SELECT st FROM SalesTransaction st WHERE st.cashier.id = :cashierId")
     List<SalesTransaction> findByCashierId(@Param("cashierId") Long cashierId);
+
+    @Query(value = "SELECT HOUR(st.created_at) as h, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
+           "FROM sales_transactions st WHERE st.created_at BETWEEN :start AND :end " +
+           "GROUP BY HOUR(st.created_at) ORDER BY h", nativeQuery = true)
+    List<Object[]> findHourlySales(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query(value = "SELECT DATE(st.created_at) as d, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
+           "FROM sales_transactions st WHERE st.created_at BETWEEN :start AND :end " +
+           "GROUP BY DATE(st.created_at) ORDER BY d", nativeQuery = true)
+    List<Object[]> findDailySalesGrouped(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

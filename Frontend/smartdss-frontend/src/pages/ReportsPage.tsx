@@ -1,30 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { reportService } from '@/services/reportService';
 import type { DailySalesReport, BestProduct, Inventory } from '@/types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AlertTriangle, Calendar } from 'lucide-react';
+
+const DAY_NAMES = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+function formatWeeklyDate(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = DAY_NAMES[d.getDay()];
+  return `${day} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<'daily' | 'weekly' | 'best' | 'low'>('daily');
-  const [dailyData, setDailyData] = useState<DailySalesReport[]>([]);
+  const [hourlyData, setHourlyData] = useState<DailySalesReport[]>([]);
   const [weeklyData, setWeeklyData] = useState<DailySalesReport[]>([]);
   const [bestProducts, setBestProducts] = useState<BestProduct[]>([]);
   const [lowStock, setLowStock] = useState<Inventory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dailyDate, setDailyDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [weeklyDate, setWeeklyDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     Promise.all([
-      reportService.dailySales().catch(() => ({ data: { data: [] } })),
-      reportService.weeklySales().catch(() => ({ data: { data: [] } })),
+      reportService.hourlySales(dailyDate).catch(() => ({ data: { data: [] } })),
+      reportService.weeklySales(weeklyDate).catch(() => ({ data: { data: [] } })),
       reportService.bestProducts().catch(() => ({ data: { data: [] } })),
       reportService.lowStock().catch(() => ({ data: { data: [] } })),
-    ]).then(([d, w, b, l]) => {
-      setDailyData(d.data.data || []);
-      setWeeklyData(w.data.data || []);
+    ]).then(([h, w, b, l]) => {
+      setHourlyData(h.data.data || []);
+      setWeeklyData((w.data.data || []).map((d: DailySalesReport) => ({ ...d, label: formatWeeklyDate(d.date) })));
       setBestProducts(b.data.data || []);
       setLowStock(l.data.data || []);
-    }).finally(() => setLoading(false));
-  }, []);
+      setLoading(false);
+    });
+  }, [dailyDate, weeklyDate]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
@@ -53,16 +66,46 @@ export default function ReportsPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         {tab === 'daily' && (
           <div>
-            <h2 className="text-lg font-semibold mb-4">Doanh thu theo ngày</h2>
-            {dailyData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip formatter={(v) => formatCurrency(Number(v))} />
-                  <Bar dataKey="totalRevenue" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Doanh thu" />
-                </BarChart>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Doanh thu theo giờ</h2>
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-400" />
+                <input type="date" value={dailyDate} onChange={(e) => setDailyDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+            {hourlyData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={380}>
+                <AreaChart data={hourlyData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} label={{ value: 'Giờ', position: 'insideBottomRight', offset: -5 }} />
+                  <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12 }}
+                    label={{ value: 'Doanh thu (VNĐ)', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12 } }} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }}
+                    label={{ value: 'Số đơn', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 12 } }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb' }}
+                    labelFormatter={(label) => `Lúc ${label}`}
+                    formatter={(v, name) =>
+                      name === 'Doanh thu' ? formatCurrency(Number(v)) : `${v} đơn`
+                    }
+                  />
+                  <Legend />
+                  <Area yAxisId="left" type="monotone" dataKey="totalRevenue" name="Doanh thu"
+                    stroke="#3b82f6" strokeWidth={2.5} fill="url(#colorRevenue)" dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+                  <Area yAxisId="right" type="monotone" dataKey="totalOrders" name="Số đơn"
+                    stroke="#f59e0b" strokeWidth={2} fill="url(#colorOrders)" dot={{ r: 2, fill: '#f59e0b' }} activeDot={{ r: 5 }} />
+                </AreaChart>
               </ResponsiveContainer>
             ) : <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>}
           </div>
@@ -70,14 +113,21 @@ export default function ReportsPage() {
 
         {tab === 'weekly' && (
           <div>
-            <h2 className="text-lg font-semibold mb-4">Doanh thu theo tuần</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Doanh thu theo tuần</h2>
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-400" />
+                <input type="date" value={weeklyDate} onChange={(e) => setWeeklyDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
             {weeklyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+                  <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.date || ''} formatter={(v) => formatCurrency(Number(v))} />
                   <Bar dataKey="totalRevenue" fill="#10b981" radius={[4, 4, 0, 0]} name="Doanh thu" />
                 </BarChart>
               </ResponsiveContainer>

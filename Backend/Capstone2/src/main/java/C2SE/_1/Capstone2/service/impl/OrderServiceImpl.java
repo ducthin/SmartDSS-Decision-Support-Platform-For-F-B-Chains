@@ -13,6 +13,7 @@ import C2SE._1.Capstone2.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class OrderServiceImpl implements OrderService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final SalesTransactionRepository salesTransactionRepository;
     private final OrderMapper orderMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -107,7 +109,9 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(orderItems);
         order.setTotalAmount(totalAmount);
 
-        return orderMapper.toDTO(orderRepository.save(order));
+        OrderDTO result = orderMapper.toDTO(orderRepository.save(order));
+        messagingTemplate.convertAndSend("/topic/orders", result);
+        return result;
     }
 
     @Override
@@ -131,7 +135,9 @@ public class OrderServiceImpl implements OrderService {
             deductInventoryForOrder(savedOrder);
         }
 
-        return orderMapper.toDTO(savedOrder);
+        OrderDTO result = orderMapper.toDTO(savedOrder);
+        messagingTemplate.convertAndSend("/topic/orders", result);
+        return result;
     }
 
     private void validateStatusTransition(OrderStatus current, OrderStatus next) {

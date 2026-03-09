@@ -9,6 +9,8 @@ export const salesService = {
 export const reportService = {
   dailySales: (date?: string) =>
     api.get<ApiResponse<DailySalesReport[]>>('/reports/daily-sales', { params: { date } }),
+  hourlySales: (date?: string) =>
+    api.get<ApiResponse<DailySalesReport[]>>('/reports/hourly-sales', { params: { date } }),
   weeklySales: (date?: string) =>
     api.get<ApiResponse<DailySalesReport[]>>('/reports/weekly-sales', { params: { date } }),
   bestProducts: () =>

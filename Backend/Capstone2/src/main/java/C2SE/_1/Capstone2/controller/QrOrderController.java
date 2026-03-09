@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class QrOrderController {
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping("/{token}/info")
     public ResponseEntity<ApiResponse<DiningTableDTO>> getTableInfo(@PathVariable String token) {
@@ -114,8 +116,10 @@ public class QrOrderController {
         order.setTotalAmount(totalAmount);
 
         Order saved = orderRepository.save(order);
+        OrderDTO result = orderMapper.toDTO(saved);
+        messagingTemplate.convertAndSend("/topic/orders", result);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(orderMapper.toDTO(saved)));
+                .body(ApiResponse.success(result));
     }
 
     @GetMapping("/{token}/orders")

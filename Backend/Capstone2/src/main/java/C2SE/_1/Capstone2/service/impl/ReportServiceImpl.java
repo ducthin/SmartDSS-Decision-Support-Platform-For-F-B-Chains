@@ -3,7 +3,6 @@ package C2SE._1.Capstone2.service.impl;
 import C2SE._1.Capstone2.dto.BestProductDTO;
 import C2SE._1.Capstone2.dto.DailySalesReportDTO;
 import C2SE._1.Capstone2.dto.InventoryDTO;
-import C2SE._1.Capstone2.entity.SalesTransaction;
 import C2SE._1.Capstone2.mapper.InventoryMapper;
 import C2SE._1.Capstone2.repository.InventoryRepository;
 import C2SE._1.Capstone2.repository.SalesItemRepository;
@@ -17,8 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,49 +30,86 @@ public class ReportServiceImpl implements ReportService {
     private final InventoryMapper inventoryMapper;
 
     @Override
-    public List<DailySalesReportDTO> getDailySalesReport() {
-        LocalDate today = LocalDate.now();
-        LocalDateTime start = today.atStartOfDay();
-        LocalDateTime end = today.atTime(LocalTime.MAX);
+    public List<DailySalesReportDTO> getDailySalesReport(LocalDate date) {
+        LocalDate target = date != null ? date : LocalDate.now();
+        LocalDateTime start = target.atStartOfDay();
+        LocalDateTime end = target.atTime(LocalTime.MAX);
 
-        List<SalesTransaction> sales = salesTransactionRepository.findByCreatedAtBetween(start, end);
+        List<Object[]> results = salesTransactionRepository.findDailySalesGrouped(start, end);
 
-        DailySalesReportDTO report = DailySalesReportDTO.builder()
-                .date(today.toString())
-                .totalOrders((long) sales.size())
-                .totalRevenue(sales.stream()
-                        .map(SalesTransaction::getTotalAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add))
-                .build();
+        if (results.isEmpty()) {
+            return List.of(DailySalesReportDTO.builder()
+                    .date(target.toString())
+                    .totalOrders(0L)
+                    .totalRevenue(BigDecimal.ZERO)
+                    .build());
+        }
 
-        return List.of(report);
+        Object[] row = results.get(0);
+        return List.of(DailySalesReportDTO.builder()
+                .date(target.toString())
+                .totalOrders(((Number) row[1]).longValue())
+                .totalRevenue(toBigDecimal(row[2]))
+                .build());
     }
 
     @Override
-    public List<DailySalesReportDTO> getWeeklySalesReport() {
-        LocalDate today = LocalDate.now();
-        LocalDate weekStart = today.minusDays(6);
+    public List<DailySalesReportDTO> getHourlySalesReport(LocalDate date) {
+        LocalDate target = date != null ? date : LocalDate.now();
+        LocalDateTime start = target.atStartOfDay();
+        LocalDateTime end = target.atTime(LocalTime.MAX);
 
-        List<DailySalesReportDTO> reports = new ArrayList<>();
+        List<Object[]> results = salesTransactionRepository.findHourlySales(start, end);
 
-        for (int i = 0; i < 7; i++) {
-            LocalDate date = weekStart.plusDays(i);
-            LocalDateTime start = date.atStartOfDay();
-            LocalDateTime end = date.atTime(LocalTime.MAX);
-
-            List<SalesTransaction> sales = salesTransactionRepository.findByCreatedAtBetween(start, end);
-
-            DailySalesReportDTO report = DailySalesReportDTO.builder()
-                    .date(date.toString())
-                    .totalOrders((long) sales.size())
-                    .totalRevenue(sales.stream()
-                            .map(SalesTransaction::getTotalAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add))
-                    .build();
-
-            reports.add(report);
+        Map<Integer, DailySalesReportDTO> hourMap = new HashMap<>();
+        for (Object[] row : results) {
+            int hour = ((Number) row[0]).intValue();
+            hourMap.put(hour, DailySalesReportDTO.builder()
+                    .date(String.format("%02d:00", hour))
+                    .totalOrders(((Number) row[1]).longValue())
+                    .totalRevenue(toBigDecimal(row[2]))
+                    .build());
         }
 
+        List<DailySalesReportDTO> reports = new ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            reports.add(hourMap.getOrDefault(h, DailySalesReportDTO.builder()
+                    .date(String.format("%02d:00", h))
+                    .totalOrders(0L)
+                    .totalRevenue(BigDecimal.ZERO)
+                    .build()));
+        }
+        return reports;
+    }
+
+    @Override
+    public List<DailySalesReportDTO> getWeeklySalesReport(LocalDate date) {
+        LocalDate target = date != null ? date : LocalDate.now();
+        LocalDate weekStart = target.minusDays(6);
+        LocalDateTime start = weekStart.atStartOfDay();
+        LocalDateTime end = target.atTime(LocalTime.MAX);
+
+        List<Object[]> results = salesTransactionRepository.findDailySalesGrouped(start, end);
+
+        Map<String, DailySalesReportDTO> dateMap = new HashMap<>();
+        for (Object[] row : results) {
+            String dateStr = row[0].toString();
+            dateMap.put(dateStr, DailySalesReportDTO.builder()
+                    .date(dateStr)
+                    .totalOrders(((Number) row[1]).longValue())
+                    .totalRevenue(toBigDecimal(row[2]))
+                    .build());
+        }
+
+        List<DailySalesReportDTO> reports = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            String d = weekStart.plusDays(i).toString();
+            reports.add(dateMap.getOrDefault(d, DailySalesReportDTO.builder()
+                    .date(d)
+                    .totalOrders(0L)
+                    .totalRevenue(BigDecimal.ZERO)
+                    .build()));
+        }
         return reports;
     }
 
@@ -99,5 +134,10 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public List<InventoryDTO> getLowStockReport() {
         return inventoryMapper.toDTOList(inventoryRepository.findLowStock());
+    }
+
+    private BigDecimal toBigDecimal(Object val) {
+        if (val instanceof BigDecimal) return (BigDecimal) val;
+        return BigDecimal.valueOf(((Number) val).doubleValue());
     }
 }
