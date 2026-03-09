@@ -6,12 +6,19 @@ export function useOrderSocket(onOrderUpdate: () => void) {
   callbackRef.current = onOrderUpdate;
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+
     const client = new Client({
       brokerURL: 'ws://localhost:8080/ws',
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       onConnect: () => {
+        let timeoutId: ReturnType<typeof setTimeout>;
         client.subscribe('/topic/orders', () => {
-          callbackRef.current();
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            if (callbackRef.current) callbackRef.current();
+          }, 500);
         });
       },
     });
@@ -23,3 +30,4 @@ export function useOrderSocket(onOrderUpdate: () => void) {
     };
   }, []);
 }
+

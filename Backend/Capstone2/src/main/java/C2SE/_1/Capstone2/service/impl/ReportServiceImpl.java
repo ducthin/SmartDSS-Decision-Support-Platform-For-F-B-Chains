@@ -123,10 +123,10 @@ public class ReportServiceImpl implements ReportService {
 
         return results.stream()
                 .map(row -> BestProductDTO.builder()
-                        .menuItemId((Long) row[0])
+                        .menuItemId(((Number) row[0]).longValue())
                         .menuItemName((String) row[1])
-                        .totalQuantitySold((Long) row[2])
-                        .totalRevenue((BigDecimal) row[3])
+                        .totalQuantitySold(((Number) row[2]).longValue())
+                        .totalRevenue(toBigDecimal(row[3]))
                         .build())
                 .collect(Collectors.toList());
     }

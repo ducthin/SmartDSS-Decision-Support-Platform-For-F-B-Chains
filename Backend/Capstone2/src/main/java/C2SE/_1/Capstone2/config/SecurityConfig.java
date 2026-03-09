@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.config;
 
+import C2SE._1.Capstone2.entity.RoleName;
 import C2SE._1.Capstone2.security.JwtAuthenticationEntryPoint;
 import C2SE._1.Capstone2.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -56,23 +57,23 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // User management - ADMIN only
-                        .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/users/**").hasRole(RoleName.ADMIN.name())
 
                         // Menu & Category management - ADMIN, MANAGER
-                        .requestMatchers(HttpMethod.POST, "/api/v1/menu/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/menu/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/menu/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/menu/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/menu/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/menu/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/menu/**").authenticated()
 
-                        .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").authenticated()
 
                         // Recipes - ADMIN, MANAGER
-                        .requestMatchers(HttpMethod.POST, "/api/v1/recipes/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/recipes/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/recipes/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/recipes/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/recipes/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/recipes/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/recipes/**").authenticated()
 
                         // Ingredients - authenticated users can view
@@ -83,34 +84,34 @@ public class SecurityConfig {
 
                         // Dining Tables - GET: authenticated, CUD: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/tables/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tables/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Sales - all authenticated users
                         .requestMatchers("/api/v1/sales/**").authenticated()
 
                         // Inventory - ADMIN, MANAGER
-                        .requestMatchers("/api/v1/inventory/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/inventory/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Reports - ADMIN, MANAGER
-                        .requestMatchers("/api/v1/reports/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/reports/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Weather - GET: authenticated, POST: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/weather/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/weather/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Events - GET: authenticated, CUD: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/events/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Holidays - GET: authenticated, CUD: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/holidays/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/holidays/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         .anyRequest().authenticated()
                 );

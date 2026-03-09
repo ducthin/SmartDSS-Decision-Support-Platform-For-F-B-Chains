@@ -184,7 +184,7 @@ public class OrderServiceImpl implements OrderService {
                 BigDecimal totalDeduction = recipe.getQuantity()
                         .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
 
-                Inventory inventory = inventoryRepository.findByIngredientId(recipe.getIngredient().getId())
+                Inventory inventory = inventoryRepository.findByIngredientIdForUpdate(recipe.getIngredient().getId())
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "Inventory", "ingredientId", recipe.getIngredient().getId()));
 

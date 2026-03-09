@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleKey } from '@/utils/helpers';
 import { tableService } from '@/services/tableService';
-import type { DiningTable, DiningTableForm } from '@/types';
+import Pagination from '@/components/ui/Pagination';
+import type { DiningTable, DiningTableForm, PageResponse } from '@/types';
 
 export default function TablesPage() {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ export default function TablesPage() {
   const [editing, setEditing] = useState<DiningTable | null>(null);
   const [form, setForm] = useState<DiningTableForm>({ name: '', active: true });
   const [showQr, setShowQr] = useState<DiningTable | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageData, setPageData] = useState<PageResponse<DiningTable> | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const frontendUrl = window.location.origin;
@@ -25,13 +28,14 @@ export default function TablesPage() {
   const fetchTables = async () => {
     setLoading(true);
     try {
-      const res = await tableService.getAll();
-      setTables(res.data.data);
+      const res = await tableService.getAll(page, 12);
+      setTables(res.data.data.content);
+      setPageData(res.data.data);
     } catch { toast.error('Lỗi tải danh sách bàn'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchTables(); }, []);
+  useEffect(() => { fetchTables(); }, [page]);
 
   const openCreate = () => {
     setEditing(null);
@@ -180,6 +184,12 @@ export default function TablesPage() {
           <QrCode className="mx-auto h-16 w-16 mb-4" />
           <p className="text-lg">Chưa có bàn nào</p>
           <p className="text-sm mt-1">Nhấn "Thêm bàn" để bắt đầu</p>
+        </div>
+      )}
+
+      {pageData && pageData.totalPages > 1 && (
+        <div className="py-4 flex justify-end">
+          <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
         </div>
       )}
 

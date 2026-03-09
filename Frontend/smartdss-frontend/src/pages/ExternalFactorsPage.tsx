@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Cloud, Droplets, Wind, Thermometer, Plus, Edit2, Trash2,
-  Calendar, MapPin, X, RefreshCw,
+  Cloud, Plus, Edit2, Trash2,
+  Calendar, MapPin, RefreshCw,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,6 +14,9 @@ import type {
   WeatherData, Event, EventForm, EventType, ImpactLevel,
   HolidayCalendar, HolidayCalendarForm, HolidayType,
 } from '@/types';
+import WeatherTab from '@/components/external/WeatherTab';
+import EventModal from '@/components/external/EventModal';
+import HolidayModal from '@/components/external/HolidayModal';
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   FESTIVAL: 'Lễ hội', HOLIDAY: 'Ngày nghỉ', CONCERT: 'Hòa nhạc',
@@ -282,65 +285,12 @@ export default function ExternalFactorsPage() {
 
       {/* WEATHER TAB */}
       {tab === 'weather' && (
-        <div className="space-y-4">
-          {weather ? (
-            <div className="bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Cloud size={20} /> Thời tiết hôm nay — {weather.city}
-                  </h2>
-                  <p className="text-3xl font-bold mt-2">{weather.temperature.toFixed(1)}°C</p>
-                  <p className="text-white/80 capitalize">{weather.description}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
-                    alt={weather.description}
-                    className="w-20 h-20"
-                  />
-                  {canEdit && (
-                    <button onClick={fetchWeatherNow} className="p-2 bg-white/20 rounded-lg hover:bg-white/30" title="Cập nhật ngay">
-                      <RefreshCw size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
-                <div className="flex items-center gap-2"><Thermometer size={16} /><span className="text-sm">Cảm giác: {weather.feelsLike.toFixed(1)}°C</span></div>
-                <div className="flex items-center gap-2"><Droplets size={16} /><span className="text-sm">Độ ẩm: {weather.humidity}%</span></div>
-                <div className="flex items-center gap-2"><Wind size={16} /><span className="text-sm">Gió: {weather.windSpeed} m/s</span></div>
-                <div className="flex items-center gap-2"><Cloud size={16} /><span className="text-sm">Mưa: {weather.rainfall} mm</span></div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-              Chưa có dữ liệu thời tiết hôm nay
-              {canEdit && (
-                <button onClick={fetchWeatherNow} className="ml-3 text-blue-600 hover:underline">Lấy ngay</button>
-              )}
-            </div>
-          )}
-
-          {/* Weather History */}
-          {weatherRange.length > 1 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4">Lịch sử thời tiết gần đây</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {weatherRange.map((w) => (
-                  <div key={w.id} className="border border-gray-100 rounded-lg p-3">
-                    <p className="text-sm text-gray-500">{new Date(w.recordDate).toLocaleDateString('vi-VN')}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <img src={`https://openweathermap.org/img/wn/${w.icon}.png`} alt="" className="w-8 h-8" />
-                      <span className="text-lg font-bold">{w.temperature.toFixed(1)}°C</span>
-                    </div>
-                    <p className="text-xs text-gray-400 capitalize">{w.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <WeatherTab
+          weather={weather}
+          weatherRange={weatherRange}
+          canEdit={canEdit}
+          onFetchNow={fetchWeatherNow}
+        />
       )}
 
       {/* CALENDAR TAB */}
@@ -502,130 +452,24 @@ export default function ExternalFactorsPage() {
 
       {/* EVENT MODAL */}
       {showEventModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowEventModal(false)}>
-          <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">{editingEvent ? 'Sửa sự kiện' : 'Thêm sự kiện'}</h3>
-              <button onClick={() => setShowEventModal(false)} className="p-1 hover:bg-gray-100 rounded"><X size={20} /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên sự kiện *</label>
-                <input type="text" value={eventForm.name} onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Loại sự kiện *</label>
-                  <select value={eventForm.eventType} onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value as EventType })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                    {(Object.keys(EVENT_TYPE_LABELS) as EventType[]).map((k) => (
-                      <option key={k} value={k}>{EVENT_TYPE_LABELS[k]}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mức tác động</label>
-                  <select value={eventForm.expectedImpact} onChange={(e) => setEventForm({ ...eventForm, expectedImpact: e.target.value as ImpactLevel })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                    {(Object.keys(IMPACT_LABELS) as ImpactLevel[]).map((k) => (
-                      <option key={k} value={k}>{IMPACT_LABELS[k]}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu *</label>
-                  <input type="date" value={eventForm.startDate} onChange={(e) => setEventForm({ ...eventForm, startDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc *</label>
-                  <input type="date" value={eventForm.endDate} onChange={(e) => setEventForm({ ...eventForm, endDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Địa điểm</label>
-                <input type="text" value={eventForm.location} onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                <textarea rows={3} value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                <textarea rows={2} value={eventForm.notes} onChange={(e) => setEventForm({ ...eventForm, notes: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={eventForm.active} onChange={(e) => setEventForm({ ...eventForm, active: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                Hoạt động
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-              <button onClick={() => setShowEventModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Hủy</button>
-              <button onClick={saveEvent} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                {editingEvent ? 'Cập nhật' : 'Tạo mới'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EventModal
+          isEditing={!!editingEvent}
+          form={eventForm}
+          onChange={setEventForm}
+          onSave={saveEvent}
+          onClose={() => setShowEventModal(false)}
+        />
       )}
 
       {/* HOLIDAY MODAL */}
       {showHolidayModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowHolidayModal(false)}>
-          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">{editingHoliday ? 'Sửa ngày lễ' : 'Thêm ngày lễ'}</h3>
-              <button onClick={() => setShowHolidayModal(false)} className="p-1 hover:bg-gray-100 rounded"><X size={20} /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngày lễ *</label>
-                <input type="text" value={holidayForm.name} onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày *</label>
-                  <input type="date" value={holidayForm.holidayDate} onChange={(e) => setHolidayForm({ ...holidayForm, holidayDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Loại *</label>
-                  <select value={holidayForm.holidayType} onChange={(e) => setHolidayForm({ ...holidayForm, holidayType: e.target.value as HolidayType })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                    {(Object.keys(HOLIDAY_TYPE_LABELS) as HolidayType[]).map((k) => (
-                      <option key={k} value={k}>{HOLIDAY_TYPE_LABELS[k]}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                <textarea rows={3} value={holidayForm.description} onChange={(e) => setHolidayForm({ ...holidayForm, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={holidayForm.recurring} onChange={(e) => setHolidayForm({ ...holidayForm, recurring: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                Lặp lại hàng năm
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-              <button onClick={() => setShowHolidayModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Hủy</button>
-              <button onClick={saveHoliday} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                {editingHoliday ? 'Cập nhật' : 'Tạo mới'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <HolidayModal
+          isEditing={!!editingHoliday}
+          form={holidayForm}
+          onChange={setHolidayForm}
+          onSave={saveHoliday}
+          onClose={() => setShowHolidayModal(false)}
+        />
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X } from 'lucid
 import toast, { Toaster } from 'react-hot-toast';
 import { qrService } from '@/services/qrService';
 import type { MenuItem, Order, DiningTable } from '@/types';
+import { useOrderSocket } from '@/hooks/useOrderSocket';
 
 interface CartItem {
   menuItem: MenuItem;
@@ -68,9 +69,27 @@ export default function QrOrderPage() {
     } catch { /* ignore */ }
   };
 
+  const handleSocketUpdate = (data?: Order) => {
+    if (data && data.id) {
+      setOrders(prev => {
+        const exists = prev.find(o => o.id === data.id);
+        if (exists) {
+          return prev.map(o => o.id === data.id ? data : o);
+        } else if (table && data.tableNumber === table.name) {
+          return [data, ...prev];
+        }
+        return prev;
+      });
+    }
+    // Still trigger reload to assure sync if something goes wrong
+    loadOrders();
+  };
+
   useEffect(() => {
     if (tab === 'orders') loadOrders();
   }, [tab]);
+
+  useOrderSocket(handleSocketUpdate);
 
   const categories = [...new Set(menuItems.map(m => m.categoryName))];
 
@@ -234,7 +253,6 @@ export default function QrOrderPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-700">Đơn hàng của bạn</h2>
-              <button onClick={loadOrders} className="text-orange-500 text-sm font-medium">Làm mới</button>
             </div>
             {orders.length === 0 ? (
               <div className="text-center py-12 text-gray-400">

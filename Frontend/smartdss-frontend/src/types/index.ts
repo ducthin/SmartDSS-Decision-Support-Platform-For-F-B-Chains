@@ -23,9 +23,8 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  type: string;
-  username: string;
-  role: string;
+  tokenType: string;
+  user: User;
 }
 
 // User
@@ -153,6 +152,7 @@ export interface Order {
   tableNumber?: string;
   createdByName: string;
   createdAt: string;
+  note?: string;
   updatedAt: string;
 }
 

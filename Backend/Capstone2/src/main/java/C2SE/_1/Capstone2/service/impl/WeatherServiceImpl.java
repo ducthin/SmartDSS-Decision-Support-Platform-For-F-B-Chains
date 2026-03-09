@@ -102,6 +102,23 @@ public class WeatherServiceImpl implements WeatherService {
     @Scheduled(fixedRateString = "${weather.api.fetch-interval:3600000}")
     public void scheduledWeatherFetch() {
         log.info("Scheduled weather fetch started");
-        fetchAndSaveCurrentWeather();
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            WeatherDataDTO result = fetchAndSaveCurrentWeather();
+            if (result != null) {
+                log.info("Weather fetch succeeded on attempt {}", attempt);
+                return;
+            }
+            if (attempt < maxRetries) {
+                log.warn("Weather fetch failed (attempt {}/{}), retrying in 10s...", attempt, maxRetries);
+                try {
+                    Thread.sleep(10_000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        }
+        log.error("Weather fetch failed after {} attempts", maxRetries);
     }
 }

@@ -187,8 +187,22 @@ function OrderListView() {
       .finally(() => setLoading(false));
   }, [page, statusFilter]);
 
+  const handleSocketUpdate = useCallback((data?: Order) => {
+    if (data && data.id) {
+       setOrders(prev => {
+         const exists = prev.find(o => o.id === data.id);
+         if (exists) {
+            return prev.map(o => o.id === data.id ? data : o);
+         }
+         return prev;
+       });
+    }
+    // Also trigger reload to keep pagination and filters fully consistent
+    loadOrders();
+  }, [loadOrders]);
+
   useEffect(() => { loadOrders(); }, [loadOrders]);
-  useOrderSocket(loadOrders);
+  useOrderSocket(handleSocketUpdate);
 
   const updateStatus = async (id: number, status: string) => {
     try {
@@ -236,7 +250,12 @@ function OrderListView() {
             <tr key={order.id} className="border-t border-gray-100">
               <td className="py-3 px-4">{order.id}</td>
               <td className="py-3 px-4 text-gray-600">
-                {order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}
+                <div>{order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}</div>
+                {order.note && (
+                  <div className="text-sm text-orange-600 mt-1 italic">
+                    Ghi chú: {order.note}
+                  </div>
+                )}
               </td>
               <td className="py-3 px-4 font-medium">{formatCurrency(order.totalAmount)}</td>
               <td className="py-3 px-4"><StatusBadge status={order.status} /></td>

@@ -14,5 +14,5 @@ export const qrService = {
   placeOrder: (token: string, data: QrOrderForm) =>
     qrApi.post<ApiResponse<Order>>(`/${token}/order`, data),
   getOrders: (token: string) =>
-    qrApi.get<ApiResponse<Order[]>>(`/${token}/orders`),
+    qrApi.get<ApiResponse<Order[]>>(`/${token}/orders?_t=${Date.now()}`),
 };

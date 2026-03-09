@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -21,6 +22,7 @@ public class OrderItemDTO {
 
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 1, message = "Số lượng phải >= 1")
+    @Max(value = 99, message = "Số lượng không được vượt quá 99")
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal subtotal;

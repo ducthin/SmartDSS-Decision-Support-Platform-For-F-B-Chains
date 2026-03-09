@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.DiningTableDTO;
+import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.DiningTable;
 import C2SE._1.Capstone2.exception.DuplicateResourceException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
@@ -10,6 +11,11 @@ import C2SE._1.Capstone2.service.DiningTableService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,8 +30,12 @@ public class DiningTableServiceImpl implements DiningTableService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<DiningTableDTO> getAllTables() {
-        return diningTableMapper.toDTOList(diningTableRepository.findAll());
+    public PageResponse<DiningTableDTO> getAllTables(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        Page<DiningTable> tablePage = diningTableRepository.findAll(pageable);
+        List<DiningTableDTO> dtoList = diningTableMapper.toDTOList(tablePage.getContent());
+        
+        return PageResponse.of(tablePage, dtoList);
     }
 
     @Override
