@@ -34,7 +34,15 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<EventDTO> searchEvents(String keyword, String eventType, Pageable pageable) {
-        Event.EventType type = eventType != null ? Event.EventType.valueOf(eventType) : null;
+        Event.EventType type = null;
+        if (eventType != null) {
+            try {
+                type = Event.EventType.valueOf(eventType);
+            } catch (IllegalArgumentException e) {
+                throw new C2SE._1.Capstone2.exception.BadRequestException(
+                        "Loại sự kiện không hợp lệ: " + eventType);
+            }
+        }
         Page<Event> page = eventRepository.search(keyword, type, pageable);
         return PageResponse.of(page, eventMapper.toDTOList(page.getContent()));
     }
@@ -68,8 +76,10 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventDTO createEvent(EventDTO dto) {
         Event event = eventMapper.toEntity(dto);
-        if (event.getActive() == null) event.setActive(true);
-        if (event.getExpectedImpact() == null) event.setExpectedImpact(Event.ImpactLevel.MEDIUM);
+        if (event.getActive() == null)
+            event.setActive(true);
+        if (event.getExpectedImpact() == null)
+            event.setExpectedImpact(Event.ImpactLevel.MEDIUM);
         return eventMapper.toDTO(eventRepository.save(event));
     }
 

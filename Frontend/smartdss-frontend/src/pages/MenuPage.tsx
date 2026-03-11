@@ -4,7 +4,7 @@ import type { MenuItem, MenuItemForm, Category, PageResponse } from '@/types';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
-import { getApiErrorMessage } from '@/utils/helpers';
+import { getApiErrorMessage, formatCurrency } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -84,8 +84,7 @@ export default function MenuPage() {
     }
   };
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
 
   return (
     <div className="space-y-6">
@@ -120,35 +119,35 @@ export default function MenuPage() {
 
       {/* Cards grid */}
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
-            <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-              <span className="text-4xl">☕</span>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{item.name}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{item.categoryName}</p>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {item.available ? 'Còn bán' : 'Hết hàng'}
-                </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {items.map((item) => (
+            <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
+              <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <span className="text-4xl">☕</span>
               </div>
-              <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
-                <div className="flex gap-1">
-                  <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
+              <div className="p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{item.categoryName}</p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {item.available ? 'Còn bán' : 'Hết hàng'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                    <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-        {items.length === 0 && <p className="col-span-full text-center text-gray-400 py-12">Chưa có món nào</p>}
-      </div>}
+          ))}
+          {items.length === 0 && <p className="col-span-full text-center text-gray-400 py-12">Chưa có món nào</p>}
+        </div>}
 
       {pageData && (
         <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />

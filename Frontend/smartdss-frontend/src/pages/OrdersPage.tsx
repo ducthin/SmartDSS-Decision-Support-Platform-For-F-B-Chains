@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { StatusBadge } from './DashboardPage';
 import type { Order } from '@/types';
 import { ORDER_STATUS } from '@/utils/constants';
-import { getApiErrorMessage } from '@/utils/helpers';
+import { getApiErrorMessage, formatCurrency } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 
@@ -71,7 +71,7 @@ function POSView() {
   const removeFromCart = (id: number) => setCart((prev) => prev.filter((c) => c.menuItem.id !== id));
 
   const total = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
-  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
 
   const placeOrder = async () => {
     if (cart.length === 0) return toast.error('Giỏ hàng trống');
@@ -189,13 +189,13 @@ function OrderListView() {
 
   const handleSocketUpdate = useCallback((data?: Order) => {
     if (data && data.id) {
-       setOrders(prev => {
-         const exists = prev.find(o => o.id === data.id);
-         if (exists) {
-            return prev.map(o => o.id === data.id ? data : o);
-         }
-         return prev;
-       });
+      setOrders(prev => {
+        const exists = prev.find(o => o.id === data.id);
+        if (exists) {
+          return prev.map(o => o.id === data.id ? data : o);
+        }
+        return prev;
+      });
     }
     // Also trigger reload to keep pagination and filters fully consistent
     loadOrders();
@@ -214,7 +214,7 @@ function OrderListView() {
     }
   };
 
-  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
 
@@ -234,54 +234,54 @@ function OrderListView() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500">Món</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500">Tổng tiền</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
-            <th className="text-left py-3 px-4 font-medium text-gray-500">Thời gian</th>
-            <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} className="border-t border-gray-100">
-              <td className="py-3 px-4">{order.id}</td>
-              <td className="py-3 px-4 text-gray-600">
-                <div>{order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}</div>
-                {order.note && (
-                  <div className="text-sm text-orange-600 mt-1 italic">
-                    Ghi chú: {order.note}
-                  </div>
-                )}
-              </td>
-              <td className="py-3 px-4 font-medium">{formatCurrency(order.totalAmount)}</td>
-              <td className="py-3 px-4"><StatusBadge status={order.status} /></td>
-              <td className="py-3 px-4 text-gray-500">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
-              <td className="py-3 px-4 text-right space-x-1">
-                {order.status === ORDER_STATUS.PENDING && (
-                  <>
-                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
-                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
-                  </>
-                )}
-                {order.status === ORDER_STATUS.PREPARING && (
-                  <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
-                )}
-              </td>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Món</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Tổng tiền</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Thời gian</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
             </tr>
-          ))}
-          {orders.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có đơn hàng</td></tr>}
-        </tbody>
-      </table>
-      {pageData && (
-        <div className="px-4 pb-4">
-          <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
-        </div>
-      )}
-    </div>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id} className="border-t border-gray-100">
+                <td className="py-3 px-4">{order.id}</td>
+                <td className="py-3 px-4 text-gray-600">
+                  <div>{order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}</div>
+                  {order.note && (
+                    <div className="text-sm text-orange-600 mt-1 italic">
+                      Ghi chú: {order.note}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 font-medium">{formatCurrency(order.totalAmount)}</td>
+                <td className="py-3 px-4"><StatusBadge status={order.status} /></td>
+                <td className="py-3 px-4 text-gray-500">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
+                <td className="py-3 px-4 text-right space-x-1">
+                  {order.status === ORDER_STATUS.PENDING && (
+                    <>
+                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
+                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
+                    </>
+                  )}
+                  {order.status === ORDER_STATUS.PREPARING && (
+                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {orders.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có đơn hàng</td></tr>}
+          </tbody>
+        </table>
+        {pageData && (
+          <div className="px-4 pb-4">
+            <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

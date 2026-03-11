@@ -49,6 +49,9 @@ public class OrderController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
         String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            throw new C2SE._1.Capstone2.exception.BadRequestException("Trạng thái đơn hàng không được để trống");
+        }
         return ResponseEntity.ok(ApiResponse.success(orderService.updateOrderStatus(id, status)));
     }
 }

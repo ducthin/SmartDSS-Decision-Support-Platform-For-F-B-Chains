@@ -3,6 +3,7 @@ import { reportService } from '@/services/reportService';
 import type { DailySalesReport, BestProduct, Inventory } from '@/types';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AlertTriangle, Calendar } from 'lucide-react';
+import { formatCurrency } from '@/utils/helpers';
 
 const DAY_NAMES = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
@@ -39,7 +40,7 @@ export default function ReportsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
 

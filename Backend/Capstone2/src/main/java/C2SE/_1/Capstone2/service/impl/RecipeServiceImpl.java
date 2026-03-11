@@ -40,6 +40,12 @@ public class RecipeServiceImpl implements RecipeService {
 
     @Override
     public RecipeDTO createRecipe(RecipeDTO dto) {
+        // Kiểm tra recipe trùng lặp
+        if (recipeRepository.existsByMenuItemIdAndIngredientId(dto.getMenuItemId(), dto.getIngredientId())) {
+            throw new C2SE._1.Capstone2.exception.DuplicateResourceException(
+                    "Công thức cho món này với nguyên liệu này đã tồn tại");
+        }
+
         MenuItem menuItem = menuItemRepository.findById(dto.getMenuItemId())
                 .orElseThrow(() -> new ResourceNotFoundException("MenuItem", "id", dto.getMenuItemId()));
         Ingredient ingredient = ingredientRepository.findById(dto.getIngredientId())

@@ -3,6 +3,8 @@ package C2SE._1.Capstone2.config;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -11,10 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
+@Slf4j
 public class RateLimitFilter implements Filter {
 
-    private static final int MAX_REQUESTS = 1;
+    private static final int MAX_REQUESTS = 5;
     private static final long WINDOW_MS = 10_000; // 10 giây
+    private static final long CLEANUP_THRESHOLD_MS = 300_000; // 5 phút
 
     private final Map<String, RateBucket> buckets = new ConcurrentHashMap<>();
 
@@ -50,6 +54,26 @@ public class RateLimitFilter implements Filter {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    /**
+     * Dọn dẹp các bucket cũ mỗi 5 phút để tránh memory leak.
+     */
+    @Scheduled(fixedRate = 300_000)
+    public void cleanupOldBuckets() {
+        long now = System.currentTimeMillis();
+        int removed = 0;
+        var iterator = buckets.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (now - entry.getValue().windowStart > CLEANUP_THRESHOLD_MS) {
+                iterator.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            log.debug("Cleaned up {} expired rate limit buckets", removed);
+        }
     }
 
     /**

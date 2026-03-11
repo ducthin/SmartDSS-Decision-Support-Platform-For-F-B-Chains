@@ -85,6 +85,17 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
+        // Kiểm tra trùng username khi đổi username
+        if (userDTO.getUsername() != null && !userDTO.getUsername().equals(user.getUsername())
+                && userRepository.existsByUsername(userDTO.getUsername())) {
+            throw new DuplicateResourceException("Username already exists: " + userDTO.getUsername());
+        }
+        // Kiểm tra trùng email khi đổi email
+        if (userDTO.getEmail() != null && !userDTO.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmail(userDTO.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + userDTO.getEmail());
+        }
+
         userMapper.updateEntityFromDTO(userDTO, user);
 
         if (userDTO.getPassword() != null && !userDTO.getPassword().isBlank()) {

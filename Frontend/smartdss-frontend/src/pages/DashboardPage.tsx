@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { ShoppingCart, DollarSign, Package, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-import { getRoleKey } from '@/utils/helpers';
+import { getRoleKey, formatCurrency } from '@/utils/helpers';
 import { orderService } from '@/services/orderService';
 import { reportService } from '@/services/reportService';
 import { inventoryService } from '@/services/inventoryService';
@@ -80,8 +80,7 @@ export default function DashboardPage() {
   const lowStockCount = inventory.filter((i) => i.quantity <= i.minimumStock).length;
   const pendingOrders = orders.filter((o) => o.status === ORDER_STATUS.PENDING || o.status === ORDER_STATUS.PREPARING);
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
 
   return (
     <div className="space-y-6">

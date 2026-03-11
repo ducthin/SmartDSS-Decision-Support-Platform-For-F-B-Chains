@@ -67,6 +67,12 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 
+        // Kiểm tra trùng tên khi đổi tên category
+        if (categoryDTO.getName() != null && !categoryDTO.getName().equals(category.getName())
+                && categoryRepository.existsByNameAndIdNot(categoryDTO.getName(), id)) {
+            throw new DuplicateResourceException("Danh mục '" + categoryDTO.getName() + "' đã tồn tại");
+        }
+
         categoryMapper.updateEntityFromDTO(categoryDTO, category);
         return categoryMapper.toDTO(categoryRepository.save(category));
     }

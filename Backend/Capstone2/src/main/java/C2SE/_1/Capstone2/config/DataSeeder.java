@@ -158,7 +158,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedMenuItemsAndRecipes() {
-        if (menuItemRepository.count() > 0) return;
+        if (menuItemRepository.count() > 0)
+            return;
 
         Category coffee = categoryRepository.findByName("Cà phê").orElseThrow();
         Category tea = categoryRepository.findByName("Trà").orElseThrow();
