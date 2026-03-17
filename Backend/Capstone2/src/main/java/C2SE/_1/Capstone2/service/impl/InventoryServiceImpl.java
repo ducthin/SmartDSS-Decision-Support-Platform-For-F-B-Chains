@@ -51,7 +51,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDTO addStock(InventoryTransactionDTO dto) {
-        Inventory inventory = inventoryRepository.findById(dto.getInventoryId())
+        Inventory inventory = inventoryRepository.findByIdForUpdate(dto.getInventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", dto.getInventoryId()));
 
         inventory.setQuantity(inventory.getQuantity().add(dto.getQuantity()));
@@ -70,7 +70,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDTO deductStock(InventoryTransactionDTO dto) {
-        Inventory inventory = inventoryRepository.findById(dto.getInventoryId())
+        Inventory inventory = inventoryRepository.findByIdForUpdate(dto.getInventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", dto.getInventoryId()));
 
         if (inventory.getQuantity().compareTo(dto.getQuantity()) < 0) {

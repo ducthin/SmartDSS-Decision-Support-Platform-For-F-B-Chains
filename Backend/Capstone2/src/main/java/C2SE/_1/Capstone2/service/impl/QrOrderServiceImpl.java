@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.service.impl;
 import C2SE._1.Capstone2.dto.*;
 import C2SE._1.Capstone2.entity.*;
 import C2SE._1.Capstone2.exception.BadRequestException;
+import C2SE._1.Capstone2.exception.InsufficientStockException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
@@ -14,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,8 @@ public class QrOrderServiceImpl implements QrOrderService {
     private final DiningTableRepository diningTableRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final RecipeRepository recipeRepository;
+    private final InventoryRepository inventoryRepository;
     private final OrderMapper orderMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -102,6 +107,8 @@ public class QrOrderServiceImpl implements QrOrderService {
             totalAmount = totalAmount.add(subtotal);
         }
 
+        validateInventoryAvailability(orderItems);
+
         order.setOrderItems(orderItems);
         order.setTotalAmount(totalAmount);
 
@@ -118,5 +125,33 @@ public class QrOrderServiceImpl implements QrOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("DiningTable", "qrToken", qrToken));
         List<Order> orders = orderRepository.findByTableNumberOrderByCreatedAtDesc(table.getName());
         return orderMapper.toDTOList(orders);
+    }
+
+    private void validateInventoryAvailability(List<OrderItem> orderItems) {
+        Map<Long, BigDecimal> requiredByIngredient = new HashMap<>();
+
+        for (OrderItem orderItem : orderItems) {
+            List<Recipe> recipes = recipeRepository.findByMenuItemId(orderItem.getMenuItem().getId());
+            for (Recipe recipe : recipes) {
+                BigDecimal required = recipe.getQuantity()
+                        .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+                requiredByIngredient.merge(recipe.getIngredient().getId(), required, BigDecimal::add);
+            }
+        }
+
+        for (Map.Entry<Long, BigDecimal> entry : requiredByIngredient.entrySet()) {
+            Long ingredientId = entry.getKey();
+            BigDecimal required = entry.getValue();
+
+            Inventory inventory = inventoryRepository.findByIngredientIdForUpdate(ingredientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory", "ingredientId", ingredientId));
+
+            if (inventory.getQuantity().compareTo(required) < 0) {
+                throw new InsufficientStockException(
+                        "Insufficient stock for ingredient: " + inventory.getIngredient().getName()
+                                + ". Available: " + inventory.getQuantity()
+                                + ", Required: " + required);
+            }
+        }
     }
 }

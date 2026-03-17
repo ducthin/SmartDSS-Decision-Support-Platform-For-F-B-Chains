@@ -4,9 +4,10 @@ import type { MenuItem, MenuItemForm, Category, PageResponse } from '@/types';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
-import { getApiErrorMessage, formatCurrency } from '@/utils/helpers';
+import { getApiErrorMessage, formatCurrency, getRoleKey } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useAuth } from '@/contexts/AuthContext';
 
 const emptyForm: MenuItemForm = { name: '', description: '', price: 0, imageUrl: '', available: true, categoryId: 0 };
 
@@ -24,6 +25,9 @@ export default function MenuPage() {
   const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
   const [filterAvailable, setFilterAvailable] = useState<boolean | undefined>(undefined);
   const debouncedKeyword = useDebounce(keyword);
+  const { user } = useAuth();
+  const userRole = getRoleKey(user?.roleName);
+  const canManageMenu = ['ADMIN', 'MANAGER'].includes(userRole);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -44,14 +48,21 @@ export default function MenuPage() {
 
   useEffect(load, [load]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true); };
+  const openCreate = () => {
+    if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
+    setEditing(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  };
   const openEdit = (item: MenuItem) => {
+    if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
     setEditing(item);
     setForm({ name: item.name, description: item.description, price: item.price, imageUrl: item.imageUrl, available: item.available, categoryId: item.categoryId });
     setShowModal(true);
   };
 
   const handleSave = async () => {
+    if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
     if (!form.name.trim()) return toast.error('Tên món không được trống');
     if (form.price <= 0) return toast.error('Giá phải > 0');
     if (!form.categoryId) return toast.error('Chọn danh mục');
@@ -74,6 +85,7 @@ export default function MenuPage() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
     if (!confirm('Xác nhận xóa món?')) return;
     try {
       await menuService.delete(id);
@@ -90,9 +102,11 @@ export default function MenuPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý Menu</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          <Plus size={18} /> Thêm món
-        </button>
+        {canManageMenu && (
+          <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <Plus size={18} /> Thêm món
+          </button>
+        )}
       </div>
 
       {/* Search & Filter */}
@@ -138,10 +152,12 @@ export default function MenuPage() {
                 <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
-                    <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
-                  </div>
+                  {canManageMenu && (
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                      <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

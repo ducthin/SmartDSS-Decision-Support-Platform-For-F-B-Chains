@@ -47,7 +47,7 @@ export interface UserForm {
   email: string;
   phone: string;
   active: boolean;
-  roleId: number;
+  roleName: string;
 }
 
 // Category

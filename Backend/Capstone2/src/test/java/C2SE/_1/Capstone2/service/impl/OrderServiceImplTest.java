@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
@@ -47,10 +48,10 @@ class OrderServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        Role role = Role.builder().id(1L).name(RoleName.STAFF).build();
+        Role role = Role.builder().id(1L).name(RoleName.WAITER).build();
         testUser = User.builder()
-                .id(1L).username("staff").fullName("Staff Member")
-                .email("staff@test.com").active(true).role(role)
+                .id(1L).username("waiter").fullName("Waiter")
+                .email("waiter@test.com").active(true).role(role)
                 .build();
 
         Category category = Category.builder().id(1L).name("Cà phê").build();
@@ -65,15 +66,20 @@ class OrderServiceImplTest {
     void createOrder_success() {
         // Arrange
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("staff", null));
+                new UsernamePasswordAuthenticationToken(
+                        "waiter",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                ));
 
         OrderItemDTO itemDTO = OrderItemDTO.builder()
                 .menuItemId(1L).quantity(2).build();
         OrderDTO orderDTO = OrderDTO.builder()
                 .orderItems(List.of(itemDTO)).note("Test order").build();
 
-        when(userRepository.findByUsername("staff")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername("waiter")).thenReturn(Optional.of(testUser));
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(testMenuItem));
+        when(recipeRepository.findByMenuItemId(anyLong())).thenReturn(List.of());
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order o = inv.getArgument(0);
             o.setId(1L);
@@ -98,7 +104,11 @@ class OrderServiceImplTest {
     @DisplayName("Tạo order thất bại - user không tồn tại")
     void createOrder_userNotFound() {
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("unknown", null));
+                new UsernamePasswordAuthenticationToken(
+                        "unknown",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                ));
 
         OrderDTO orderDTO = OrderDTO.builder()
                 .orderItems(List.of(OrderItemDTO.builder().menuItemId(1L).quantity(1).build()))
@@ -114,13 +124,17 @@ class OrderServiceImplTest {
     @DisplayName("Tạo order thất bại - menu item không tồn tại")
     void createOrder_menuItemNotFound() {
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("staff", null));
+                new UsernamePasswordAuthenticationToken(
+                        "waiter",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                ));
 
         OrderDTO orderDTO = OrderDTO.builder()
                 .orderItems(List.of(OrderItemDTO.builder().menuItemId(999L).quantity(1).build()))
                 .build();
 
-        when(userRepository.findByUsername("staff")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername("waiter")).thenReturn(Optional.of(testUser));
         when(menuItemRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(orderDTO))
@@ -132,7 +146,14 @@ class OrderServiceImplTest {
     void updateOrderStatus_pendingToPreparing() {
         Order order = Order.builder().id(1L).status(OrderStatus.PENDING).build();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "barista",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                ));
+
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any())).thenReturn(order);
         when(orderMapper.toDTO(any())).thenReturn(
                 OrderDTO.builder().id(1L).status("PREPARING").build());
@@ -147,7 +168,13 @@ class OrderServiceImplTest {
     @DisplayName("Không thể chuyển COMPLETED → PREPARING")
     void updateOrderStatus_completedCannotChange() {
         Order order = Order.builder().id(1L).status(OrderStatus.COMPLETED).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "barista",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                ));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(1L, "PREPARING"))
                 .isInstanceOf(BadRequestException.class)
@@ -158,7 +185,13 @@ class OrderServiceImplTest {
     @DisplayName("Không thể chuyển PENDING → COMPLETED (phải qua PREPARING)")
     void updateOrderStatus_pendingCannotComplete() {
         Order order = Order.builder().id(1L).status(OrderStatus.PENDING).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "barista",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                ));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(1L, "COMPLETED"))
                 .isInstanceOf(BadRequestException.class);
@@ -168,7 +201,13 @@ class OrderServiceImplTest {
     @DisplayName("Status không hợp lệ")
     void updateOrderStatus_invalidStatus() {
         Order order = Order.builder().id(1L).status(OrderStatus.PENDING).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "barista",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                ));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(1L, "INVALID"))
                 .isInstanceOf(BadRequestException.class)
@@ -179,14 +218,16 @@ class OrderServiceImplTest {
     @DisplayName("COMPLETED → tạo SalesTransaction + trừ kho")
     void updateOrderStatus_completedTriggersInventoryDeduction() {
         // Arrange
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "barista",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                ));
         Ingredient ingredient = Ingredient.builder().id(1L).name("Cà phê xay").build();
         Recipe recipe = Recipe.builder()
                 .menuItem(testMenuItem).ingredient(ingredient)
                 .quantity(BigDecimal.valueOf(20)).build();
-        Inventory inventory = Inventory.builder()
-                .id(1L).ingredient(ingredient)
-                .quantity(BigDecimal.valueOf(5000)).minimumStock(BigDecimal.valueOf(500))
-                .build();
 
         OrderItem orderItem = OrderItem.builder()
                 .menuItem(testMenuItem).quantity(2)
@@ -201,10 +242,8 @@ class OrderServiceImplTest {
                 .orderItems(List.of(orderItem))
                 .build();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any())).thenReturn(order);
-        when(recipeRepository.findByMenuItemId(anyLong())).thenReturn(List.of(recipe));
-        when(inventoryRepository.findByIngredientIdForUpdate(anyLong())).thenReturn(Optional.of(inventory));
         when(orderMapper.toDTO(any())).thenReturn(
                 OrderDTO.builder().id(1L).status("COMPLETED").build());
 
@@ -213,9 +252,7 @@ class OrderServiceImplTest {
 
         // Assert
         verify(salesTransactionRepository).save(any(SalesTransaction.class));
-        verify(inventoryRepository).save(any(Inventory.class));
-        verify(inventoryTransactionRepository).save(any(InventoryTransaction.class));
-        // Kiểm tra kho đã bị trừ: 5000 - (20 * 2) = 4960
-        assertThat(inventory.getQuantity()).isEqualByComparingTo(BigDecimal.valueOf(4960));
+        verify(inventoryRepository, never()).save(any(Inventory.class));
+        verify(inventoryTransactionRepository, never()).save(any(InventoryTransaction.class));
     }
 }

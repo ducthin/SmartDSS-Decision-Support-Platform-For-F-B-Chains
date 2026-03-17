@@ -10,6 +10,8 @@ import { ORDER_STATUS } from '@/utils/constants';
 import { getApiErrorMessage, formatCurrency } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
+import { useAuth } from '@/contexts/AuthContext';
+import { getRoleKey } from '@/utils/helpers';
 
 const CATEGORY_ICONS: Record<string, string> = {
   'Cà phê': '☕', 'Trà': '🍵', 'Sinh tố': '🥤', 'Nước ép': '🧃', 'Bánh ngọt': '🍰',
@@ -22,16 +24,22 @@ interface CartItem {
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<'pos' | 'list'>('pos');
+  const { user } = useAuth();
+  const userRole = getRoleKey(user?.roleName);
+
+  const canUsePOS = ['ADMIN', 'MANAGER', 'WAITER'].includes(userRole);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold">Đơn hàng</h1>
         <div className="flex bg-gray-100 rounded-lg p-1">
-          <button onClick={() => setTab('pos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pos' ? 'bg-white shadow' : ''}`}>POS</button>
+          {canUsePOS && (
+            <button onClick={() => setTab('pos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pos' ? 'bg-white shadow' : ''}`}>POS</button>
+          )}
           <button onClick={() => setTab('list')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'list' ? 'bg-white shadow' : ''}`}>Danh sách</button>
         </div>
       </div>
-      {tab === 'pos' ? <POSView /> : <OrderListView />}
+      {tab === 'pos' && canUsePOS ? <POSView /> : <OrderListView />}
     </div>
   );
 }
@@ -175,6 +183,10 @@ function OrderListView() {
   const [page, setPage] = useState(0);
   const [pageData, setPageData] = useState<PageResponse<Order> | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const { user } = useAuth();
+  const userRole = getRoleKey(user?.roleName);
+  const canPrepareOrComplete = ['ADMIN', 'MANAGER', 'BARISTA'].includes(userRole);
+  const canCancel = ['ADMIN', 'MANAGER', 'WAITER'].includes(userRole);
 
   const loadOrders = useCallback(() => {
     orderService.getAll(page, 10, statusFilter || undefined)
@@ -263,12 +275,18 @@ function OrderListView() {
                 <td className="py-3 px-4 text-right space-x-1">
                   {order.status === ORDER_STATUS.PENDING && (
                     <>
-                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
-                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
+                      {canPrepareOrComplete && (
+                        <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
+                      )}
+                      {canCancel && (
+                        <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
+                      )}
                     </>
                   )}
                   {order.status === ORDER_STATUS.PREPARING && (
-                    <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
+                    canPrepareOrComplete ? (
+                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
+                    ) : null
                   )}
                 </td>
               </tr>

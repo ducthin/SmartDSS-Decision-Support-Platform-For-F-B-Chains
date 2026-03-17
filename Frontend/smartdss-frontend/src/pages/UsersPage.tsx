@@ -8,12 +8,13 @@ import { getApiErrorMessage, getRoleKey } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
-const emptyForm: UserForm = { username: '', password: '', fullName: '', email: '', phone: '', active: true, roleId: 1 };
+const emptyForm: UserForm = { username: '', password: '', fullName: '', email: '', phone: '', active: true, roleName: 'WAITER' };
 
 const roleOptions = [
-  { id: 1, name: 'ADMIN' },
-  { id: 2, name: 'MANAGER' },
-  { id: 3, name: 'STAFF' },
+  { name: 'ADMIN' },
+  { name: 'MANAGER' },
+  { name: 'BARISTA' },
+  { name: 'WAITER' },
 ];
 
 export default function UsersPage() {
@@ -46,7 +47,7 @@ export default function UsersPage() {
   const openEdit = (u: User) => {
     setEditing(u);
     setForm({ username: u.username, fullName: u.fullName, email: u.email, phone: u.phone, active: u.active,
-      roleId: roleOptions.find((r) => r.name === getRoleKey(u.roleName))?.id ?? 3 });
+      roleName: getRoleKey(u.roleName) || 'WAITER' });
     setShowModal(true);
   };
 
@@ -186,9 +187,9 @@ export default function UsersPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
-              <select value={form.roleId} onChange={(e) => setForm({ ...form, roleId: Number(e.target.value) })}
+              <select value={form.roleName} onChange={(e) => setForm({ ...form, roleName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                {roleOptions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {roleOptions.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
               </select>
             </div>
             <div className="flex items-end pb-1">

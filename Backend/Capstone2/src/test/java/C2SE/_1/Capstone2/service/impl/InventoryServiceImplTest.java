@@ -54,7 +54,7 @@ class InventoryServiceImplTest {
         InventoryTransactionDTO dto = InventoryTransactionDTO.builder()
                 .inventoryId(1L).quantity(BigDecimal.valueOf(1000)).reason("Nhập hàng").build();
 
-        when(inventoryRepository.findById(1L)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testInventory));
         when(inventoryRepository.save(any())).thenReturn(testInventory);
         when(inventoryMapper.toDTO(any())).thenReturn(
                 InventoryDTO.builder().id(1L).quantity(BigDecimal.valueOf(6000)).build());
@@ -72,7 +72,7 @@ class InventoryServiceImplTest {
         InventoryTransactionDTO dto = InventoryTransactionDTO.builder()
                 .inventoryId(1L).quantity(BigDecimal.valueOf(1000)).reason("Sử dụng").build();
 
-        when(inventoryRepository.findById(1L)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testInventory));
         when(inventoryRepository.save(any())).thenReturn(testInventory);
         when(inventoryMapper.toDTO(any())).thenReturn(
                 InventoryDTO.builder().id(1L).quantity(BigDecimal.valueOf(4000)).build());
@@ -90,7 +90,7 @@ class InventoryServiceImplTest {
         InventoryTransactionDTO dto = InventoryTransactionDTO.builder()
                 .inventoryId(1L).quantity(BigDecimal.valueOf(9000)).reason("Sử dụng").build();
 
-        when(inventoryRepository.findById(1L)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testInventory));
 
         assertThatThrownBy(() -> inventoryService.deductStock(dto))
                 .isInstanceOf(InsufficientStockException.class)
@@ -103,7 +103,7 @@ class InventoryServiceImplTest {
         InventoryTransactionDTO dto = InventoryTransactionDTO.builder()
                 .inventoryId(999L).quantity(BigDecimal.valueOf(100)).build();
 
-        when(inventoryRepository.findById(999L)).thenReturn(Optional.empty());
+        when(inventoryRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> inventoryService.addStock(dto))
                 .isInstanceOf(ResourceNotFoundException.class);

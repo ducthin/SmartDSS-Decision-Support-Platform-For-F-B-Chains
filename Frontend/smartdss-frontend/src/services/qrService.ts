@@ -2,8 +2,9 @@ import axios from 'axios';
 import type { ApiResponse, DiningTable, MenuItem, Order, QrOrderForm } from '@/types';
 
 const qrApi = axios.create({
-  baseURL: 'http://localhost:8080/api/v1/public/qr',
+  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/public/qr`,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 });
 
 export const qrService = {

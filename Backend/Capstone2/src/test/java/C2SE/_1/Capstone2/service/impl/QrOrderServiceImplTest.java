@@ -29,6 +29,8 @@ class QrOrderServiceImplTest {
     @Mock private DiningTableRepository diningTableRepository;
     @Mock private MenuItemRepository menuItemRepository;
     @Mock private OrderRepository orderRepository;
+    @Mock private RecipeRepository recipeRepository;
+    @Mock private InventoryRepository inventoryRepository;
     @Mock private OrderMapper orderMapper;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
@@ -95,6 +97,7 @@ class QrOrderServiceImplTest {
         when(diningTableRepository.findByQrToken("test-token-123"))
                 .thenReturn(Optional.of(activeTable));
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(testMenuItem));
+        when(recipeRepository.findByMenuItemId(anyLong())).thenReturn(List.of());
         when(orderRepository.save(any())).thenAnswer(inv -> {
             Order o = inv.getArgument(0);
             o.setId(1L);

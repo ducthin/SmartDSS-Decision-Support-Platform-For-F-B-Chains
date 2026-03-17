@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Plus, Edit2, Trash2, QrCode, RefreshCw, X, Download, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
@@ -25,7 +25,7 @@ export default function TablesPage() {
 
   const frontendUrl = window.location.origin;
 
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     setLoading(true);
     try {
       const res = await tableService.getAll(page, 12);
@@ -33,9 +33,9 @@ export default function TablesPage() {
       setPageData(res.data.data);
     } catch { toast.error('Lỗi tải danh sách bàn'); }
     finally { setLoading(false); }
-  };
+  }, [page]);
 
-  useEffect(() => { fetchTables(); }, [page]);
+  useEffect(() => { fetchTables(); }, [fetchTables]);
 
   const openCreate = () => {
     setEditing(null);

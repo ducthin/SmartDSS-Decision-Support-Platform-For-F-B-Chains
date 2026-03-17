@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Cloud, Plus, Edit2, Trash2,
   Calendar, MapPin, RefreshCw,
@@ -144,8 +144,7 @@ export default function ExternalFactorsPage() {
     load();
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
+  const loadCalendar = useCallback(() => {
     const from = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
     const to = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -156,7 +155,11 @@ export default function ExternalFactorsPage() {
       setMonthEvents(evRes.data.data || []);
       setMonthHolidays(holRes.data.data || []);
     });
-  }, [calMonth, calYear, calRefresh]);
+  }, [calMonth, calYear]);
+
+  useEffect(() => {
+    loadCalendar();
+  }, [loadCalendar, calRefresh]);
 
   // Event CRUD
   const openEventCreate = () => {

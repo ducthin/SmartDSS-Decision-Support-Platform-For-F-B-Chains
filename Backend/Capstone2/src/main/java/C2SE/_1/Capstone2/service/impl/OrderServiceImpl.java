@@ -14,13 +14,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +77,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO createOrder(OrderDTO orderDTO) {
+        requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.WAITER);
+
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
@@ -106,6 +112,8 @@ public class OrderServiceImpl implements OrderService {
             totalAmount = totalAmount.add(subtotal);
         }
 
+        validateInventoryAvailability(orderItems);
+
         order.setOrderItems(orderItems);
         order.setTotalAmount(totalAmount);
 
@@ -116,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO updateOrderStatus(Long id, String status) {
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
 
         OrderStatus newStatus;
@@ -126,18 +134,48 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Invalid order status: " + status);
         }
 
-        validateStatusTransition(order.getStatus(), newStatus);
+        OrderStatus currentStatus = order.getStatus();
+        validateStatusTransition(currentStatus, newStatus);
+
+        // Permission by action
+        if (newStatus == OrderStatus.PREPARING || newStatus == OrderStatus.COMPLETED) {
+            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.BARISTA);
+        } else if (newStatus == OrderStatus.CANCELLED) {
+            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.WAITER);
+        }
+
+        if (newStatus == OrderStatus.PREPARING) {
+            reserveInventoryForOrder(order);
+        }
+        if (newStatus == OrderStatus.CANCELLED && currentStatus == OrderStatus.PREPARING) {
+            releaseReservedInventoryForOrder(order);
+        }
+
         order.setStatus(newStatus);
         Order savedOrder = orderRepository.save(order);
 
         if (newStatus == OrderStatus.COMPLETED) {
             createSalesTransactionFromOrder(savedOrder);
-            deductInventoryForOrder(savedOrder);
         }
 
         OrderDTO result = orderMapper.toDTO(savedOrder);
         messagingTemplate.convertAndSend("/topic/orders", result);
         return result;
+    }
+
+    private void requireAnyRole(RoleName... roles) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        for (RoleName role : roles) {
+            String required = "ROLE_" + role.name();
+            boolean match = auth.getAuthorities().stream().anyMatch(a -> required.equals(a.getAuthority()));
+            if (match) return;
+        }
+
+        throw new AccessDeniedException("Access denied");
     }
 
     private void validateStatusTransition(OrderStatus current, OrderStatus next) {
@@ -176,7 +214,7 @@ public class OrderServiceImpl implements OrderService {
         salesTransactionRepository.save(salesTransaction);
     }
 
-    private void deductInventoryForOrder(Order order) {
+    private void reserveInventoryForOrder(Order order) {
         for (OrderItem orderItem : order.getOrderItems()) {
             List<Recipe> recipes = recipeRepository.findByMenuItemId(orderItem.getMenuItem().getId());
 
@@ -202,9 +240,63 @@ public class OrderServiceImpl implements OrderService {
                         .inventory(inventory)
                         .type(TransactionType.DEDUCT)
                         .quantity(totalDeduction)
-                        .reason("Order #" + order.getId() + " completed")
+                        .reason("Order #" + order.getId() + " reserved (PREPARING)")
                         .build();
                 inventoryTransactionRepository.save(transaction);
+            }
+        }
+    }
+
+    private void releaseReservedInventoryForOrder(Order order) {
+        for (OrderItem orderItem : order.getOrderItems()) {
+            List<Recipe> recipes = recipeRepository.findByMenuItemId(orderItem.getMenuItem().getId());
+
+            for (Recipe recipe : recipes) {
+                BigDecimal totalRestore = recipe.getQuantity()
+                        .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+
+                Inventory inventory = inventoryRepository.findByIngredientIdForUpdate(recipe.getIngredient().getId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Inventory", "ingredientId", recipe.getIngredient().getId()));
+
+                inventory.setQuantity(inventory.getQuantity().add(totalRestore));
+                inventoryRepository.save(inventory);
+
+                InventoryTransaction transaction = InventoryTransaction.builder()
+                        .inventory(inventory)
+                        .type(TransactionType.ADD)
+                        .quantity(totalRestore)
+                        .reason("Order #" + order.getId() + " cancelled (release reserved)")
+                        .build();
+                inventoryTransactionRepository.save(transaction);
+            }
+        }
+    }
+
+    private void validateInventoryAvailability(List<OrderItem> orderItems) {
+        Map<Long, BigDecimal> requiredByIngredient = new HashMap<>();
+
+        for (OrderItem orderItem : orderItems) {
+            List<Recipe> recipes = recipeRepository.findByMenuItemId(orderItem.getMenuItem().getId());
+            for (Recipe recipe : recipes) {
+                BigDecimal required = recipe.getQuantity()
+                        .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+                requiredByIngredient.merge(recipe.getIngredient().getId(), required, BigDecimal::add);
+            }
+        }
+
+        for (Map.Entry<Long, BigDecimal> entry : requiredByIngredient.entrySet()) {
+            Long ingredientId = entry.getKey();
+            BigDecimal required = entry.getValue();
+
+            Inventory inventory = inventoryRepository.findByIngredientIdForUpdate(ingredientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory", "ingredientId", ingredientId));
+
+            if (inventory.getQuantity().compareTo(required) < 0) {
+                throw new InsufficientStockException(
+                        "Insufficient stock for ingredient: " + inventory.getIngredient().getName()
+                                + ". Available: " + inventory.getQuantity()
+                                + ", Required: " + required);
             }
         }
     }

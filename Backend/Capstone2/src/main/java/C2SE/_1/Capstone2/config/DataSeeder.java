@@ -5,6 +5,7 @@ import C2SE._1.Capstone2.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
@@ -61,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
                     .role(adminRole)
                     .build();
             userRepository.save(admin);
-            log.info("Created admin user: admin / admin123");
+            log.info("Created admin user: admin");
         }
 
         if (!userRepository.existsByUsername("manager")) {
@@ -78,24 +80,41 @@ public class DataSeeder implements CommandLineRunner {
                     .role(managerRole)
                     .build();
             userRepository.save(manager);
-            log.info("Created manager user: manager / manager123");
+            log.info("Created manager user: manager");
         }
 
-        if (!userRepository.existsByUsername("staff")) {
-            Role staffRole = roleRepository.findByName(RoleName.STAFF)
-                    .orElseThrow(() -> new RuntimeException("STAFF role not found"));
+        if (!userRepository.existsByUsername("barista")) {
+            Role baristaRole = roleRepository.findByName(RoleName.BARISTA)
+                    .orElseThrow(() -> new RuntimeException("BARISTA role not found"));
 
-            User staff = User.builder()
-                    .username("staff")
-                    .password(passwordEncoder.encode("staff123"))
-                    .fullName("Staff Member")
-                    .email("staff@smartdss.com")
+            User barista = User.builder()
+                    .username("barista")
+                    .password(passwordEncoder.encode("barista123"))
+                    .fullName("Barista")
+                    .email("barista@smartdss.com")
                     .phone("0901234569")
                     .active(true)
-                    .role(staffRole)
+                    .role(baristaRole)
                     .build();
-            userRepository.save(staff);
-            log.info("Created staff user: staff / staff123");
+            userRepository.save(barista);
+            log.info("Created barista user: barista");
+        }
+
+        if (!userRepository.existsByUsername("waiter")) {
+            Role waiterRole = roleRepository.findByName(RoleName.WAITER)
+                    .orElseThrow(() -> new RuntimeException("WAITER role not found"));
+
+            User waiter = User.builder()
+                    .username("waiter")
+                    .password(passwordEncoder.encode("waiter123"))
+                    .fullName("Waiter")
+                    .email("waiter@smartdss.com")
+                    .phone("0901234570")
+                    .active(true)
+                    .role(waiterRole)
+                    .build();
+            userRepository.save(waiter);
+            log.info("Created waiter user: waiter");
         }
     }
 

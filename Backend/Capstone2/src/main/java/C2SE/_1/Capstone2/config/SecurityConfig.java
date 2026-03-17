@@ -6,6 +6,7 @@ import C2SE._1.Capstone2.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -31,6 +32,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("#{'${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}'.split(',')}")
+    private List<String> allowedOrigins;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -79,8 +83,24 @@ public class SecurityConfig {
                         // Ingredients - authenticated users can view
                         .requestMatchers(HttpMethod.GET, "/api/v1/ingredients/**").authenticated()
 
-                        // Orders - all authenticated users (STAFF can create/view)
-                        .requestMatchers("/api/v1/orders/**").authenticated()
+                        // Orders
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.WAITER.name()
+                        )
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/orders/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
 
                         // Dining Tables - GET: authenticated, CUD: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/tables/**").authenticated()
@@ -88,8 +108,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
-                        // Sales - all authenticated users
-                        .requestMatchers("/api/v1/sales/**").authenticated()
+                        // Sales
+                        .requestMatchers(HttpMethod.GET, "/api/v1/sales/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/sales/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.WAITER.name()
+                        )
 
                         // Inventory - ADMIN, MANAGER
                         .requestMatchers("/api/v1/inventory/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
@@ -124,7 +154,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:3000"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

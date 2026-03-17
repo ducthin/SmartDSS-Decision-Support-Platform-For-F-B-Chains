@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -40,17 +40,13 @@ export default function QrOrderPage() {
   const [showCart, setShowCart] = useState(false);
   const [filterCat, setFilterCat] = useState<string>('all');
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!token) return;
-    loadData();
-  }, [token]);
-
-  const loadData = async () => {
     setLoading(true);
     try {
       const [tableRes, menuRes] = await Promise.all([
-        qrService.getTableInfo(token!),
-        qrService.getMenu(token!),
+        qrService.getTableInfo(token),
+        qrService.getMenu(token),
       ]);
       setTable(tableRes.data.data);
       setMenuItems(menuRes.data.data);
@@ -60,16 +56,21 @@ export default function QrOrderPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
+    if (!token) return;
     try {
-      const res = await qrService.getOrders(token!);
+      const res = await qrService.getOrders(token);
       setOrders(res.data.data);
     } catch { /* ignore */ }
-  };
+  }, [token]);
 
-  const handleSocketUpdate = (data?: Order) => {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSocketUpdate = useCallback((data?: Order) => {
     if (data && data.id) {
       setOrders(prev => {
         const exists = prev.find(o => o.id === data.id);
@@ -83,11 +84,11 @@ export default function QrOrderPage() {
     }
     // Still trigger reload to assure sync if something goes wrong
     loadOrders();
-  };
+  }, [loadOrders, table]);
 
   useEffect(() => {
     if (tab === 'orders') loadOrders();
-  }, [tab]);
+  }, [tab, loadOrders]);
 
   useOrderSocket(handleSocketUpdate);
 
@@ -119,10 +120,10 @@ export default function QrOrderPage() {
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
 
   const placeOrder = async () => {
-    if (cart.length === 0) return;
+    if (!token || cart.length === 0) return;
     setSubmitting(true);
     try {
-      await qrService.placeOrder(token!, {
+      await qrService.placeOrder(token, {
         note: note || undefined,
         orderItems: cart.map(c => ({ menuItemId: c.menuItem.id, quantity: c.quantity })),
       });

@@ -19,6 +19,10 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
      Optional<Inventory> findByIngredientId(Long ingredientId);
 
      @Lock(LockModeType.PESSIMISTIC_WRITE)
+     @Query("SELECT i FROM Inventory i WHERE i.id = :id")
+     Optional<Inventory> findByIdForUpdate(@Param("id") Long id);
+
+     @Lock(LockModeType.PESSIMISTIC_WRITE)
      @Query("SELECT i FROM Inventory i WHERE i.ingredient.id = :ingredientId")
      Optional<Inventory> findByIngredientIdForUpdate(@Param("ingredientId") Long ingredientId);
 

@@ -68,15 +68,6 @@ export default function LoginPage() {
             {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
-
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 font-medium mb-2">Tài khoản demo:</p>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p><span className="font-medium">Admin:</span> admin / admin123</p>
-            <p><span className="font-medium">Manager:</span> manager / manager123</p>
-            <p><span className="font-medium">Staff:</span> staff / staff123</p>
-          </div>
-        </div>
       </div>
     </div>
   );
