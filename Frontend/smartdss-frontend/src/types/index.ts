@@ -181,6 +181,18 @@ export interface QrOrderForm {
   orderItems: { menuItemId: number; quantity: number }[];
 }
 
+// Staff Call (from QR)
+export interface StaffCall {
+  id: number;
+  tableName: string;
+  message?: string;
+  createdAt: string;
+}
+
+export interface QrStaffCallForm {
+  message?: string;
+}
+
 // Sales
 export interface SalesItem {
   id: number;

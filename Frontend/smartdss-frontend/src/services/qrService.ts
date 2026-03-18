@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, DiningTable, MenuItem, Order, QrOrderForm } from '@/types';
+import type { ApiResponse, DiningTable, MenuItem, Order, QrOrderForm, QrStaffCallForm, StaffCall } from '@/types';
 
 const qrApi = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'}/public/qr`,
@@ -16,4 +16,6 @@ export const qrService = {
     qrApi.post<ApiResponse<Order>>(`/${token}/order`, data),
   getOrders: (token: string) =>
     qrApi.get<ApiResponse<Order[]>>(`/${token}/orders?_t=${Date.now()}`),
+  callStaff: (token: string, data?: QrStaffCallForm) =>
+    qrApi.post<ApiResponse<StaffCall>>(`/${token}/call`, data || {}),
 };

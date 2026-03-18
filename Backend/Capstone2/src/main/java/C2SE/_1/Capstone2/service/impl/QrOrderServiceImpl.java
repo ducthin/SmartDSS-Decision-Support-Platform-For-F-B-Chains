@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ public class QrOrderServiceImpl implements QrOrderService {
     private final DiningTableRepository diningTableRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final StaffCallRepository staffCallRepository;
     private final RecipeRepository recipeRepository;
     private final InventoryRepository inventoryRepository;
     private final OrderMapper orderMapper;
@@ -125,6 +127,37 @@ public class QrOrderServiceImpl implements QrOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("DiningTable", "qrToken", qrToken));
         List<Order> orders = orderRepository.findByTableNumberOrderByCreatedAtDesc(table.getName());
         return orderMapper.toDTOList(orders);
+    }
+
+    @Override
+    public StaffCallDTO callStaff(String qrToken, QrStaffCallDTO callDTO) {
+        DiningTable table = validateAndGetTable(qrToken);
+        String tableName = table.getName();
+
+        staffCallRepository.findTopByTableNameOrderByCreatedAtDesc(tableName).ifPresent(last -> {
+            if (last.getCreatedAt() != null) {
+                Duration since = Duration.between(last.getCreatedAt(), java.time.LocalDateTime.now());
+                if (since.getSeconds() < 20) {
+                    throw new BadRequestException("Bạn vừa gọi nhân viên, vui lòng chờ một chút rồi thử lại");
+                }
+            }
+        });
+
+        StaffCall call = StaffCall.builder()
+                .tableName(tableName)
+                .message(callDTO != null ? callDTO.getMessage() : null)
+                .build();
+
+        StaffCall saved = staffCallRepository.save(call);
+        StaffCallDTO dto = StaffCallDTO.builder()
+                .id(saved.getId())
+                .tableName(saved.getTableName())
+                .message(saved.getMessage())
+                .createdAt(saved.getCreatedAt())
+                .build();
+
+        messagingTemplate.convertAndSend("/topic/staff-calls", dto);
+        return dto;
     }
 
     private void validateInventoryAvailability(List<OrderItem> orderItems) {

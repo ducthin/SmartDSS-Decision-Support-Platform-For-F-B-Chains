@@ -57,6 +57,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
@@ -107,6 +108,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
+                        // Settings
+                        .requestMatchers(HttpMethod.GET, "/api/v1/settings/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
 
                         // Sales
                         .requestMatchers(HttpMethod.GET, "/api/v1/sales/**").hasAnyRole(

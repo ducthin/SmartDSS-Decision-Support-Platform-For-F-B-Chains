@@ -14,6 +14,7 @@ import UsersPage from '@/pages/UsersPage';
 import RecipesPage from '@/pages/RecipesPage';
 import ExternalFactorsPage from '@/pages/ExternalFactorsPage';
 import TablesPage from '@/pages/TablesPage';
+import SettingsPage from '@/pages/SettingsPage';
 import QrOrderPage from '@/pages/QrOrderPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
@@ -34,6 +35,7 @@ function App() {
             <Route path="/reports" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ReportsPage /></ProtectedRoute>} />
             <Route path="/external-factors" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
             <Route path="/tables" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><TablesPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute roles={['ADMIN']}><SettingsPage /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

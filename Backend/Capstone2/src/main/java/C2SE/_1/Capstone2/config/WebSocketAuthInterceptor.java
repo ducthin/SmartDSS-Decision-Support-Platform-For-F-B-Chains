@@ -59,8 +59,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String destination = accessor.getDestination();
-            if (destination != null && destination.startsWith("/topic/orders") && accessor.getUser() == null) {
-                throw new AccessDeniedException("Authentication required to subscribe to orders topic");
+            if (destination != null
+                    && (destination.startsWith("/topic/orders") || destination.startsWith("/topic/staff-calls"))
+                    && accessor.getUser() == null) {
+                throw new AccessDeniedException("Authentication required to subscribe to protected topic");
             }
         }
 

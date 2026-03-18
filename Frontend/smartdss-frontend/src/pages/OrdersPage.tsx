@@ -268,6 +268,17 @@ function OrderListView() {
                       Ghi chú: {order.note}
                     </div>
                   )}
+                  <div className="mt-1">
+                    {order.tableNumber ? (
+                      <div className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+                        <span className="font-medium">{order.tableNumber}</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200">
+                        <span className="font-medium">POS</span>
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="py-3 px-4 font-medium">{formatCurrency(order.totalAmount)}</td>
                 <td className="py-3 px-4"><StatusBadge status={order.status} /></td>

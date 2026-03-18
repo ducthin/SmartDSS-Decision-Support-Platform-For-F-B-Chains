@@ -39,4 +39,13 @@ public class QrOrderController {
     public ResponseEntity<ApiResponse<List<OrderDTO>>> getTableOrders(@PathVariable String token) {
         return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token)));
     }
+
+    @PostMapping("/{token}/call")
+    public ResponseEntity<ApiResponse<StaffCallDTO>> callStaff(
+            @PathVariable String token,
+            @Valid @RequestBody(required = false) QrStaffCallDTO callDTO) {
+        QrStaffCallDTO safeDto = callDTO != null ? callDTO : QrStaffCallDTO.builder().build();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(qrOrderService.callStaff(token, safeDto)));
+    }
 }

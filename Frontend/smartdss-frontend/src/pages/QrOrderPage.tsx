@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X, Bell } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { qrService } from '@/services/qrService';
 import type { MenuItem, Order, DiningTable } from '@/types';
@@ -39,6 +39,7 @@ export default function QrOrderPage() {
   const [tab, setTab] = useState<Tab>('menu');
   const [showCart, setShowCart] = useState(false);
   const [filterCat, setFilterCat] = useState<string>('all');
+  const [callingStaff, setCallingStaff] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -140,6 +141,20 @@ export default function QrOrderPage() {
     }
   };
 
+  const callStaff = async () => {
+    if (!token) return;
+    if (callingStaff) return;
+    setCallingStaff(true);
+    try {
+      await qrService.callStaff(token);
+      toast.success('Đã gọi nhân viên. Vui lòng chờ một chút.');
+    } catch {
+      toast.error('Không thể gọi nhân viên, vui lòng thử lại');
+    } finally {
+      setCallingStaff(false);
+    }
+  };
+
   const formatPrice = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
   if (loading) {
@@ -174,6 +189,15 @@ export default function QrOrderPage() {
             <p className="text-orange-100 text-sm">{table.name}</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={callStaff}
+              disabled={callingStaff}
+              className="px-3 py-1 rounded-full text-sm font-medium transition bg-white/15 hover:bg-white/20 disabled:opacity-60 flex items-center gap-1"
+              title="Gọi nhân viên"
+            >
+              <Bell className="h-4 w-4" />
+              {callingStaff ? 'Đang gọi...' : 'Gọi NV'}
+            </button>
             <button onClick={() => setTab('menu')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition ${tab === 'menu' ? 'bg-white text-orange-600' : 'bg-orange-400/50 text-white'}`}>
               Thực đơn
