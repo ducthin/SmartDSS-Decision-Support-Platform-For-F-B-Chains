@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { menuService, categoryService } from '@/services/menuService';
-import type { MenuItem, MenuItemForm, Category, PageResponse } from '@/types';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { menuService, categoryService, recipeService } from '@/services/menuService';
+import type { MenuItem, MenuItemForm, Category, PageResponse, Recipe } from '@/types';
+import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import { getApiErrorMessage, formatCurrency, getRoleKey } from '@/utils/helpers';
@@ -19,6 +19,10 @@ export default function MenuPage() {
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState<MenuItemForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [recipeItem, setRecipeItem] = useState<MenuItem | null>(null);
+  const [recipeLines, setRecipeLines] = useState<Recipe[]>([]);
+  const [recipeLoading, setRecipeLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [pageData, setPageData] = useState<PageResponse<MenuItem> | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -96,7 +100,27 @@ export default function MenuPage() {
     }
   };
 
+  const openRecipe = async (item: MenuItem) => {
+    setRecipeItem(item);
+    setShowRecipeModal(true);
+    setRecipeLoading(true);
+    try {
+      const res = await recipeService.getByMenuItemId(item.id);
+      const lines = (res.data.data || []).sort((a, b) => a.ingredientName.localeCompare(b.ingredientName));
+      setRecipeLines(lines);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Lỗi tải công thức'));
+      setRecipeLines([]);
+    } finally {
+      setRecipeLoading(false);
+    }
+  };
 
+  const closeRecipe = () => {
+    setShowRecipeModal(false);
+    setRecipeItem(null);
+    setRecipeLines([]);
+  };
 
   return (
     <div className="space-y-6">
@@ -135,7 +159,15 @@ export default function MenuPage() {
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => openRecipe(item)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRecipe(item); } }}
+              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Bấm để xem công thức pha chế"
+            >
               <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <span className="text-4xl">☕</span>
               </div>
@@ -152,12 +184,21 @@ export default function MenuPage() {
                 <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
-                  {canManageMenu && (
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openRecipe(item); }}
+                      className="p-1.5 rounded hover:bg-blue-50 text-blue-600"
+                      title="Xem công thức"
+                    >
+                      <BookOpen size={16} />
+                    </button>
+                    {canManageMenu && (
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); openEdit(item); }} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -214,6 +255,51 @@ export default function MenuPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={showRecipeModal}
+        onClose={closeRecipe}
+        title={recipeItem ? `Công thức: ${recipeItem.name}` : 'Công thức'}
+        maxWidth="max-w-xl"
+      >
+        {recipeLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+              <div className="text-sm font-medium text-blue-900">Hỗ trợ pha chế</div>
+              <div className="text-sm text-blue-700 mt-0.5">Danh sách nguyên liệu và định lượng theo công thức đã khai báo.</div>
+            </div>
+
+            {recipeItem && recipeLines.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-700">Nguyên liệu</div>
+                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                  {recipeLines.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between px-3 py-2">
+                      <div className="text-sm font-medium text-gray-800">{r.ingredientName}</div>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-semibold text-gray-800">{r.quantity}</span>
+                        {r.ingredientUnit ? ` ${r.ingredientUnit}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+                Chưa có công thức cho món này. Vui lòng khai báo ở mục Công thức (Recipes).
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button onClick={closeRecipe} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Đóng</button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.controller;
 
 import C2SE._1.Capstone2.dto.*;
+import C2SE._1.Capstone2.service.CustomerFeedbackService;
 import C2SE._1.Capstone2.service.QrOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 public class QrOrderController {
 
     private final QrOrderService qrOrderService;
+    private final CustomerFeedbackService customerFeedbackService;
 
     @GetMapping("/{token}/info")
     public ResponseEntity<ApiResponse<DiningTableDTO>> getTableInfo(@PathVariable String token) {
@@ -47,5 +49,14 @@ public class QrOrderController {
         QrStaffCallDTO safeDto = callDTO != null ? callDTO : QrStaffCallDTO.builder().build();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(qrOrderService.callStaff(token, safeDto)));
+    }
+
+    @PostMapping(value = "/{token}/feedback", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<CustomerFeedbackDTO>> submitFeedback(
+            @PathVariable String token,
+            @Valid @ModelAttribute QrFeedbackDTO feedbackDTO
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(customerFeedbackService.submitFeedback(token, feedbackDTO)));
     }
 }

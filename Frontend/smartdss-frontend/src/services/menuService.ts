@@ -26,6 +26,7 @@ export const ingredientService = {
 
 export const recipeService = {
   getAll: () => api.get<ApiResponse<Recipe[]>>('/recipes'),
+  getByMenuItemId: (menuItemId: number) => api.get<ApiResponse<Recipe[]>>('/recipes', { params: { menuItemId } }),
   create: (data: RecipeForm) => api.post<ApiResponse<Recipe>>('/recipes', data),
   update: (id: number, data: RecipeForm) => api.put<ApiResponse<Recipe>>(`/recipes/${id}`, data),
   delete: (id: number) => api.delete<ApiResponse<void>>(`/recipes/${id}`),

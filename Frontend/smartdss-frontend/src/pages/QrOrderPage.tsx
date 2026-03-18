@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X, Bell } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X, Bell, Star, MessageSquareText, ImagePlus } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { qrService } from '@/services/qrService';
-import type { MenuItem, Order, DiningTable } from '@/types';
+import type { MenuItem, Order, DiningTable, QrFeedbackForm } from '@/types';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 
 interface CartItem {
@@ -24,7 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700',
 };
 
-type Tab = 'menu' | 'orders';
+type Tab = 'menu' | 'orders' | 'feedback';
 
 export default function QrOrderPage() {
   const { token } = useParams<{ token: string }>();
@@ -40,6 +40,15 @@ export default function QrOrderPage() {
   const [showCart, setShowCart] = useState(false);
   const [filterCat, setFilterCat] = useState<string>('all');
   const [callingStaff, setCallingStaff] = useState(false);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedback, setFeedback] = useState<QrFeedbackForm>({
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    rating: 5,
+    content: '',
+    images: [],
+  });
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -155,6 +164,41 @@ export default function QrOrderPage() {
     }
   };
 
+  const submitFeedback = async () => {
+    if (!token) return;
+    if (submittingFeedback) return;
+
+    if (!feedback.customerName.trim()) return toast.error('Vui lòng nhập họ tên');
+    if (!feedback.customerPhone.trim()) return toast.error('Vui lòng nhập số điện thoại');
+    if (!feedback.customerEmail.trim()) return toast.error('Vui lòng nhập email');
+    if (!feedback.content.trim()) return toast.error('Vui lòng nhập nội dung feedback');
+
+    setSubmittingFeedback(true);
+    try {
+      await qrService.submitFeedback(token, {
+        ...feedback,
+        customerName: feedback.customerName.trim(),
+        customerPhone: feedback.customerPhone.trim(),
+        customerEmail: feedback.customerEmail.trim(),
+        content: feedback.content.trim(),
+      });
+      toast.success('Cảm ơn bạn đã gửi feedback cho quán!');
+      setFeedback({
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
+        rating: 5,
+        content: '',
+        images: [],
+      });
+      setTab('menu');
+    } catch {
+      toast.error('Gửi feedback thất bại, vui lòng thử lại');
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
   const formatPrice = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
   if (loading) {
@@ -205,6 +249,10 @@ export default function QrOrderPage() {
             <button onClick={() => setTab('orders')}
               className={`px-3 py-1 rounded-full text-sm font-medium transition ${tab === 'orders' ? 'bg-white text-orange-600' : 'bg-orange-400/50 text-white'}`}>
               Đơn hàng
+            </button>
+            <button onClick={() => setTab('feedback')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition ${tab === 'feedback' ? 'bg-white text-orange-600' : 'bg-orange-400/50 text-white'}`}>
+              Feedback
             </button>
           </div>
         </div>
@@ -310,6 +358,90 @@ export default function QrOrderPage() {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {tab === 'feedback' && (
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-orange-100 space-y-4">
+            <div className="flex items-start gap-2">
+              <MessageSquareText className="h-5 w-5 text-orange-500 mt-0.5" />
+              <div>
+                <h2 className="font-bold text-gray-800">Góp ý về quán</h2>
+                <p className="text-sm text-gray-500">Thông tin này chỉ Admin và Manager xem được.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <input
+                value={feedback.customerName}
+                onChange={(e) => setFeedback((prev) => ({ ...prev, customerName: e.target.value }))}
+                placeholder="Họ và tên *"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-300 focus:outline-none"
+              />
+              <input
+                value={feedback.customerPhone}
+                onChange={(e) => setFeedback((prev) => ({ ...prev, customerPhone: e.target.value }))}
+                placeholder="Số điện thoại *"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-300 focus:outline-none"
+              />
+              <input
+                type="email"
+                value={feedback.customerEmail}
+                onChange={(e) => setFeedback((prev) => ({ ...prev, customerEmail: e.target.value }))}
+                placeholder="Email *"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-300 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Đánh giá *</label>
+              <div className="flex items-center gap-2 mt-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setFeedback((prev) => ({ ...prev, rating: s }))}
+                    className="p-1"
+                    title={`${s} sao`}
+                  >
+                    <Star
+                      className={`h-5 w-5 ${s <= feedback.rating ? 'text-amber-500 fill-amber-400' : 'text-gray-300'}`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <textarea
+              value={feedback.content}
+              onChange={(e) => setFeedback((prev) => ({ ...prev, content: e.target.value }))}
+              placeholder="Nội dung feedback *"
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-orange-300 focus:outline-none"
+              rows={4}
+            />
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Ảnh đính kèm (không bắt buộc)</label>
+              <label className="mt-2 border border-dashed border-orange-300 rounded-lg p-3 flex items-center justify-center gap-2 text-sm text-gray-600 cursor-pointer hover:bg-orange-50 transition">
+                <ImagePlus className="h-4 w-4 text-orange-500" />
+                <span>{feedback.images?.length ? `Đã chọn ${feedback.images.length} ảnh` : 'Chọn ảnh (JPG/PNG/WEBP/GIF, tối đa 5MB/ảnh)'}</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => setFeedback((prev) => ({ ...prev, images: Array.from(e.target.files || []) }))}
+                />
+              </label>
+            </div>
+
+            <button
+              onClick={submitFeedback}
+              disabled={submittingFeedback}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition"
+            >
+              <Send className="h-4 w-4" />
+              {submittingFeedback ? 'Đang gửi feedback...' : 'Gửi feedback'}
+            </button>
           </div>
         )}
       </div>

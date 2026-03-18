@@ -138,6 +138,9 @@ public class SecurityConfig {
                         // Reports - ADMIN, MANAGER
                         .requestMatchers("/api/v1/reports/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
+                        // Customer feedbacks - ADMIN, MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
                         // Weather - GET: authenticated, POST: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/weather/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())

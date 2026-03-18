@@ -103,6 +103,7 @@ export interface Recipe {
   menuItemName: string;
   ingredientId: number;
   ingredientName: string;
+  ingredientUnit?: string;
   quantity: number;
   createdAt: string;
   updatedAt: string;
@@ -191,6 +192,29 @@ export interface StaffCall {
 
 export interface QrStaffCallForm {
   message?: string;
+}
+
+// Customer Feedback
+export interface QrFeedbackForm {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  rating: number;
+  content: string;
+  images?: File[];
+}
+
+export interface CustomerFeedback {
+  id: number;
+  tableName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  rating: number;
+  content: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  createdAt: string;
 }
 
 // Sales
