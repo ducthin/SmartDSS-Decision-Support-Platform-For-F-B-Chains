@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import C2SE._1.Capstone2.entity.FeedbackStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -20,5 +21,7 @@ public class CustomerFeedbackDTO {
     private String content;
     private String imageUrl;
     private List<String> imageUrls;
+    private FeedbackStatus status;
+    private String internalNote;
     private LocalDateTime createdAt;
 }

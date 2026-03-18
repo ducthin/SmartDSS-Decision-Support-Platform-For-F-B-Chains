@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,22 @@ public class SalesTransaction extends BaseEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal netAmount;
+
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal vatRate;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal vatAmount;
+
     @Column(length = 30)
     private String paymentMethod;
+
+    @Column(length = 100)
+    private String providerTransactionId;
+
+    private LocalDateTime paidAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cashier_id")

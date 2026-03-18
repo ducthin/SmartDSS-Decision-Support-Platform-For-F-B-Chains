@@ -17,6 +17,7 @@ public interface SalesItemRepository extends JpaRepository<SalesItem, Long> {
     @Query("SELECT si.menuItem.id, si.menuItem.name, SUM(si.quantity) as totalQty, SUM(si.subtotal) as totalRev " +
            "FROM SalesItem si " +
            "WHERE si.salesTransaction.createdAt BETWEEN :start AND :end " +
+           "AND si.salesTransaction.paymentMethod IN ('CASH', 'QR') " +
            "GROUP BY si.menuItem.id, si.menuItem.name " +
            "ORDER BY totalQty DESC")
     List<Object[]> findBestSellingProducts(@Param("start") LocalDateTime start,

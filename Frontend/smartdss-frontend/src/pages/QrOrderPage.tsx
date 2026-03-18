@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X, Bell, Star, MessageSquareText, ImagePlus } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ClipboardList, Coffee, X, Bell, Star, MessageSquareText, ImagePlus, Trash2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { qrService } from '@/services/qrService';
-import type { MenuItem, Order, DiningTable, QrFeedbackForm } from '@/types';
+import { publicConfigService } from '@/services/publicConfigService';
+import type { MenuItem, Order, DiningTable, QrFeedbackForm, TaxPolicy } from '@/types';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
+import { calculateVatBreakdown } from '@/utils/helpers';
 
 interface CartItem {
   menuItem: MenuItem;
@@ -23,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-700',
 };
+const MAX_FEEDBACK_CONTENT = 2000;
 
 type Tab = 'menu' | 'orders' | 'feedback';
 
@@ -41,6 +44,8 @@ export default function QrOrderPage() {
   const [filterCat, setFilterCat] = useState<string>('all');
   const [callingStaff, setCallingStaff] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackPreviewUrls, setFeedbackPreviewUrls] = useState<string[]>([]);
+  const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
   const [feedback, setFeedback] = useState<QrFeedbackForm>({
     customerName: '',
     customerPhone: '',
@@ -54,12 +59,14 @@ export default function QrOrderPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const [tableRes, menuRes] = await Promise.all([
+      const [tableRes, menuRes, taxRes] = await Promise.all([
         qrService.getTableInfo(token),
         qrService.getMenu(token),
+        publicConfigService.getTaxPolicy(),
       ]);
       setTable(tableRes.data.data);
       setMenuItems(menuRes.data.data);
+      setTaxPolicy(taxRes.data.data);
       setError('');
     } catch {
       setError('Mã QR không hợp lệ hoặc bàn không hoạt động');
@@ -80,21 +87,30 @@ export default function QrOrderPage() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const urls = (feedback.images || []).map((f) => URL.createObjectURL(f));
+    setFeedbackPreviewUrls(urls);
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [feedback.images]);
+
   const handleSocketUpdate = useCallback((data?: Order) => {
-    if (data && data.id) {
+    if (data && data.id && table && data.tableNumber === table.name) {
       setOrders(prev => {
         const exists = prev.find(o => o.id === data.id);
         if (exists) {
           return prev.map(o => o.id === data.id ? data : o);
-        } else if (table && data.tableNumber === table.name) {
+        } else {
           return [data, ...prev];
         }
-        return prev;
       });
     }
-    // Still trigger reload to assure sync if something goes wrong
-    loadOrders();
-  }, [loadOrders, table]);
+    // Only fallback-refetch when on Orders tab and payload is missing/invalid.
+    if (!data?.id && tab === 'orders') {
+      loadOrders();
+    }
+  }, [loadOrders, table, tab]);
 
   useEffect(() => {
     if (tab === 'orders') loadOrders();
@@ -128,6 +144,7 @@ export default function QrOrderPage() {
 
   const cartTotal = cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+  const vat = calculateVatBreakdown(cartTotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
 
   const placeOrder = async () => {
     if (!token || cart.length === 0) return;
@@ -172,6 +189,7 @@ export default function QrOrderPage() {
     if (!feedback.customerPhone.trim()) return toast.error('Vui lòng nhập số điện thoại');
     if (!feedback.customerEmail.trim()) return toast.error('Vui lòng nhập email');
     if (!feedback.content.trim()) return toast.error('Vui lòng nhập nội dung feedback');
+    if (feedback.content.trim().length > MAX_FEEDBACK_CONTENT) return toast.error('Nội dung feedback tối đa 2000 ký tự');
 
     setSubmittingFeedback(true);
     try {
@@ -200,6 +218,13 @@ export default function QrOrderPage() {
   };
 
   const formatPrice = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  const removeSelectedImage = (idx: number) => {
+    setFeedback((prev) => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== idx),
+    }));
+  };
 
   if (loading) {
     return (
@@ -418,6 +443,9 @@ export default function QrOrderPage() {
               className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-orange-300 focus:outline-none"
               rows={4}
             />
+            <div className="text-right text-xs text-gray-400">
+              {feedback.content.length}/{MAX_FEEDBACK_CONTENT}
+            </div>
 
             <div>
               <label className="text-sm font-medium text-gray-700">Ảnh đính kèm (không bắt buộc)</label>
@@ -432,6 +460,22 @@ export default function QrOrderPage() {
                   onChange={(e) => setFeedback((prev) => ({ ...prev, images: Array.from(e.target.files || []) }))}
                 />
               </label>
+              {(feedback.images || []).length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {(feedback.images || []).map((file, idx) => (
+                    <div key={`${file.name}-${idx}`} className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={feedbackPreviewUrls[idx]} alt={file.name} className="w-full h-20 object-cover" />
+                      <button
+                        onClick={() => removeSelectedImage(idx)}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white hover:bg-black/75"
+                        title="Xóa ảnh"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
@@ -456,7 +500,7 @@ export default function QrOrderPage() {
               {cartCount}
             </span>
           </div>
-          <span className="font-bold">{formatPrice(cartTotal)}</span>
+          <span className="font-bold">{formatPrice(vat.grossAmount)}</span>
           <span className="text-orange-200">|</span>
           <span className="text-sm">Xem giỏ hàng</span>
         </button>
@@ -501,9 +545,19 @@ export default function QrOrderPage() {
               </div>
             </div>
             <div className="border-t px-4 py-3 space-y-3">
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tạm tính</span>
+                  <span className="text-gray-800">{formatPrice(vat.netAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">VAT ({taxPolicy.vatRatePercent}%)</span>
+                  <span className="text-gray-800">{formatPrice(vat.vatAmount)}</span>
+                </div>
+              </div>
               <div className="flex justify-between text-lg font-bold">
-                <span className="text-gray-700">Tổng cộng</span>
-                <span className="text-orange-600">{formatPrice(cartTotal)}</span>
+                <span className="text-gray-700">Tổng thanh toán</span>
+                <span className="text-orange-600">{formatPrice(vat.grossAmount)}</span>
               </div>
               <button onClick={placeOrder} disabled={submitting}
                 className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition">

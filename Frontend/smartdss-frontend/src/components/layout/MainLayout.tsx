@@ -4,7 +4,8 @@ import Sidebar, { MobileHeader } from './Sidebar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useStaffCallSocket } from '@/hooks/useStaffCallSocket';
-import type { StaffCall } from '@/types';
+import { useFeedbackAlertSocket } from '@/hooks/useFeedbackAlertSocket';
+import type { FeedbackAlert, StaffCall } from '@/types';
 import { getRoleKey } from '@/utils/helpers';
 import { resolveBackendUrl, settingsService } from '@/services/settingsService';
 
@@ -43,7 +44,9 @@ export default function MainLayout() {
   const { token, loading, user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
   const canReceiveStaffCalls = ['ADMIN', 'MANAGER', 'WAITER', 'BARISTA'].includes(userRole);
+  const canReceiveFeedbackAlerts = ['ADMIN', 'MANAGER'].includes(userRole);
   const lastCallIdRef = useRef<number | null>(null);
+  const lastFeedbackAlertIdRef = useRef<number | null>(null);
   const [notiEnabled, setNotiEnabled] = useState(() => localStorage.getItem(STAFF_NOTI_PREF_KEY) === '1');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -117,7 +120,25 @@ export default function MainLayout() {
     }
   }, [canReceiveStaffCalls, notiEnabled, notificationSupported]);
 
+  const handleFeedbackAlert = useCallback((data?: FeedbackAlert) => {
+    if (!canReceiveFeedbackAlerts) return;
+    if (!data?.feedbackId) return;
+    if (lastFeedbackAlertIdRef.current === data.feedbackId) return;
+    lastFeedbackAlertIdRef.current = data.feedbackId;
+
+    const baseMsg = `Feedback ${data.rating}/5 từ ${data.customerName} (${data.tableName})`;
+    if (data.level === 'CRITICAL') {
+      toast.error(`${baseMsg} - CẢNH BÁO NGHIÊM TRỌNG (${data.lowRatingCountInWindow} phản hồi xấu/${data.windowMinutes}p)`, { duration: 8000 });
+      playAlertBeep();
+      setTimeout(() => playAlertBeep(), 900);
+    } else {
+      toast.error(`${baseMsg} - Cảnh báo mức cao`, { duration: 5000 });
+      playAlertBeep();
+    }
+  }, [canReceiveFeedbackAlerts]);
+
   useStaffCallSocket(handleStaffCall);
+  useFeedbackAlertSocket(handleFeedbackAlert);
 
   if (loading) {
     return (

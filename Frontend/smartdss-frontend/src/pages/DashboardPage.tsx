@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { ShoppingCart, DollarSign, Package, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-import { getRoleKey, formatCurrency } from '@/utils/helpers';
+import { calculateVatBreakdown, getRoleKey, formatCurrency } from '@/utils/helpers';
 import { orderService } from '@/services/orderService';
 import { reportService } from '@/services/reportService';
 import { inventoryService } from '@/services/inventoryService';
-import type { Order, DailySalesReport, Inventory } from '@/types';
+import { publicConfigService } from '@/services/publicConfigService';
+import type { Order, DailySalesReport, Inventory, TaxPolicy } from '@/types';
 import { ORDER_STATUS, ORDER_STATUS_LABELS, ORDER_STATUS_STYLES } from '@/utils/constants';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 
@@ -34,7 +35,9 @@ export default function DashboardPage() {
   const [dailySales, setDailySales] = useState<DailySalesReport[]>([]);
   const [hourlyData, setHourlyData] = useState<DailySalesReport[]>([]);
   const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
   const [loading, setLoading] = useState(true);
+  const lastReloadRef = useRef(0);
 
   const loadData = useCallback(() => {
     const promises: Promise<unknown>[] = [
@@ -62,7 +65,33 @@ export default function DashboardPage() {
   }, [isManagerOrAdmin]);
 
   useEffect(() => { loadData(); }, [loadData]);
-  useOrderSocket(loadData);
+  useEffect(() => {
+    publicConfigService.getTaxPolicy()
+      .then((res) => {
+        if (res.data?.data) {
+          setTaxPolicy(res.data.data);
+        }
+      })
+      .catch(() => {
+        // Keep fallback default tax policy.
+      });
+  }, []);
+  const handleOrderSocket = useCallback((data?: Order) => {
+    if (data?.id) {
+      setOrders(prev => {
+        const exists = prev.find(o => o.id === data.id);
+        if (exists) return prev.map(o => o.id === data.id ? data : o);
+        return [data, ...prev.slice(0, 49)];
+      });
+    }
+    const now = Date.now();
+    // Dashboard has heavy multi-widget fetch; keep fresh but avoid per-event reload storm.
+    if (now - lastReloadRef.current > 10000) {
+      lastReloadRef.current = now;
+      loadData();
+    }
+  }, [loadData]);
+  useOrderSocket(handleOrderSocket);
 
   if (loading) {
     return (
@@ -73,10 +102,11 @@ export default function DashboardPage() {
   }
 
   const todayOrders = orders.filter((o) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateKey(new Date());
     return o.createdAt?.startsWith(today);
   });
-  const todayRevenue = dailySales.length > 0 ? dailySales[0].totalRevenue : 0;
+  const todayKey = getLocalDateKey(new Date());
+  const todayRevenue = dailySales.find((d) => d.date === todayKey)?.totalRevenue ?? 0;
   const lowStockCount = inventory.filter((i) => i.quantity <= i.minimumStock).length;
   const pendingOrders = orders.filter((o) => o.status === ORDER_STATUS.PENDING || o.status === ORDER_STATUS.PREPARING);
 
@@ -129,7 +159,7 @@ export default function DashboardPage() {
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-2 font-medium text-gray-500">#</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Thu ngân</th>
-                <th className="text-left py-3 px-2 font-medium text-gray-500">Tổng tiền</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500">Thanh toán</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Trạng thái</th>
                 <th className="text-left py-3 px-2 font-medium text-gray-500">Thời gian</th>
               </tr>
@@ -139,7 +169,27 @@ export default function DashboardPage() {
                 <tr key={order.id} className="border-b border-gray-100">
                   <td className="py-3 px-2">{order.id}</td>
                   <td className="py-3 px-2">{order.createdByName ?? 'N/A'}</td>
-                  <td className="py-3 px-2">{formatCurrency(order.totalAmount)}</td>
+                  <td className="py-3 px-2">
+                    {(() => {
+                      const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+                      if (!isManagerOrAdmin) {
+                        return <div className="font-medium">{formatCurrency(tax.grossAmount)}</div>;
+                      }
+                      return (
+                        <div className="leading-5 text-sm">
+                          <div className="text-gray-600">
+                            Tạm tính: <span className="font-medium text-gray-800">{formatCurrency(tax.netAmount)}</span>
+                          </div>
+                          <div className="text-gray-600">
+                            Thuế GTGT ({taxPolicy.vatRatePercent}%): <span className="font-medium text-gray-800">{formatCurrency(tax.vatAmount)}</span>
+                          </div>
+                          <div className="font-semibold text-gray-900">
+                            Tổng: {formatCurrency(tax.grossAmount)}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="py-3 px-2">
                     <StatusBadge status={order.status} />
                   </td>
@@ -155,6 +205,13 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function StatusBadge({ status }: { status: string }) {

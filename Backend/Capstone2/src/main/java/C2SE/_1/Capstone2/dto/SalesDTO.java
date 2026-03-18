@@ -14,8 +14,13 @@ import java.util.List;
 public class SalesDTO {
     private Long id;
     private Long orderId;
+    private BigDecimal netAmount;
+    private BigDecimal vatRate;
+    private BigDecimal vatAmount;
     private BigDecimal totalAmount;
     private String paymentMethod;
+    private String providerTransactionId;
+    private LocalDateTime paidAt;
     private Long cashierId;
     private String cashierName;
     private List<SalesItemDTO> salesItems;

@@ -18,3 +18,17 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   const axiosError = error as AxiosError<{ message?: string }>;
   return axiosError?.response?.data?.message ?? fallback;
 }
+
+export function calculateVatBreakdown(amount: number, vatRatePercent: number, priceIncludesVat: boolean) {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const rate = vatRatePercent / 100;
+  if (priceIncludesVat) {
+    const netAmount = Math.round(safeAmount / (1 + rate));
+    const vatAmount = safeAmount - netAmount;
+    return { netAmount, vatAmount, grossAmount: safeAmount };
+  }
+  const netAmount = safeAmount;
+  const vatAmount = Math.round(netAmount * rate);
+  const grossAmount = netAmount + vatAmount;
+  return { netAmount, vatAmount, grossAmount };
+}

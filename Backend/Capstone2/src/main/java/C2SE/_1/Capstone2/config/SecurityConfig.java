@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.config;
 import C2SE._1.Capstone2.entity.RoleName;
 import C2SE._1.Capstone2.security.JwtAuthenticationEntryPoint;
 import C2SE._1.Capstone2.security.JwtAuthenticationFilter;
+import C2SE._1.Capstone2.security.RestAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("#{'${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}'.split(',')}")
@@ -51,11 +53,13 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/public/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
@@ -103,6 +107,20 @@ public class SecurityConfig {
                                 RoleName.WAITER.name()
                         )
 
+                        // Payments
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.BARISTA.name(),
+                                RoleName.WAITER.name()
+                        )
+
                         // Dining Tables - GET: authenticated, CUD: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/tables/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/tables/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
@@ -140,6 +158,7 @@ public class SecurityConfig {
 
                         // Customer feedbacks - ADMIN, MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Weather - GET: authenticated, POST: ADMIN/MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").authenticated()

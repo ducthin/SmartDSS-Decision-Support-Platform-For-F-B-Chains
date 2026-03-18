@@ -195,6 +195,8 @@ export interface QrStaffCallForm {
 }
 
 // Customer Feedback
+export type FeedbackStatus = 'NEW' | 'IN_REVIEW' | 'RESOLVED';
+
 export interface QrFeedbackForm {
   customerName: string;
   customerPhone: string;
@@ -214,6 +216,32 @@ export interface CustomerFeedback {
   content: string;
   imageUrl?: string;
   imageUrls?: string[];
+  status: FeedbackStatus;
+  internalNote?: string;
+  createdAt: string;
+}
+
+export interface FeedbackStats {
+  total: number;
+  newCount: number;
+  inReviewCount: number;
+  resolvedCount: number;
+  lowRatingCount: number;
+  todayCount: number;
+  averageRating: number;
+}
+
+export type FeedbackAlertLevel = 'HIGH' | 'CRITICAL';
+
+export interface FeedbackAlert {
+  feedbackId: number;
+  tableName: string;
+  customerName: string;
+  rating: number;
+  content: string;
+  level: FeedbackAlertLevel;
+  lowRatingCountInWindow: number;
+  windowMinutes: number;
   createdAt: string;
 }
 
@@ -229,10 +257,39 @@ export interface SalesItem {
 export interface Sales {
   id: number;
   orderId: number;
+  netAmount: number;
+  vatRate: number;
+  vatAmount: number;
   salesItems: SalesItem[];
   totalAmount: number;
   cashierName: string;
   createdAt: string;
+}
+
+export interface TaxPolicy {
+  vatRatePercent: number;
+  priceIncludesVat: boolean;
+}
+
+export type PaymentState = 'PENDING' | 'PAID';
+export type PaymentMethod = 'PENDING' | 'CASH' | 'QR';
+
+export interface PaymentStatus {
+  orderId: number;
+  status: PaymentState;
+  paymentMethod: PaymentMethod;
+}
+
+export interface PaymentInit {
+  orderId: number;
+  amount: number;
+  transferContent: string;
+  qrImageUrl: string;
+  qrCode?: string;
+  checkoutUrl?: string;
+  provider?: 'PAYOS' | 'VIETQR';
+  expiresAt: string;
+  paymentStatus: PaymentStatus;
 }
 
 // Reports

@@ -1,2 +1,17 @@
+# Environment files
 .env
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
 Backend/.env
+
+# Secrets / key material
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519

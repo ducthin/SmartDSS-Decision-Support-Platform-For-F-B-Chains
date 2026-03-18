@@ -11,6 +11,7 @@ import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
 import C2SE._1.Capstone2.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +42,10 @@ public class OrderServiceImpl implements OrderService {
     private final SalesTransactionRepository salesTransactionRepository;
     private final OrderMapper orderMapper;
     private final SimpMessagingTemplate messagingTemplate;
+    @Value("${app.tax.vat.rate-percent:8}")
+    private BigDecimal vatRatePercent;
+    @Value("${app.tax.vat.price-includes-vat:true}")
+    private boolean priceIncludesVat;
 
     @Override
     @Transactional(readOnly = true)
@@ -192,10 +198,28 @@ public class OrderServiceImpl implements OrderService {
 
     private void createSalesTransactionFromOrder(Order order) {
         List<SalesItem> salesItems = new ArrayList<>();
+        BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+        BigDecimal rate = vatRatePercent.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+        BigDecimal netAmount;
+        BigDecimal vatAmount;
+
+        if (priceIncludesVat) {
+            BigDecimal divisor = BigDecimal.ONE.add(rate);
+            netAmount = grossAmount.divide(divisor, 0, RoundingMode.HALF_UP);
+            vatAmount = grossAmount.subtract(netAmount);
+        } else {
+            netAmount = grossAmount;
+            vatAmount = netAmount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
+            grossAmount = netAmount.add(vatAmount);
+        }
 
         SalesTransaction salesTransaction = SalesTransaction.builder()
                 .order(order)
-                .totalAmount(order.getTotalAmount())
+                .netAmount(netAmount)
+                .vatRate(vatRatePercent)
+                .vatAmount(vatAmount)
+                .totalAmount(grossAmount)
+                .paymentMethod("PENDING")
                 .cashier(order.getCreatedBy())
                 .build();
 

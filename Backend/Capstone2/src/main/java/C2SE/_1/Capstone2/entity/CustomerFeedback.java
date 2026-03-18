@@ -45,6 +45,14 @@ public class CustomerFeedback extends BaseEntity {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private FeedbackStatus status = FeedbackStatus.NEW;
+
+    @Column(name = "internal_note", length = 1000)
+    private String internalNote;
+
     @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CustomerFeedbackImage> images = new ArrayList<>();
