@@ -103,7 +103,7 @@ export default function MenuPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý Menu</h1>
         {canManageMenu && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          <button onClick={openCreate} className="flex items-center gap-2 bg-[#F4A825] text-white px-4 py-2 rounded-lg hover:bg-[#D48806] transition">
             <Plus size={18} /> Thêm món
           </button>
         )}
@@ -112,19 +112,19 @@ export default function MenuPage() {
       {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1887F]" />
           <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
             placeholder="Tìm kiếm theo tên..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            className="w-full pl-10 pr-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none text-sm" />
         </div>
         <select value={filterCategoryId ?? ''} onChange={(e) => { setFilterCategoryId(e.target.value ? Number(e.target.value) : undefined); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          className="px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none text-sm">
           <option value="">Tất cả danh mục</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <select value={filterAvailable === undefined ? '' : filterAvailable ? 'true' : 'false'}
           onChange={(e) => { setFilterAvailable(e.target.value === '' ? undefined : e.target.value === 'true'); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          className="px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none text-sm">
           <option value="">Tất cả trạng thái</option>
           <option value="true">Còn bán</option>
           <option value="false">Hết hàng</option>
@@ -135,26 +135,26 @@ export default function MenuPage() {
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
-              <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div key={item.id} className="bg-white rounded-xl border border-[#E4CFB4] overflow-hidden hover:shadow-md transition">
+              <div className="h-40 bg-gradient-to-br from-[#FDF6EC] to-[#F5E6D3] flex items-center justify-center">
                 <span className="text-4xl">☕</span>
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{item.categoryName}</p>
+                    <p className="text-xs text-[#A1887F] mt-0.5">{item.categoryName}</p>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {item.available ? 'Còn bán' : 'Hết hàng'}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
+                <p className="text-sm text-[#6D4C41] mt-2 line-clamp-2">{item.description}</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
+                  <span className="text-lg font-bold text-[#D48806]">{formatCurrency(item.price)}</span>
                   {canManageMenu && (
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                      <button onClick={() => openEdit(item)} className="p-1.5 rounded hover:bg-[#F5E6D3] text-[#6D4C41]"><Pencil size={16} /></button>
                       <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
                     </div>
                   )}
@@ -162,7 +162,7 @@ export default function MenuPage() {
               </div>
             </div>
           ))}
-          {items.length === 0 && <p className="col-span-full text-center text-gray-400 py-12">Chưa có món nào</p>}
+          {items.length === 0 && <p className="col-span-full text-center text-[#A1887F] py-12">Chưa có món nào</p>}
         </div>}
 
       {pageData && (
@@ -172,44 +172,44 @@ export default function MenuPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Sửa món' : 'Thêm món mới'} maxWidth="max-w-lg">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên món <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Tên món <span className="text-red-500">*</span></label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Mô tả</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows={2} />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" rows={2} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VND) <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Giá (VND) <span className="text-red-500">*</span></label>
               <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Danh mục <span className="text-red-500">*</span></label>
               <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none">
                 <option value={0}>Chọn danh mục</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Đường dẫn hình ảnh (URL)</label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Đường dẫn hình ảnh (URL)</label>
             <input value={form.imageUrl ?? ''} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none"
               placeholder="https://example.com/image.jpg" />
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="available" checked={form.available} onChange={(e) => setForm({ ...form, available: e.target.checked })}
-              className="rounded border-gray-300" />
-            <label htmlFor="available" className="text-sm text-gray-700">Còn bán</label>
+              className="rounded border-[#DCC2A8]" />
+            <label htmlFor="available" className="text-sm text-[#5D4037]">Còn bán</label>
           </div>
           <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[#DCC2A8] rounded-lg hover:bg-[#FDF6EC]">Hủy</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806] disabled:opacity-50">
               {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
@@ -218,3 +218,5 @@ export default function MenuPage() {
     </div>
   );
 }
+
+

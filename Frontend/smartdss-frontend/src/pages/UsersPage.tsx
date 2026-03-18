@@ -89,44 +89,44 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý nhân viên</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        <button onClick={openCreate} className="flex items-center gap-2 bg-[#F4A825] text-white px-4 py-2 rounded-lg hover:bg-[#D48806] transition">
           <Plus size={18} /> Thêm nhân viên
         </button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1887F]" />
         <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
           placeholder="Tìm theo tên, username, email..."
-          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+          className="w-full pl-10 pr-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none text-sm" />
       </div>
 
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#E4CFB4] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#FDF6EC]">
             <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Username</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Họ tên</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Email</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">SĐT</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Vai trò</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">#</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Username</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Họ tên</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Email</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">SĐT</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Vai trò</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Trạng thái</th>
+              <th className="text-right py-3 px-4 font-medium text-[#6D4C41]">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-t border-gray-100">
+              <tr key={u.id} className="border-t border-[#F1E4D6]">
                 <td className="py-3 px-4">{u.id}</td>
                 <td className="py-3 px-4 font-medium">{u.username}</td>
                 <td className="py-3 px-4">{u.fullName}</td>
-                <td className="py-3 px-4 text-gray-500">{u.email}</td>
-                <td className="py-3 px-4 text-gray-500">{u.phone}</td>
+                <td className="py-3 px-4 text-[#6D4C41]">{u.email}</td>
+                <td className="py-3 px-4 text-[#6D4C41]">{u.phone}</td>
                 <td className="py-3 px-4">
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#FFE7CC] text-[#D48806]">
                     {getRoleKey(u.roleName)}
                   </span>
                 </td>
@@ -136,12 +136,12 @@ export default function UsersPage() {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-right space-x-2">
-                  <button onClick={() => openEdit(u)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                  <button onClick={() => openEdit(u)} className="p-1.5 rounded hover:bg-[#F5E6D3] text-[#6D4C41]"><Pencil size={16} /></button>
                   <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
-            {users.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Chưa có nhân viên</td></tr>}
+            {users.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-[#A1887F]">Chưa có nhân viên</td></tr>}
           </tbody>
         </table>
         {pageData && (
@@ -155,53 +155,53 @@ export default function UsersPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Username <span className="text-red-500">*</span></label>
               <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!!editing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100" />
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none disabled:bg-[#F5E6D3]" />
             </div>
             {!editing && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-[#5D4037] mb-1">Mật khẩu <span className="text-red-500">*</span></label>
                 <input type="password" value={form.password ?? ''} onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
               </div>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Họ tên <span className="text-red-500">*</span></label>
             <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Email <span className="text-red-500">*</span></label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Số ĐT</label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Số ĐT</label>
               <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+              <label className="block text-sm font-medium text-[#5D4037] mb-1">Vai trò</label>
               <select value={form.roleName} onChange={(e) => setForm({ ...form, roleName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none">
                 {roleOptions.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
               </select>
             </div>
             <div className="flex items-end pb-1">
               <label className="flex items-center gap-2">
-                <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded border-gray-300" />
-                <span className="text-sm text-gray-700">Hoạt động</span>
+                <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded border-[#DCC2A8]" />
+                <span className="text-sm text-[#5D4037]">Hoạt động</span>
               </label>
             </div>
           </div>
           <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[#DCC2A8] rounded-lg hover:bg-[#FDF6EC]">Hủy</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806] disabled:opacity-50">
               {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
@@ -210,3 +210,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+

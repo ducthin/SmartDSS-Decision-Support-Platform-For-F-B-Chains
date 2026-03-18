@@ -25,8 +25,8 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
   FESTIVAL: 'bg-purple-100 text-purple-700', HOLIDAY: 'bg-red-100 text-red-700',
   CONCERT: 'bg-pink-100 text-pink-700', SPORT: 'bg-green-100 text-green-700',
-  PROMOTION: 'bg-yellow-100 text-yellow-700', CONFERENCE: 'bg-blue-100 text-blue-700',
-  OTHER: 'bg-gray-100 text-gray-700',
+  PROMOTION: 'bg-yellow-100 text-yellow-700', CONFERENCE: 'bg-[#FFE7CC] text-[#D48806]',
+  OTHER: 'bg-[#F5E6D3] text-[#5D4037]',
 };
 const IMPACT_LABELS: Record<ImpactLevel, string> = {
   LOW: 'Thấp', MEDIUM: 'Trung bình', HIGH: 'Cao', CRITICAL: 'Rất cao',
@@ -41,8 +41,8 @@ const HOLIDAY_TYPE_LABELS: Record<HolidayType, string> = {
 };
 const HOLIDAY_TYPE_COLORS: Record<HolidayType, string> = {
   PUBLIC_HOLIDAY: 'bg-red-100 text-red-700', CULTURAL: 'bg-purple-100 text-purple-700',
-  RELIGIOUS: 'bg-amber-100 text-amber-700', SCHOOL: 'bg-blue-100 text-blue-700',
-  COMPANY: 'bg-teal-100 text-teal-700', OTHER: 'bg-gray-100 text-gray-700',
+  RELIGIOUS: 'bg-amber-100 text-amber-700', SCHOOL: 'bg-[#FFE7CC] text-[#D48806]',
+  COMPANY: 'bg-teal-100 text-teal-700', OTHER: 'bg-[#F5E6D3] text-[#5D4037]',
 };
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -269,7 +269,7 @@ export default function ExternalFactorsPage() {
       <h1 className="text-2xl font-bold">Yếu tố bên ngoài</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-[#F5E6D3] rounded-lg p-1 w-fit">
         {([
           { key: 'weather' as Tab, label: 'Thời tiết', icon: Cloud },
           { key: 'calendar' as Tab, label: 'Lịch sự kiện & ngày lễ', icon: Calendar },
@@ -278,7 +278,7 @@ export default function ExternalFactorsPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-              ${tab === t.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              ${tab === t.key ? 'bg-white text-[#D48806] shadow-sm' : 'text-[#6D4C41] hover:text-[#5D4037]'}`}
           >
             <t.icon size={16} />
             {t.label}
@@ -301,9 +301,9 @@ export default function ExternalFactorsPage() {
         <div className="space-y-4">
           {/* Action bar */}
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center gap-3 text-xs text-[#6D4C41]">
               <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Ngày lễ</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Sự kiện</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#FFF4E3]0 inline-block" /> Sự kiện</span>
             </div>
             {canEdit && (
               <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export default function ExternalFactorsPage() {
                   <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
                   {syncing ? 'Đang đồng bộ...' : 'Đồng bộ ngày lễ'}
                 </button>
-                <button onClick={openEventCreate} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                <button onClick={openEventCreate} className="flex items-center gap-2 bg-[#F4A825] text-white px-3 py-2 rounded-lg text-sm hover:bg-[#D48806]">
                   <Plus size={16} /> Sự kiện
                 </button>
                 <button onClick={openHolidayCreate} className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700">
@@ -323,31 +323,31 @@ export default function ExternalFactorsPage() {
           </div>
 
           {/* Calendar grid */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-xl border border-[#E4CFB4] overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4CFB4]">
               <div className="flex items-center gap-2">
-                <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <button onClick={prevMonth} className="p-1.5 hover:bg-[#F5E6D3] rounded-lg transition-colors">
                   <ChevronLeft size={20} />
                 </button>
                 <h2 className="text-lg font-semibold min-w-[180px] text-center">
                   Tháng {calMonth + 1}, {calYear}
                 </h2>
-                <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <button onClick={nextMonth} className="p-1.5 hover:bg-[#F5E6D3] rounded-lg transition-colors">
                   <ChevronRight size={20} />
                 </button>
               </div>
-              <button onClick={goToday} className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+              <button onClick={goToday} className="text-sm text-[#D48806] hover:bg-[#FFF4E3] px-3 py-1.5 rounded-lg transition-colors">
                 Hôm nay
               </button>
             </div>
-            <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+            <div className="grid grid-cols-7 border-b border-[#E4CFB4] bg-[#FDF6EC]">
               {WEEKDAYS.map((d) => (
-                <div key={d} className="py-2 text-center text-xs font-medium text-gray-500">{d}</div>
+                <div key={d} className="py-2 text-center text-xs font-medium text-[#6D4C41]">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7">
               {calendarDays.map((day, i) => {
-                if (day === null) return <div key={i} className="min-h-[90px] bg-gray-50/50 border-b border-r border-gray-100" />;
+                if (day === null) return <div key={i} className="min-h-[90px] bg-[#FDF6EC]/50 border-b border-r border-[#F1E4D6]" />;
                 const dateStr = getDateStr(day);
                 const isToday = dateStr === todayStr;
                 const isSelected = dateStr === selectedDate;
@@ -355,13 +355,13 @@ export default function ExternalFactorsPage() {
                 const dayHols = holidaysForDate(dateStr);
                 return (
                   <div key={i} onClick={() => setSelectedDate(dateStr)}
-                    className={`min-h-[90px] p-1.5 border-b border-r border-gray-100 cursor-pointer transition-colors
-                      ${isSelected ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : 'hover:bg-gray-50'}
+                    className={`min-h-[90px] p-1.5 border-b border-r border-[#F1E4D6] cursor-pointer transition-colors
+                      ${isSelected ? 'bg-[#FFF4E3] ring-2 ring-[#F4A825] ring-inset' : 'hover:bg-[#FDF6EC]'}
                       ${isToday && !isSelected ? 'bg-amber-50/50' : ''}`}>
                     <div className="mb-1">
                       <span className={`text-sm leading-none ${isToday
-                        ? 'bg-blue-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center font-bold'
-                        : 'text-gray-700 font-medium'}`}>{day}</span>
+                        ? 'bg-[#F4A825] text-white w-6 h-6 rounded-full inline-flex items-center justify-center font-bold'
+                        : 'text-[#5D4037] font-medium'}`}>{day}</span>
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       {dayHols.slice(0, 2).map((h) => (
@@ -371,7 +371,7 @@ export default function ExternalFactorsPage() {
                         <div key={`e${e.id}`} className={`text-[10px] leading-tight px-1 py-0.5 rounded truncate ${EVENT_TYPE_COLORS[e.eventType]}`}>{e.name}</div>
                       ))}
                       {(dayHols.length + dayEvts.length) > 4 && (
-                        <div className="text-[10px] text-gray-400 pl-1">+{dayHols.length + dayEvts.length - 4} khác</div>
+                        <div className="text-[10px] text-[#A1887F] pl-1">+{dayHols.length + dayEvts.length - 4} khác</div>
                       )}
                     </div>
                   </div>
@@ -382,13 +382,13 @@ export default function ExternalFactorsPage() {
 
           {/* Selected date detail */}
           {selectedDate && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white rounded-xl border border-[#E4CFB4] p-5">
               <h3 className="font-semibold text-lg mb-4">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </h3>
               {selectedHolidays.length > 0 && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-[#6D4C41] mb-2 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Ngày lễ ({selectedHolidays.length})
                   </h4>
                   <div className="space-y-2">
@@ -400,12 +400,12 @@ export default function ExternalFactorsPage() {
                             {h.recurring && <span className="text-xs text-blue-500">🔄 Hàng năm</span>}
                           </div>
                           <p className="font-medium">{h.name}</p>
-                          {h.description && <p className="text-sm text-gray-500 mt-0.5">{h.description}</p>}
+                          {h.description && <p className="text-sm text-[#6D4C41] mt-0.5">{h.description}</p>}
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 ml-3 shrink-0">
-                            <button onClick={() => openHolidayEdit(h)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                            <button onClick={() => deleteHoliday(h.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                            <button onClick={() => openHolidayEdit(h)} className="p-1.5 text-[#A1887F] hover:text-[#D48806] hover:bg-[#FFE7CC] rounded"><Edit2 size={16} /></button>
+                            <button onClick={() => deleteHoliday(h.id)} className="p-1.5 text-[#A1887F] hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
                           </div>
                         )}
                       </div>
@@ -415,12 +415,12 @@ export default function ExternalFactorsPage() {
               )}
               {selectedEvents.length > 0 && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Sự kiện ({selectedEvents.length})
+                  <h4 className="text-sm font-medium text-[#6D4C41] mb-2 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#FFF4E3]0 inline-block" /> Sự kiện ({selectedEvents.length})
                   </h4>
                   <div className="space-y-2">
                     {selectedEvents.map((e) => (
-                      <div key={e.id} className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                      <div key={e.id} className="flex items-center justify-between bg-[#FFF4E3] rounded-lg p-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_COLORS[e.eventType]}`}>{EVENT_TYPE_LABELS[e.eventType]}</span>
@@ -428,16 +428,16 @@ export default function ExternalFactorsPage() {
                             {e.active && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Hoạt động</span>}
                           </div>
                           <p className="font-medium">{e.name}</p>
-                          <p className="text-sm text-gray-500 mt-0.5">
+                          <p className="text-sm text-[#6D4C41] mt-0.5">
                             {new Date(e.startDate).toLocaleDateString('vi-VN')} — {new Date(e.endDate).toLocaleDateString('vi-VN')}
                             {e.location && <> · <MapPin size={12} className="inline" /> {e.location}</>}
                           </p>
-                          {e.description && <p className="text-sm text-gray-400 mt-0.5">{e.description}</p>}
+                          {e.description && <p className="text-sm text-[#A1887F] mt-0.5">{e.description}</p>}
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 ml-3 shrink-0">
-                            <button onClick={() => openEventEdit(e)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                            <button onClick={() => deleteEvent(e.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                            <button onClick={() => openEventEdit(e)} className="p-1.5 text-[#A1887F] hover:text-[#D48806] hover:bg-[#FFE7CC] rounded"><Edit2 size={16} /></button>
+                            <button onClick={() => deleteEvent(e.id)} className="p-1.5 text-[#A1887F] hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
                           </div>
                         )}
                       </div>
@@ -446,7 +446,7 @@ export default function ExternalFactorsPage() {
                 </div>
               )}
               {selectedHolidays.length === 0 && selectedEvents.length === 0 && (
-                <p className="text-gray-400 text-sm py-2">Không có sự kiện hoặc ngày lễ nào trong ngày này</p>
+                <p className="text-[#A1887F] text-sm py-2">Không có sự kiện hoặc ngày lễ nào trong ngày này</p>
               )}
             </div>
           )}
@@ -477,3 +477,5 @@ export default function ExternalFactorsPage() {
     </div>
   );
 }
+
+

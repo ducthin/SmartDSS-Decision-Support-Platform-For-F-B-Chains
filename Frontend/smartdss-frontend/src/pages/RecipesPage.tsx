@@ -82,46 +82,46 @@ export default function RecipesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Công thức</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        <button onClick={openCreate} className="flex items-center gap-2 bg-[#F4A825] text-white px-4 py-2 rounded-lg hover:bg-[#D48806] transition">
           <Plus size={18} /> Thêm công thức
         </button>
       </div>
 
       <div>
         <select value={filterMenuId} onChange={(e) => setFilterMenuId(Number(e.target.value))}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          className="px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none">
           <option value={0}>Tất cả món</option>
           {menuItems.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#E4CFB4] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#FDF6EC]">
             <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Món</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Nguyên liệu</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Số lượng</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Đơn vị</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">#</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Món</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Nguyên liệu</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Số lượng</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Đơn vị</th>
+              <th className="text-right py-3 px-4 font-medium text-[#6D4C41]">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((r) => (
-              <tr key={r.id} className="border-t border-gray-100">
+              <tr key={r.id} className="border-t border-[#F1E4D6]">
                 <td className="py-3 px-4">{r.id}</td>
                 <td className="py-3 px-4 font-medium">{r.menuItemName}</td>
                 <td className="py-3 px-4">{r.ingredientName}</td>
                 <td className="py-3 px-4">{r.quantity}</td>
-                <td className="py-3 px-4 text-gray-500">{getUnit(r.ingredientId)}</td>
+                <td className="py-3 px-4 text-[#6D4C41]">{getUnit(r.ingredientId)}</td>
                 <td className="py-3 px-4 text-right space-x-2">
-                  <button onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                  <button onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-[#F5E6D3] text-[#6D4C41]"><Pencil size={16} /></button>
                   <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có công thức</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-[#A1887F]">Chưa có công thức</td></tr>}
           </tbody>
         </table>
       </div>
@@ -129,29 +129,29 @@ export default function RecipesPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Sửa công thức' : 'Thêm công thức'}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Món <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Món <span className="text-red-500">*</span></label>
             <select value={form.menuItemId} onChange={(e) => setForm({ ...form, menuItemId: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" disabled={!!editing}>
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" disabled={!!editing}>
               <option value={0}>Chọn món</option>
               {menuItems.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nguyên liệu <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Nguyên liệu <span className="text-red-500">*</span></label>
             <select value={form.ingredientId} onChange={(e) => setForm({ ...form, ingredientId: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" disabled={!!editing}>
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" disabled={!!editing}>
               <option value={0}>Chọn nguyên liệu</option>
               {ingredients.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Số lượng <span className="text-red-500">*</span></label>
             <input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" min={0.01} step={0.01} />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" min={0.01} step={0.01} />
           </div>
           <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[#DCC2A8] rounded-lg hover:bg-[#FDF6EC]">Hủy</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806] disabled:opacity-50">
               {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
@@ -160,3 +160,5 @@ export default function RecipesPage() {
     </div>
   );
 }
+
+

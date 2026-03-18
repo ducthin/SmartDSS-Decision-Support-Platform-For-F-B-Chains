@@ -72,43 +72,43 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Danh mục</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        <button onClick={openCreate} className="flex items-center gap-2 bg-[#F4A825] text-white px-4 py-2 rounded-lg hover:bg-[#D48806] transition">
           <Plus size={18} /> Thêm danh mục
         </button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1887F]" />
         <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
           placeholder="Tìm kiếm danh mục..."
-          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+          className="w-full pl-10 pr-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none text-sm" />
       </div>
 
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#E4CFB4] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#FDF6EC]">
             <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Tên</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Mô tả</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">#</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Tên</th>
+              <th className="text-left py-3 px-4 font-medium text-[#6D4C41]">Mô tả</th>
+              <th className="text-right py-3 px-4 font-medium text-[#6D4C41]">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {categories.map((cat) => (
-              <tr key={cat.id} className="border-t border-gray-100">
+              <tr key={cat.id} className="border-t border-[#F1E4D6]">
                 <td className="py-3 px-4">{cat.id}</td>
                 <td className="py-3 px-4 font-medium">{cat.name}</td>
-                <td className="py-3 px-4 text-gray-500">{cat.description}</td>
+                <td className="py-3 px-4 text-[#6D4C41]">{cat.description}</td>
                 <td className="py-3 px-4 text-right space-x-2">
-                  <button onClick={() => openEdit(cat)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
+                  <button onClick={() => openEdit(cat)} className="p-1.5 rounded hover:bg-[#F5E6D3] text-[#6D4C41]"><Pencil size={16} /></button>
                   <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
-            {categories.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-gray-400">Chưa có danh mục</td></tr>}
+            {categories.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-[#A1887F]">Chưa có danh mục</td></tr>}
           </tbody>
         </table>
         {pageData && (
@@ -121,18 +121,18 @@ export default function CategoriesPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Sửa danh mục' : 'Thêm danh mục'}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên danh mục <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Tên danh mục <span className="text-red-500">*</span></label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+            <label className="block text-sm font-medium text-[#5D4037] mb-1">Mô tả</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows={3} />
+              className="w-full px-3 py-2 border border-[#DCC2A8] rounded-lg focus:ring-2 focus:ring-[#F4A825] outline-none" rows={3} />
           </div>
           <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[#DCC2A8] rounded-lg hover:bg-[#FDF6EC]">Hủy</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806] disabled:opacity-50">
               {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
@@ -141,3 +141,5 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+

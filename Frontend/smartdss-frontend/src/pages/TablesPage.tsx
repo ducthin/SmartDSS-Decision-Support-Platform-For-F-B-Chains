@@ -123,11 +123,11 @@ export default function TablesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Quản lý bàn</h1>
-          <p className="text-gray-500 text-sm mt-1">Tạo và quản lý mã QR cho từng bàn</p>
+          <p className="text-[#6D4C41] text-sm mt-1">Tạo và quản lý mã QR cho từng bàn</p>
         </div>
         {canEdit && (
           <button onClick={openCreate}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            className="flex items-center gap-2 bg-[#F4A825] text-white px-4 py-2 rounded-lg hover:bg-[#D48806] transition">
             <Plus className="h-4 w-4" /> Thêm bàn
           </button>
         )}
@@ -136,10 +136,10 @@ export default function TablesPage() {
       {/* Table grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {tables.map(t => (
-          <div key={t.id} className={`bg-white rounded-xl shadow-sm border-2 p-4 ${t.active ? 'border-green-200' : 'border-gray-200 opacity-60'}`}>
+          <div key={t.id} className={`bg-white rounded-xl shadow-sm border-2 p-4 ${t.active ? 'border-green-200' : 'border-[#E4CFB4] opacity-60'}`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-lg text-gray-800">{t.name}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.active ? 'bg-green-100 text-green-700' : 'bg-[#F5E6D3] text-[#6D4C41]'}`}>
                 {t.active ? 'Hoạt động' : 'Tắt'}
               </span>
             </div>
@@ -151,11 +151,11 @@ export default function TablesPage() {
 
             <div className="flex gap-1 justify-center">
               <button onClick={() => setShowQr(t)} title="Xem QR"
-                className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                className="p-2 text-blue-500 hover:bg-[#FFF4E3] rounded-lg transition">
                 <QrCode className="h-4 w-4" />
               </button>
               <button onClick={() => copyQrUrl(t)} title="Sao chép link"
-                className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg transition">
+                className="p-2 text-[#6D4C41] hover:bg-[#FDF6EC] rounded-lg transition">
                 <Copy className="h-4 w-4" />
               </button>
               {canEdit && (
@@ -180,7 +180,7 @@ export default function TablesPage() {
       </div>
 
       {tables.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-[#A1887F]">
           <QrCode className="mx-auto h-16 w-16 mb-4" />
           <p className="text-lg">Chưa có bàn nào</p>
           <p className="text-sm mt-1">Nhấn "Thêm bàn" để bắt đầu</p>
@@ -199,11 +199,11 @@ export default function TablesPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-800">{editing ? 'Sửa bàn' : 'Thêm bàn mới'}</h2>
-              <button onClick={() => setShowModal(false)}><X className="h-5 w-5 text-gray-400" /></button>
+              <button onClick={() => setShowModal(false)}><X className="h-5 w-5 text-[#A1887F]" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên bàn</label>
+                <label className="block text-sm font-medium text-[#5D4037] mb-1">Tên bàn</label>
                 <input
                   value={form.name}
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
@@ -214,13 +214,13 @@ export default function TablesPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.active}
                   onChange={e => setForm(p => ({ ...p, active: e.target.checked }))}
-                  className="rounded border-gray-300" />
-                <span className="text-sm text-gray-700">Hoạt động</span>
+                  className="rounded border-[#DCC2A8]" />
+                <span className="text-sm text-[#5D4037]">Hoạt động</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">Hủy</button>
-              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Lưu</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-[#6D4C41] hover:bg-[#F5E6D3] rounded-lg">Hủy</button>
+              <button onClick={save} className="px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806]">Lưu</button>
             </div>
           </div>
         </div>
@@ -232,19 +232,19 @@ export default function TablesPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-800">Mã QR - {showQr.name}</h2>
-              <button onClick={() => setShowQr(null)}><X className="h-5 w-5 text-gray-400" /></button>
+              <button onClick={() => setShowQr(null)}><X className="h-5 w-5 text-[#A1887F]" /></button>
             </div>
             <div ref={qrRef} className="flex justify-center mb-4">
               <QRCodeSVG value={getQrUrl(showQr)} size={250} level="H" includeMargin />
             </div>
-            <p className="text-xs text-gray-400 break-all mb-4">{getQrUrl(showQr)}</p>
+            <p className="text-xs text-[#A1887F] break-all mb-4">{getQrUrl(showQr)}</p>
             <div className="flex gap-2 justify-center">
               <button onClick={() => copyQrUrl(showQr)}
-                className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                className="flex items-center gap-1 px-4 py-2 bg-[#F5E6D3] text-[#5D4037] rounded-lg hover:bg-[#EEDCC7]">
                 <Copy className="h-4 w-4" /> Sao chép link
               </button>
               <button onClick={downloadQr}
-                className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                className="flex items-center gap-1 px-4 py-2 bg-[#F4A825] text-white rounded-lg hover:bg-[#D48806]">
                 <Download className="h-4 w-4" /> Tải QR
               </button>
             </div>
@@ -254,3 +254,5 @@ export default function TablesPage() {
     </div>
   );
 }
+
+

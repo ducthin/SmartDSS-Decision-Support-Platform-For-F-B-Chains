@@ -22,6 +22,15 @@ const navItems = [
   { path: '/users', label: 'Nhân viên', icon: Users, roles: ['ADMIN'] },
 ];
 
+function BrandName() {
+  return (
+    <p className="text-[15px] sm:text-base uppercase tracking-[0.14em] text-[#FFB74D] font-semibold flex items-center justify-center gap-1">
+      {/* logo */}
+      Coffee Name
+    </p>
+  );
+}
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
@@ -34,7 +43,7 @@ export default function Sidebar() {
     <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col transition-all duration-300`}>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 shrink-0">
-        {!collapsed && <span className="text-xl font-bold text-blue-600">SmartDSS</span>}
+        {!collapsed && <BrandName />}
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100">
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
@@ -90,7 +99,7 @@ export function MobileHeader() {
   return (
     <>
       <header className="lg:hidden bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4">
-        <span className="text-lg font-bold text-blue-600">SmartDSS</span>
+        <BrandName />
         <button onClick={() => setOpen(!open)} className="p-2 rounded hover:bg-gray-100">
           <MenuIcon size={20} />
         </button>
@@ -98,7 +107,7 @@ export function MobileHeader() {
       {open && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setOpen(false)}>
           <div className="w-64 bg-white h-full p-4 space-y-2" onClick={(e) => e.stopPropagation()}>
-            <div className="text-xl font-bold text-blue-600 mb-6">SmartDSS</div>
+            <div className="mb-6"><BrandName /></div>
             {filteredNav.map((item) => {
               const isActive = location.pathname === item.path;
               return (

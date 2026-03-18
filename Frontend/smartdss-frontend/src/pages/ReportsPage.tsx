@@ -55,7 +55,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Báo cáo</h1>
 
-      <div className="flex gap-2 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-2 bg-[#F5E6D3] rounded-lg p-1 w-fit">
         {tabs.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === t.key ? 'bg-white shadow' : ''}`}>
@@ -64,15 +64,15 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-[#E4CFB4] p-6">
         {tab === 'daily' && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Doanh thu theo giờ</h2>
               <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-400" />
+                <Calendar size={16} className="text-[#A1887F]" />
                 <input type="date" value={dailyDate} onChange={(e) => setDailyDate(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  className="px-3 py-1.5 border border-[#DCC2A8] rounded-lg text-sm focus:ring-2 focus:ring-[#F4A825] outline-none" />
               </div>
             </div>
             {hourlyData.length > 0 ? (
@@ -108,7 +108,7 @@ export default function ReportsPage() {
                     stroke="#f59e0b" strokeWidth={2} fill="url(#colorOrders)" dot={{ r: 2, fill: '#f59e0b' }} activeDot={{ r: 5 }} />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>}
+            ) : <p className="text-[#A1887F] text-center py-12">Chưa có dữ liệu</p>}
           </div>
         )}
 
@@ -117,9 +117,9 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Doanh thu theo tuần</h2>
               <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-400" />
+                <Calendar size={16} className="text-[#A1887F]" />
                 <input type="date" value={weeklyDate} onChange={(e) => setWeeklyDate(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  className="px-3 py-1.5 border border-[#DCC2A8] rounded-lg text-sm focus:ring-2 focus:ring-[#F4A825] outline-none" />
               </div>
             </div>
             {weeklyData.length > 0 ? (
@@ -132,7 +132,7 @@ export default function ReportsPage() {
                   <Bar dataKey="totalRevenue" fill="#10b981" radius={[4, 4, 0, 0]} name="Doanh thu" />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>}
+            ) : <p className="text-[#A1887F] text-center py-12">Chưa có dữ liệu</p>}
           </div>
         )}
 
@@ -143,16 +143,16 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 font-medium text-gray-500">#</th>
-                      <th className="text-left py-3 px-2 font-medium text-gray-500">Sản phẩm</th>
-                      <th className="text-left py-3 px-2 font-medium text-gray-500">Số lượng bán</th>
-                      <th className="text-left py-3 px-2 font-medium text-gray-500">Doanh thu</th>
+                    <tr className="border-b border-[#E4CFB4]">
+                      <th className="text-left py-3 px-2 font-medium text-[#6D4C41]">#</th>
+                      <th className="text-left py-3 px-2 font-medium text-[#6D4C41]">Sản phẩm</th>
+                      <th className="text-left py-3 px-2 font-medium text-[#6D4C41]">Số lượng bán</th>
+                      <th className="text-left py-3 px-2 font-medium text-[#6D4C41]">Doanh thu</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bestProducts.map((p, i) => (
-                      <tr key={i} className="border-b border-gray-100">
+                      <tr key={i} className="border-b border-[#F1E4D6]">
                         <td className="py-3 px-2">{i + 1}</td>
                         <td className="py-3 px-2 font-medium">{p.menuItemName}</td>
                         <td className="py-3 px-2">{p.totalQuantitySold}</td>
@@ -162,7 +162,7 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               </div>
-            ) : <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>}
+            ) : <p className="text-[#A1887F] text-center py-12">Chưa có dữ liệu</p>}
           </div>
         )}
 
@@ -176,7 +176,7 @@ export default function ReportsPage() {
                     <AlertTriangle size={20} className="text-red-500 shrink-0" />
                     <div className="flex-1">
                       <p className="font-medium">{item.ingredientName}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#6D4C41]">
                         Tồn: <span className="text-red-600 font-medium">{item.quantity} {item.unit}</span> / Tối thiểu: {item.minimumStock} {item.unit}
                       </p>
                     </div>
@@ -192,3 +192,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+

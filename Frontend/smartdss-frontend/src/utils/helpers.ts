@@ -11,7 +11,7 @@ export function getRoleKey(roleName: string | undefined): string {
 }
 
 export function formatCurrency(n: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  return `${new Intl.NumberFormat('vi-VN').format(n)} VND`;
 }
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
