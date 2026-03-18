@@ -217,7 +217,7 @@ function OrderListView() {
   const [billOrder, setBillOrder] = useState<Order | null>(null);
   const [loadingBillId, setLoadingBillId] = useState<number | null>(null);
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>('QR');
+  const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>('CASH');
   const [paymentData, setPaymentData] = useState<CurrentPaymentData | null>(null);
   const [paymentStatusByOrder, setPaymentStatusByOrder] = useState<Record<number, PaymentStatus>>({});
   const [refreshingPayment, setRefreshingPayment] = useState(false);
@@ -323,9 +323,13 @@ function OrderListView() {
   };
 
   const openPaymentModal = async (order: Order) => {
+    setPaymentOrder(order);
+    setPaymentMethod('CASH');
+    setPaymentData(null);
+  };
+
+  const initQrPayment = async (order: Order) => {
     try {
-      setPaymentOrder(order);
-      setPaymentMethod('QR');
       setRefreshingPayment(true);
       const res = await paymentService.initQr(order.id);
       const data = res.data.data;
@@ -345,25 +349,44 @@ function OrderListView() {
       }));
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Không khởi tạo được QR thanh toán'));
-      setPaymentOrder(null);
       setPaymentData(null);
+      setPaymentMethod('CASH');
     } finally {
       setRefreshingPayment(false);
     }
   };
 
-  const refreshPaymentStatus = async (orderId: number) => {
-    const res = await paymentService.getStatus(orderId);
-    const status = res.data.data;
-    setPaymentStatusByOrder((prev) => ({ ...prev, [orderId]: status }));
-    if (status.status === 'PAID') {
-      toast.success(`Đơn #${orderId} đã thanh toán thành công`);
-      setPaymentOrder(null);
-      setPaymentData(null);
-      loadOrders();
+  const selectPaymentMethod = async (method: PosPaymentMethod) => {
+    if (!paymentOrder) return;
+    if (method === 'QR') {
+      setPaymentMethod('QR');
+      if (!paymentData || paymentData.orderId !== paymentOrder.id) {
+        await initQrPayment(paymentOrder);
+      }
+      return;
     }
-    return status;
+    setPaymentMethod('CASH');
   };
+
+  const refreshPaymentStatus = useCallback(async (orderId: number, silent = false) => {
+    setRefreshingPayment(true);
+    try {
+      const res = await paymentService.getStatus(orderId);
+      const status = res.data.data;
+      setPaymentStatusByOrder((prev) => ({ ...prev, [orderId]: status }));
+      if (status.status === 'PAID') {
+        toast.success(`Đơn #${orderId} đã thanh toán thành công`);
+        setPaymentOrder(null);
+        setPaymentData(null);
+        loadOrders();
+      } else if (!silent) {
+        toast('Chưa nhận được thanh toán, vui lòng thử lại sau vài giây', { icon: '⏳' });
+      }
+      return status;
+    } finally {
+      setRefreshingPayment(false);
+    }
+  }, [loadOrders]);
 
   const confirmCashPayment = async () => {
     if (!paymentOrder) return;
@@ -386,12 +409,21 @@ function OrderListView() {
     if (!paymentOrder || paymentMethod !== 'QR') return;
     const orderId = paymentOrder.id;
     const timer = window.setInterval(() => {
-      refreshPaymentStatus(orderId).catch(() => {
+      refreshPaymentStatus(orderId, true).catch(() => {
         // Ignore polling transient errors.
       });
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [paymentOrder, paymentMethod]);
+  }, [paymentOrder, paymentMethod, refreshPaymentStatus]);
+
+  useEffect(() => {
+    if (!paymentOrder) return;
+    const current = paymentStatusByOrder[paymentOrder.id];
+    if (current?.status === 'PAID') {
+      setPaymentOrder(null);
+      setPaymentData(null);
+    }
+  }, [paymentOrder, paymentStatusByOrder]);
 
   const printBill = (order: Order) => {
     const payment = paymentStatusByOrder[order.id];
@@ -591,13 +623,21 @@ function OrderListView() {
 
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setPaymentMethod('CASH')}
+                onClick={() => {
+                  selectPaymentMethod('CASH').catch(() => {
+                    // no-op
+                  });
+                }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
                 <span className="inline-flex items-center gap-1"><Wallet size={16} /> Tiền mặt</span>
               </button>
               <button
-                onClick={() => setPaymentMethod('QR')}
+                onClick={() => {
+                  selectPaymentMethod('QR').catch(() => {
+                    // errors are handled in initQrPayment
+                  });
+                }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
                 <span className="inline-flex items-center gap-1"><QrCode size={16} /> QR chuyển khoản</span>

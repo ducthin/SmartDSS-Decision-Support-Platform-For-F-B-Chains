@@ -56,6 +56,8 @@ public class PaymentServiceImpl implements PaymentService {
     private int qrExpireMinutes;
     @Value("${app.payment.webhook.secret:}")
     private String webhookSecret;
+    @Value("${app.payment.webhook.allow-insecure:false}")
+    private boolean allowInsecureWebhook;
     @Value("${app.payment.payos.client-id:}")
     private String payosClientId;
     @Value("${app.payment.payos.api-key:}")
@@ -66,6 +68,8 @@ public class PaymentServiceImpl implements PaymentService {
     private String payosReturnUrl;
     @Value("${app.payment.payos.cancel-url:http://localhost:5173/payment/cancel}")
     private String payosCancelUrl;
+    @Value("${app.timezone:Asia/Ho_Chi_Minh}")
+    private String appTimezone;
 
     @Override
     public PaymentInitDTO initQrPayment(Long orderId) {
@@ -77,8 +81,12 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BadRequestException("Chỉ được thanh toán cho đơn đã COMPLETED");
         }
 
-        SalesTransaction tx = salesTransactionRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy giao dịch bán hàng của đơn này"));
+        SalesTransaction tx = getTransactionForUpdate(orderId);
+
+        if (isPaid(tx.getPaymentMethod())) {
+            log.warn("Reject init payment for order {} because payment is already {}", orderId, tx.getPaymentMethod());
+            throw new BadRequestException("Đơn này đã được thanh toán");
+        }
 
         if (!isPaid(tx.getPaymentMethod())) {
             tx.setPaymentMethod("PENDING");
@@ -88,10 +96,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         BigDecimal amount = tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount();
         String transferContent = "BILL-" + orderId;
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(Math.max(1, qrExpireMinutes));
+        LocalDateTime expiresAt = now().plusMinutes(Math.max(1, qrExpireMinutes));
         PaymentStatusDTO statusDTO = toStatusDTO(tx);
 
-        PaymentInitDTO payosInit = tryInitPayosPayment(orderId, amount, transferContent, expiresAt, statusDTO);
+        PaymentInitDTO payosInit = tryInitPayosPayment(orderId, amount, transferContent, expiresAt, tx, statusDTO);
         if (payosInit != null) {
             log.info("Init payment success with provider PAYOS for order {}", orderId);
             return payosInit;
@@ -105,10 +113,18 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentStatusDTO markCashPaid(Long orderId) {
         log.info("Mark cash paid requested for order {}", orderId);
-        SalesTransaction tx = salesTransactionRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy giao dịch bán hàng của đơn này"));
+        SalesTransaction tx = getTransactionForUpdate(orderId);
+        String currentMethod = normalizeMethod(tx.getPaymentMethod());
+        if ("QR".equals(currentMethod)) {
+            log.warn("Reject mark cash paid for order {} because already paid by QR", orderId);
+            throw new BadRequestException("Đơn này đã thanh toán bằng QR");
+        }
+        if ("CASH".equals(currentMethod)) {
+            log.info("Ignore duplicate mark cash paid for order {}", orderId);
+            return toStatusDTO(tx);
+        }
         tx.setPaymentMethod("CASH");
-        tx.setPaidAt(LocalDateTime.now());
+        tx.setPaidAt(now());
         SalesTransaction saved = salesTransactionRepository.save(tx);
         PaymentStatusDTO statusDTO = toStatusDTO(saved);
         broadcastStatus(statusDTO);
@@ -164,11 +180,17 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentStatusDTO handleWebhook(PaymentWebhookDTO webhookDTO, String webhookSecretHeader) {
         log.debug("Handle generic webhook for orderId={}, status={}, hasAmount={}",
                 webhookDTO.getOrderId(), webhookDTO.getStatus(), webhookDTO.getAmount() != null);
-        if (webhookSecret != null && !webhookSecret.isBlank()) {
-            if (webhookSecretHeader == null || !webhookSecret.equals(webhookSecretHeader)) {
-                log.warn("Reject generic webhook due to invalid secret for orderId={}", webhookDTO.getOrderId());
-                throw new BadRequestException("Webhook secret không hợp lệ");
+        if (webhookSecret == null || webhookSecret.isBlank()) {
+            if (!allowInsecureWebhook) {
+                log.warn("Reject generic webhook because secret is not configured");
+                incrementWebhookMetric("rejected", "secret_missing");
+                throw new BadRequestException("Webhook secret chưa được cấu hình");
             }
+            log.warn("Allowing insecure generic webhook because app.payment.webhook.allow-insecure=true");
+        } else if (webhookSecretHeader == null || !webhookSecret.equals(webhookSecretHeader)) {
+            log.warn("Reject generic webhook due to invalid secret for orderId={}", webhookDTO.getOrderId());
+            incrementWebhookMetric("rejected", "secret_invalid");
+            throw new BadRequestException("Webhook secret không hợp lệ");
         }
         return applyWebhook(webhookDTO);
     }
@@ -185,7 +207,7 @@ public class PaymentServiceImpl implements PaymentService {
         String status = webhookDTO.getStatus() == null ? "" : webhookDTO.getStatus().trim().toUpperCase(Locale.ROOT);
         log.info("Apply webhook for orderId={}, normalizedStatus={}, providerTransactionId={}",
                 webhookDTO.getOrderId(), status, providerTxId);
-        SalesTransaction tx = salesTransactionRepository.findByOrderId(webhookDTO.getOrderId())
+        SalesTransaction tx = salesTransactionRepository.findByOrderIdForUpdate(webhookDTO.getOrderId())
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy giao dịch theo orderId"));
 
         if (!"PAID".equals(status)) {
@@ -194,9 +216,17 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         BigDecimal expectedAmount = tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount();
-        if (webhookDTO.getAmount() != null && webhookDTO.getAmount().compareTo(expectedAmount) != 0) {
-            log.warn("Reject webhook amount mismatch for orderId={}, expected={}, actual={}",
-                    webhookDTO.getOrderId(), expectedAmount, webhookDTO.getAmount());
+        BigDecimal expectedAmountForProvider = expectedAmount.setScale(0, RoundingMode.HALF_UP);
+        if (webhookDTO.getAmount() == null) {
+            log.warn("Reject webhook because amount is missing for orderId={}", webhookDTO.getOrderId());
+            incrementWebhookMetric("rejected", "amount_missing");
+            throw new BadRequestException("Thiếu số tiền thanh toán trong webhook");
+        }
+        BigDecimal actualAmountForProvider = webhookDTO.getAmount().setScale(0, RoundingMode.HALF_UP);
+        if (actualAmountForProvider.compareTo(expectedAmountForProvider) != 0) {
+            log.warn("Reject webhook amount mismatch for orderId={}, expectedProviderAmount={}, expectedRawAmount={}, actualProviderAmount={}",
+                    webhookDTO.getOrderId(), expectedAmountForProvider, expectedAmount, actualAmountForProvider);
+            incrementWebhookMetric("rejected", "amount_mismatch");
             throw new BadRequestException("Số tiền thanh toán không khớp hóa đơn");
         }
 
@@ -205,21 +235,24 @@ public class PaymentServiceImpl implements PaymentService {
             String existingProviderTxId = normalizeProviderTransactionId(tx.getProviderTransactionId());
             if ("CASH".equalsIgnoreCase(tx.getPaymentMethod())) {
                 log.info("Ignore webhook for orderId={} because order already paid by CASH", webhookDTO.getOrderId());
+                incrementWebhookMetric("duplicate", "already_cash_paid");
                 return toStatusDTO(tx);
             }
             if (providerTxId == null || existingProviderTxId == null || providerTxId.equals(existingProviderTxId)) {
                 log.info("Ignore duplicate PAID webhook for orderId={}, providerTransactionId={}",
                         webhookDTO.getOrderId(), providerTxId);
+                incrementWebhookMetric("duplicate", "provider_retry");
                 return toStatusDTO(tx);
             }
             log.warn("Reject conflicting provider transaction for orderId={}, existingProviderTransactionId={}, incomingProviderTransactionId={}",
                     webhookDTO.getOrderId(), existingProviderTxId, providerTxId);
+            incrementWebhookMetric("rejected", "provider_tx_conflict");
             throw new BadRequestException("Webhook bị trùng với providerTransactionId khác");
         }
 
         tx.setPaymentMethod("QR");
         tx.setProviderTransactionId(providerTxId);
-        tx.setPaidAt(LocalDateTime.now());
+        tx.setPaidAt(now());
         SalesTransaction saved = salesTransactionRepository.save(tx);
         PaymentStatusDTO statusDTO = toStatusDTO(saved);
         broadcastStatus(statusDTO);
@@ -260,11 +293,26 @@ public class PaymentServiceImpl implements PaymentService {
             BigDecimal amount,
             String transferContent,
             LocalDateTime expiresAt,
+            SalesTransaction tx,
             PaymentStatusDTO statusDTO
     ) {
         if (!isPayosConfigured()) {
             log.debug("PayOS is not configured. Skip PayOS init for order {}", orderId);
             return null;
+        }
+        if (hasReusablePayosLink(tx)) {
+            log.info("Reuse cached PayOS link for order {}", orderId);
+            return buildInitResponse(
+                    orderId,
+                    amount,
+                    transferContent,
+                    buildQrImageFromContent(tx.getPayosQrCode()),
+                    tx.getPayosQrCode(),
+                    tx.getPayosCheckoutUrl(),
+                    "PAYOS",
+                    tx.getPayosQrExpiresAt() == null ? expiresAt : tx.getPayosQrExpiresAt(),
+                    statusDTO
+            );
         }
 
         Long amountInVnd = amount.setScale(0, RoundingMode.HALF_UP).longValue();
@@ -274,19 +322,27 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             PayOS payOS = new PayOS(payosClientId.trim(), payosApiKey.trim(), payosChecksumKey.trim());
+            long payosOrderCode = buildPayosOrderCode(orderId);
             CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
-                    .orderCode(orderId)
+                    .orderCode(payosOrderCode)
                     .amount(amountInVnd)
                     .description(truncatePayosDescription(transferContent))
                     .returnUrl(payosReturnUrl)
                     .cancelUrl(payosCancelUrl)
                     .expiredAt(toEpochSecond(expiresAt))
                     .build();
-            log.debug("Creating PayOS payment link for order {}, amount={}, returnUrl={}", orderId, amountInVnd, payosReturnUrl);
+            log.debug("Creating PayOS payment link for order {}, payosOrderCode={}, amount={}, returnUrl={}",
+                    orderId, payosOrderCode, amountInVnd, payosReturnUrl);
 
             CreatePaymentLinkResponse response = payOS.paymentRequests().create(request);
             String qrCode = response.getQrCode();
             String qrImageUrl = buildQrImageFromContent(qrCode);
+            LocalDateTime resolvedExpiresAt = toLocalDateTime(response.getExpiredAt(), expiresAt);
+
+            tx.setPayosQrCode(qrCode);
+            tx.setPayosCheckoutUrl(response.getCheckoutUrl());
+            tx.setPayosQrExpiresAt(resolvedExpiresAt);
+            salesTransactionRepository.save(tx);
 
             return buildInitResponse(
                     orderId,
@@ -296,10 +352,24 @@ public class PaymentServiceImpl implements PaymentService {
                     qrCode,
                     response.getCheckoutUrl(),
                     "PAYOS",
-                    toLocalDateTime(response.getExpiredAt(), expiresAt),
+                    resolvedExpiresAt,
                     statusDTO
             );
         } catch (Exception ex) {
+            if (isOrderAlreadyExistsError(ex) && hasReusablePayosLink(tx)) {
+                log.warn("PayOS says order exists, fallback to cached link for order {}", orderId);
+                return buildInitResponse(
+                        orderId,
+                        amount,
+                        transferContent,
+                        buildQrImageFromContent(tx.getPayosQrCode()),
+                        tx.getPayosQrCode(),
+                        tx.getPayosCheckoutUrl(),
+                        "PAYOS",
+                        tx.getPayosQrExpiresAt() == null ? expiresAt : tx.getPayosQrExpiresAt(),
+                        statusDTO
+                );
+            }
             log.error("PayOS init failed for order {}: {}", orderId, ex.getMessage());
             throw new BadRequestException("Không thể tạo QR PayOS: " + ex.getMessage());
         }
@@ -358,14 +428,14 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private long toEpochSecond(LocalDateTime dateTime) {
-        return dateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
+        return dateTime.atZone(resolveZoneId()).toEpochSecond();
     }
 
     private LocalDateTime toLocalDateTime(Long epochSecond, LocalDateTime fallback) {
         if (epochSecond == null || epochSecond <= 0) {
             return fallback;
         }
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), resolveZoneId());
     }
 
     private String urlEncode(String value) {
@@ -378,5 +448,52 @@ public class PaymentServiceImpl implements PaymentService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private boolean hasReusablePayosLink(SalesTransaction tx) {
+        if (tx == null || tx.getPayosQrCode() == null || tx.getPayosQrCode().isBlank() || tx.getPayosCheckoutUrl() == null || tx.getPayosCheckoutUrl().isBlank()) {
+            return false;
+        }
+        if (tx.getPayosQrExpiresAt() == null) {
+            return true;
+        }
+        return tx.getPayosQrExpiresAt().isAfter(now().minusMinutes(1));
+    }
+
+    private boolean isOrderAlreadyExistsError(Exception ex) {
+        if (ex == null || ex.getMessage() == null) {
+            return false;
+        }
+        String msg = ex.getMessage().toLowerCase(Locale.ROOT);
+        return msg.contains("đơn thanh toán đã tồn tại")
+                || msg.contains("don thanh toan da ton tai")
+                || msg.contains("order already exists");
+    }
+
+    private long buildPayosOrderCode(Long orderId) {
+        long safeOrderId = orderId == null ? 0L : Math.abs(orderId);
+        long suffix = System.currentTimeMillis() % 1_000_000L;
+        return safeOrderId * 1_000_000L + suffix;
+    }
+
+    private SalesTransaction getTransactionForUpdate(Long orderId) {
+        return salesTransactionRepository.findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy giao dịch bán hàng của đơn này"));
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(resolveZoneId());
+    }
+
+    private ZoneId resolveZoneId() {
+        try {
+            return ZoneId.of(appTimezone);
+        } catch (Exception ex) {
+            return ZoneId.of("Asia/Ho_Chi_Minh");
+        }
+    }
+
+    private void incrementWebhookMetric(String outcome, String reason) {
+        log.debug("Webhook metric event outcome={}, reason={}", outcome, reason);
     }
 }

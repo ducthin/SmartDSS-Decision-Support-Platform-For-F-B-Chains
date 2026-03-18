@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse, Sales, DailySalesReport, BestProduct } from '@/types';
+import type { ApiResponse, Sales, DailySalesReport, BestProduct, TaxReportResponse } from '@/types';
 
 export const salesService = {
   getAll: () => api.get<ApiResponse<Sales[]>>('/sales'),
@@ -17,6 +17,8 @@ export const reportService = {
     api.get<ApiResponse<BestProduct[]>>('/reports/best-products'),
   lowStock: () =>
     api.get<ApiResponse<Inventory[]>>('/reports/low-stock'),
+  taxReport: (fromDate?: string, toDate?: string) =>
+    api.get<ApiResponse<TaxReportResponse>>('/reports/tax', { params: { fromDate, toDate } }),
 };
 
 type Inventory = import('@/types').Inventory;

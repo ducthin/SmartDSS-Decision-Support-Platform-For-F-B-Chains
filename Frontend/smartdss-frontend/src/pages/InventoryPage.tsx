@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { inventoryService } from '@/services/inventoryService';
-import type { Inventory, InventoryTransactionForm, PageResponse } from '@/types';
-import { Plus, Minus, AlertTriangle, Search } from 'lucide-react';
+import type { Inventory, InventoryItemForm, InventoryTransactionForm, InventoryTransactionHistory, PageResponse } from '@/types';
+import { Plus, Minus, AlertTriangle, Search, PenSquare, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/utils/helpers';
@@ -9,14 +9,25 @@ import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export default function InventoryPage() {
+  const emptyItemForm: InventoryItemForm = { ingredientName: '', unit: '', quantity: 0, minimumStock: 0 };
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'add' | 'deduct'>('add');
   const [form, setForm] = useState<InventoryTransactionForm>({ inventoryId: 0, quantity: 0, reason: '' });
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [itemMode, setItemMode] = useState<'create' | 'edit'>('create');
+  const [itemForm, setItemForm] = useState<InventoryItemForm>(emptyItemForm);
+  const [editingInventoryId, setEditingInventoryId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [itemSaving, setItemSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [pageData, setPageData] = useState<PageResponse<Inventory> | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyData, setHistoryData] = useState<PageResponse<InventoryTransactionHistory> | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
   const [keyword, setKeyword] = useState('');
   const [lowStockFilter, setLowStockFilter] = useState<boolean | undefined>(undefined);
   const debouncedKeyword = useDebounce(keyword);
@@ -65,6 +76,68 @@ export default function InventoryPage() {
     }
   };
 
+  const openCreateItemModal = () => {
+    setItemMode('create');
+    setEditingInventoryId(null);
+    setItemForm(emptyItemForm);
+    setShowItemModal(true);
+  };
+
+  const openEditItemModal = (inv: Inventory) => {
+    setItemMode('edit');
+    setEditingInventoryId(inv.id);
+    setItemForm({
+      ingredientName: inv.ingredientName,
+      unit: inv.unit,
+      quantity: Number(inv.quantity),
+      minimumStock: Number(inv.minimumStock),
+    });
+    setShowItemModal(true);
+  };
+
+  const handleItemSubmit = async () => {
+    if (!itemForm.ingredientName.trim()) return toast.error('Tên nguyên liệu không được để trống');
+    if (!itemForm.unit.trim()) return toast.error('Đơn vị không được để trống');
+    if (itemForm.quantity < 0) return toast.error('Tồn kho phải >= 0');
+    if (itemForm.minimumStock < 0) return toast.error('Mức tối thiểu phải >= 0');
+
+    setItemSaving(true);
+    try {
+      if (itemMode === 'create') {
+        await inventoryService.createItem(itemForm);
+        toast.success('Thêm nguyên liệu thành công');
+      } else if (editingInventoryId) {
+        await inventoryService.updateItem(editingInventoryId, itemForm);
+        toast.success('Cập nhật nguyên liệu thành công');
+      }
+      setShowItemModal(false);
+      load();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không thể lưu nguyên liệu'));
+    } finally {
+      setItemSaving(false);
+    }
+  };
+
+  const openHistoryModal = (inv: Inventory) => {
+    setSelectedInventory(inv);
+    setHistoryPage(0);
+    setShowHistoryModal(true);
+  };
+
+  const loadHistory = useCallback(() => {
+    if (!showHistoryModal || !selectedInventory) return;
+    setHistoryLoading(true);
+    inventoryService.getTransactions(selectedInventory.id, historyPage, 10)
+      .then((res) => setHistoryData(res.data.data))
+      .catch(() => toast.error('Không thể tải lịch sử nhập xuất'))
+      .finally(() => setHistoryLoading(false));
+  }, [showHistoryModal, selectedInventory, historyPage]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Quản lý kho</h1>
@@ -84,6 +157,13 @@ export default function InventoryPage() {
           <AlertTriangle size={16} className="text-orange-500" />
           Chỉ hiện sắp hết
         </label>
+        <button
+          onClick={openCreateItemModal}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm"
+        >
+          <Plus size={16} />
+          Thêm nguyên liệu
+        </button>
       </div>
 
       {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
@@ -118,6 +198,14 @@ export default function InventoryPage() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right space-x-1">
+                    <button onClick={() => openHistoryModal(inv)}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                      <History size={14} /> Lịch sử
+                    </button>
+                    <button onClick={() => openEditItemModal(inv)}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">
+                      <PenSquare size={14} /> Sửa
+                    </button>
                     <button onClick={() => openModal('add', inv)}
                       className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">
                       <Plus size={14} /> Nhập
@@ -160,6 +248,122 @@ export default function InventoryPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={showItemModal}
+        onClose={() => setShowItemModal(false)}
+        title={itemMode === 'create' ? 'Thêm nguyên liệu mới' : 'Chỉnh sửa nguyên liệu'}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tên nguyên liệu <span className="text-red-500">*</span></label>
+            <input
+              value={itemForm.ingredientName}
+              onChange={(e) => setItemForm({ ...itemForm, ingredientName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Đơn vị <span className="text-red-500">*</span></label>
+              <input
+                value={itemForm.unit}
+                onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
+                placeholder="ví dụ: ml, g, chai..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mức tối thiểu <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                min={0}
+                value={itemForm.minimumStock}
+                onChange={(e) => setItemForm({ ...itemForm, minimumStock: Number(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {itemMode === 'create' ? 'Tồn kho ban đầu' : 'Điều chỉnh tồn kho hiện tại'} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={itemForm.quantity}
+              onChange={(e) => setItemForm({ ...itemForm, quantity: Number(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setShowItemModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              Hủy
+            </button>
+            <button
+              onClick={handleItemSubmit}
+              disabled={itemSaving}
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {itemSaving ? 'Đang lưu...' : itemMode === 'create' ? 'Thêm nguyên liệu' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        title={`Lịch sử nhập xuất - ${selectedInventory?.ingredientName ?? ''}`}
+      >
+        {historyLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="max-h-[360px] overflow-auto border border-gray-200 rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Thời gian</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Loại</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Số lượng</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyData?.content?.map((tx) => (
+                    <tr key={tx.id} className="border-t border-gray-100">
+                      <td className="py-2 px-3 text-gray-600">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
+                      <td className="py-2 px-3">
+                        <span className={`text-xs font-medium ${tx.type === 'ADD' ? 'text-green-700' : 'text-orange-700'}`}>
+                          {tx.type === 'ADD' ? 'Nhập' : 'Xuất'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3">{tx.quantity}</td>
+                      <td className="py-2 px-3 text-gray-700">{tx.reason || '-'}</td>
+                    </tr>
+                  ))}
+                  {(!historyData || historyData.content.length === 0) && (
+                    <tr>
+                      <td colSpan={4} className="py-6 px-3 text-center text-gray-400">Chưa có giao dịch nhập/xuất</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {historyData && (
+              <Pagination
+                page={historyPage}
+                totalPages={historyData.totalPages}
+                totalElements={historyData.totalElements}
+                onPageChange={setHistoryPage}
+              />
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -44,4 +44,11 @@ public class ReportController {
     public ResponseEntity<ApiResponse<List<InventoryDTO>>> getLowStock() {
         return ResponseEntity.ok(ApiResponse.success(reportService.getLowStockReport()));
     }
+
+    @GetMapping("/tax")
+    public ResponseEntity<ApiResponse<TaxReportResponseDTO>> getTaxReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return ResponseEntity.ok(ApiResponse.success(reportService.getTaxReport(fromDate, toDate)));
+    }
 }

@@ -46,6 +46,15 @@ public class SalesTransaction extends BaseEntity {
 
     private LocalDateTime paidAt;
 
+    @Column(length = 500)
+    private String payosCheckoutUrl;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String payosQrCode;
+
+    private LocalDateTime payosQrExpiresAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cashier_id")
     private User cashier;

@@ -133,6 +133,21 @@ export interface InventoryTransactionForm {
   reason: string;
 }
 
+export interface InventoryTransactionHistory {
+  id: number;
+  type: 'ADD' | 'DEDUCT';
+  quantity: number;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface InventoryItemForm {
+  ingredientName: string;
+  unit: string;
+  quantity: number;
+  minimumStock: number;
+}
+
 // Order
 export type OrderStatus = 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
 
@@ -297,6 +312,19 @@ export interface DailySalesReport {
   date: string;
   totalOrders: number;
   totalRevenue: number;
+}
+
+export interface TaxReportItem {
+  date: string;
+  totalOrders: number;
+  netAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+}
+
+export interface TaxReportResponse {
+  summary: TaxReportItem;
+  items: TaxReportItem[];
 }
 
 export interface BestProduct {

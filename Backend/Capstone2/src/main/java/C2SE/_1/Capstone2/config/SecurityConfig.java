@@ -34,6 +34,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RequestCorrelationFilter requestCorrelationFilter;
 
     @Value("#{'${app.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}'.split(',')}")
     private List<String> allowedOrigins;
@@ -60,7 +61,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/config/tax").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/qr/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/qr/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/payments/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/payments/payos/webhook").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
@@ -179,6 +184,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
+        http.addFilterBefore(requestCorrelationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

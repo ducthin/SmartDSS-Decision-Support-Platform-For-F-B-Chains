@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { reportService } from '@/services/reportService';
-import type { DailySalesReport, BestProduct, Inventory } from '@/types';
+import type { DailySalesReport, BestProduct, Inventory, TaxReportResponse } from '@/types';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { AlertTriangle, Calendar } from 'lucide-react';
+import { AlertTriangle, Calendar, Download } from 'lucide-react';
 import { formatCurrency } from '@/utils/helpers';
 
 const DAY_NAMES = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -13,30 +13,48 @@ function formatWeeklyDate(dateStr: string) {
   return `${day} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function toLocalDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function ReportsPage() {
-  const [tab, setTab] = useState<'daily' | 'weekly' | 'best' | 'low'>('daily');
+  const [tab, setTab] = useState<'daily' | 'weekly' | 'best' | 'low' | 'tax'>('daily');
   const [hourlyData, setHourlyData] = useState<DailySalesReport[]>([]);
   const [weeklyData, setWeeklyData] = useState<DailySalesReport[]>([]);
   const [bestProducts, setBestProducts] = useState<BestProduct[]>([]);
   const [lowStock, setLowStock] = useState<Inventory[]>([]);
+  const [taxReport, setTaxReport] = useState<TaxReportResponse>({ summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] });
   const [loading, setLoading] = useState(true);
-  const [dailyDate, setDailyDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [weeklyDate, setWeeklyDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [dailyDate, setDailyDate] = useState(() => toLocalDateInputValue(new Date()));
+  const [weeklyDate, setWeeklyDate] = useState(() => toLocalDateInputValue(new Date()));
+  const [taxFromDate, setTaxFromDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    return toLocalDateInputValue(d);
+  });
+  const [taxToDate, setTaxToDate] = useState(() => toLocalDateInputValue(new Date()));
 
   const loadData = useCallback(() => {
+    setLoading(true);
     Promise.all([
       reportService.hourlySales(dailyDate).catch(() => ({ data: { data: [] } })),
       reportService.weeklySales(weeklyDate).catch(() => ({ data: { data: [] } })),
       reportService.bestProducts().catch(() => ({ data: { data: [] } })),
       reportService.lowStock().catch(() => ({ data: { data: [] } })),
-    ]).then(([h, w, b, l]) => {
+      reportService.taxReport(taxFromDate, taxToDate).catch(() => ({
+        data: { data: { summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] } },
+      })),
+    ]).then(([h, w, b, l, t]) => {
       setHourlyData(h.data.data || []);
       setWeeklyData((w.data.data || []).map((d: DailySalesReport) => ({ ...d, label: formatWeeklyDate(d.date) })));
       setBestProducts(b.data.data || []);
       setLowStock(l.data.data || []);
-      setLoading(false);
-    });
-  }, [dailyDate, weeklyDate]);
+      setTaxReport(t.data.data || { summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] });
+    }).finally(() => setLoading(false));
+  }, [dailyDate, weeklyDate, taxFromDate, taxToDate]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -47,9 +65,97 @@ export default function ReportsPage() {
   const tabs = [
     { key: 'daily', label: 'Doanh thu ngày' },
     { key: 'weekly', label: 'Doanh thu tuần' },
+    { key: 'tax', label: 'Báo cáo thuế' },
     { key: 'best', label: 'Bán chạy nhất' },
     { key: 'low', label: 'Sắp hết hàng' },
   ] as const;
+
+  const exportTaxReportExcel = async () => {
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Bao cao thue');
+
+    sheet.columns = [
+      { header: 'Ngay', key: 'date', width: 16 },
+      { header: 'Don da thanh toan', key: 'orders', width: 20 },
+      { header: 'Tam tinh', key: 'net', width: 18 },
+      { header: 'Thue GTGT', key: 'vat', width: 18 },
+      { header: 'Tong thanh toan', key: 'gross', width: 20 },
+    ];
+
+    sheet.mergeCells('A1:E1');
+    sheet.getCell('A1').value = 'BAO CAO THUE GTGT';
+    sheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FF1F2937' } };
+    sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+    sheet.mergeCells('A2:E2');
+    sheet.getCell('A2').value = `Ky bao cao: ${taxFromDate} den ${taxToDate}`;
+    sheet.getCell('A2').alignment = { horizontal: 'center' };
+    sheet.getCell('A2').font = { color: { argb: 'FF4B5563' } };
+
+    sheet.getCell('A4').value = 'Tong don da thanh toan';
+    sheet.getCell('B4').value = taxReport.summary.totalOrders ?? 0;
+    sheet.getCell('A5').value = 'Tam tinh';
+    sheet.getCell('B5').value = taxReport.summary.netAmount ?? 0;
+    sheet.getCell('A6').value = 'Thue GTGT';
+    sheet.getCell('B6').value = taxReport.summary.vatAmount ?? 0;
+    sheet.getCell('A7').value = 'Tong thanh toan';
+    sheet.getCell('B7').value = taxReport.summary.totalAmount ?? 0;
+
+    const currencyFormat = '#,##0';
+    sheet.getCell('B5').numFmt = currencyFormat;
+    sheet.getCell('B6').numFmt = currencyFormat;
+    sheet.getCell('B7').numFmt = currencyFormat;
+
+    for (let row = 4; row <= 7; row++) {
+      sheet.getCell(`A${row}`).font = { bold: true };
+      sheet.getCell(`A${row}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+      sheet.getCell(`A${row}`).border = thinBorder();
+      sheet.getCell(`B${row}`).border = thinBorder();
+    }
+
+    const headerRowIndex = 9;
+    const headerRow = sheet.getRow(headerRowIndex);
+    headerRow.values = ['Ngay', 'Don da thanh toan', 'Tam tinh', 'Thue GTGT', 'Tong thanh toan'];
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.eachCell((cell) => {
+      cell.border = thinBorder();
+    });
+
+    let rowPointer = headerRowIndex + 1;
+    for (const item of taxReport.items) {
+      const row = sheet.getRow(rowPointer);
+      row.values = [
+        item.date,
+        item.totalOrders ?? 0,
+        item.netAmount ?? 0,
+        item.vatAmount ?? 0,
+        item.totalAmount ?? 0,
+      ];
+      row.getCell(3).numFmt = currencyFormat;
+      row.getCell(4).numFmt = currencyFormat;
+      row.getCell(5).numFmt = currencyFormat;
+      row.eachCell((cell) => {
+        cell.border = thinBorder();
+      });
+      rowPointer += 1;
+    }
+
+    sheet.views = [{ state: 'frozen', ySplit: headerRowIndex }];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tax-report-${taxFromDate}-to-${taxToDate}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -166,6 +272,103 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {tab === 'tax' && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Báo cáo thuế GTGT</h2>
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-400" />
+                <input
+                  type="date"
+                  value={taxFromDate}
+                  onChange={(e) => setTaxFromDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <span className="text-gray-400 text-sm">đến</span>
+                <input
+                  type="date"
+                  value={taxToDate}
+                  onChange={(e) => setTaxToDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  onClick={() => {
+                    exportTaxReportExcel().catch(() => {
+                      // keep silent; user can retry export
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-sm font-medium"
+                >
+                  <Download size={14} /> Xuất Excel
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Tổng đơn đã thanh toán</p>
+                <p className="text-xl font-semibold">{taxReport.summary.totalOrders || 0}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Tạm tính (chưa thuế)</p>
+                <p className="text-xl font-semibold text-gray-800">{formatCurrency(taxReport.summary.netAmount || 0)}</p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm text-amber-700">Thuế GTGT phải nộp</p>
+                <p className="text-xl font-semibold text-amber-800">{formatCurrency(taxReport.summary.vatAmount || 0)}</p>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-sm text-emerald-700">Tổng thanh toán</p>
+                <p className="text-xl font-semibold text-emerald-800">{formatCurrency(taxReport.summary.totalAmount || 0)}</p>
+              </div>
+            </div>
+
+            {taxReport.items.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={taxReport.items}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}K`} />
+                    <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+                    <Legend />
+                    <Bar dataKey="netAmount" name="Tạm tính" fill="#64748b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="vatAmount" name="Thuế GTGT" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="totalAmount" name="Tổng thanh toán" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-2 font-medium text-gray-500">Ngày</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-500">Đơn đã thanh toán</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-500">Tạm tính</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-500">Thuế GTGT</th>
+                        <th className="text-left py-2 px-2 font-medium text-gray-500">Tổng thanh toán</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {taxReport.items.map((item) => (
+                        <tr key={item.date} className="border-b border-gray-100">
+                          <td className="py-2 px-2">{item.date}</td>
+                          <td className="py-2 px-2">{item.totalOrders}</td>
+                          <td className="py-2 px-2">{formatCurrency(item.netAmount)}</td>
+                          <td className="py-2 px-2 text-amber-700 font-medium">{formatCurrency(item.vatAmount)}</td>
+                          <td className="py-2 px-2 font-medium">{formatCurrency(item.totalAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-gray-400 text-center py-12">Khoảng thời gian này chưa có giao dịch đã thanh toán.</p>
+            )}
+          </div>
+        )}
+
         {tab === 'low' && (
           <div>
             <h2 className="text-lg font-semibold mb-4">Nguyên liệu sắp hết</h2>
@@ -191,4 +394,13 @@ export default function ReportsPage() {
       </div>
     </div>
   );
+}
+
+function thinBorder() {
+  return {
+    top: { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+    left: { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+    bottom: { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+    right: { style: 'thin' as const, color: { argb: 'FFE5E7EB' } },
+  };
 }

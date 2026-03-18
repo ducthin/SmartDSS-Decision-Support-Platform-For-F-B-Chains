@@ -34,6 +34,8 @@ public class PaymentWebhookController {
     private String payosApiKey;
     @Value("${app.payment.payos.checksum-key:}")
     private String payosChecksumKey;
+    @Value("${app.payment.webhook.allow-insecure:false}")
+    private boolean allowInsecureWebhook;
 
     @PostMapping("/webhook")
     public ResponseEntity<ApiResponse<?>> webhook(
@@ -113,7 +115,11 @@ public class PaymentWebhookController {
     private Map<String, Object> extractVerifiedPayosData(Map<String, Object> payload) {
         Map<String, Object> rawData = asMap(payload.get("data"));
         if (!isPayosConfigured()) {
-            log.debug("PayOS keys not configured. Skip signature verification");
+            if (!allowInsecureWebhook) {
+                log.warn("Reject PayOS webhook because PayOS keys are not configured");
+                throw new BadRequestException("PayOS webhook chưa được cấu hình chữ ký");
+            }
+            log.warn("Allowing insecure PayOS webhook because app.payment.webhook.allow-insecure=true");
             return rawData;
         }
 
@@ -157,15 +163,27 @@ public class PaymentWebhookController {
     }
 
     private Long parseOrderIdFromPayos(Map<String, Object> root, Map<String, Object> data) {
-        Long byOrderCode = parseLong(data.get("orderCode"));
-        if (byOrderCode != null) return byOrderCode;
-
         String desc = parseString(data.get("description"));
         Long byDesc = parseOrderIdFromDescription(desc);
         if (byDesc != null) return byDesc;
 
         String transferContent = parseString(root.get("transferContent"));
-        return parseOrderIdFromDescription(transferContent);
+        Long byTransferContent = parseOrderIdFromDescription(transferContent);
+        if (byTransferContent != null) return byTransferContent;
+
+        Long rawOrderCode = parseLong(data.get("orderCode"));
+        if (rawOrderCode == null) {
+            return null;
+        }
+        // New flow: PayOS orderCode = internalOrderId * 1_000_000 + suffix.
+        if (rawOrderCode >= 1_000_000L) {
+            long decodedOrderId = rawOrderCode / 1_000_000L;
+            if (decodedOrderId > 0) {
+                return decodedOrderId;
+            }
+        }
+        // Backward compatibility: older flow used orderCode == internal orderId.
+        return rawOrderCode;
     }
 
     private Long parseOrderIdFromDescription(String description) {
