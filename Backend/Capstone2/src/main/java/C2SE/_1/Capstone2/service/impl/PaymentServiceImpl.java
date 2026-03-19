@@ -48,7 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Value("${app.payment.bank.bin:970422}")
     private String bankBin;
-    @Value("${app.payment.bank.account:0123456789}")
+    @Value("${app.payment.bank.account:55777777686868}")
     private String bankAccount;
     @Value("${app.payment.bank.account-name:SMARTDSS CAFE}")
     private String bankAccountName;

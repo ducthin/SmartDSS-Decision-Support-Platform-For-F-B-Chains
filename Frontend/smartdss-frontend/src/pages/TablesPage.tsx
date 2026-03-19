@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleKey } from '@/utils/helpers';
+import { getApiErrorMessage } from '@/utils/helpers';
 import { tableService } from '@/services/tableService';
 import Pagination from '@/components/ui/Pagination';
 import type { DiningTable, DiningTableForm, PageResponse } from '@/types';
@@ -31,7 +32,7 @@ export default function TablesPage() {
       const res = await tableService.getAll(page, 12);
       setTables(res.data.data.content);
       setPageData(res.data.data);
-    } catch { toast.error('Lỗi tải danh sách bàn'); }
+    } catch (error) { toast.error(getApiErrorMessage(error, 'Lỗi tải danh sách bàn')); }
     finally { setLoading(false); }
   }, [page]);
 
@@ -61,7 +62,7 @@ export default function TablesPage() {
       }
       setShowModal(false);
       fetchTables();
-    } catch { toast.error('Lỗi lưu bàn'); }
+    } catch (error) { toast.error(getApiErrorMessage(error, 'Lỗi lưu bàn')); }
   };
 
   const deleteTable = async (id: number) => {
@@ -70,7 +71,7 @@ export default function TablesPage() {
       await tableService.delete(id);
       toast.success('Đã xóa bàn');
       fetchTables();
-    } catch { toast.error('Lỗi xóa bàn'); }
+    } catch (error) { toast.error(getApiErrorMessage(error, 'Lỗi xóa bàn')); }
   };
 
   const regenerateQr = async (id: number) => {
@@ -79,7 +80,7 @@ export default function TablesPage() {
       await tableService.regenerateQr(id);
       toast.success('Đã tạo mã QR mới');
       fetchTables();
-    } catch { toast.error('Lỗi tạo mã QR'); }
+    } catch (error) { toast.error(getApiErrorMessage(error, 'Lỗi tạo mã QR')); }
   };
 
   const getQrUrl = (t: DiningTable) => `${frontendUrl}/qr/${t.qrToken}`;
