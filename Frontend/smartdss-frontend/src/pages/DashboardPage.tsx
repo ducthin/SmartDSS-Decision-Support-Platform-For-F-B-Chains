@@ -32,7 +32,6 @@ export default function DashboardPage() {
   const role = getRoleKey(user?.roleName);
   const isManagerOrAdmin = role === 'ADMIN' || role === 'MANAGER';
   const [orders, setOrders] = useState<Order[]>([]);
-  const [dailySales, setDailySales] = useState<DailySalesReport[]>([]);
   const [hourlyData, setHourlyData] = useState<DailySalesReport[]>([]);
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
@@ -45,7 +44,6 @@ export default function DashboardPage() {
     ];
     if (isManagerOrAdmin) {
       promises.push(
-        reportService.dailySales().catch(() => ({ data: { data: [] } })),
         inventoryService.getAll(0, 100).catch(() => ({ data: { data: { content: [] } } })),
         reportService.hourlySales().catch(() => ({ data: { data: [] } })),
       );
@@ -54,10 +52,8 @@ export default function DashboardPage() {
       const ordersRes = results[0] as { data: { data: { content: Order[] } } };
       setOrders(ordersRes.data.data.content || []);
       if (isManagerOrAdmin) {
-        const salesRes = results[1] as { data: { data: DailySalesReport[] } };
-        const invRes = results[2] as { data: { data: { content: Inventory[] } } };
-        const hourlyRes = results[3] as { data: { data: DailySalesReport[] } };
-        setDailySales(salesRes.data.data || []);
+        const invRes = results[1] as { data: { data: { content: Inventory[] } } };
+        const hourlyRes = results[2] as { data: { data: DailySalesReport[] } };
         setInventory(invRes.data.data.content || []);
         setHourlyData(hourlyRes.data.data || []);
       }
@@ -103,10 +99,9 @@ export default function DashboardPage() {
 
   const todayOrders = orders.filter((o) => {
     const today = getLocalDateKey(new Date());
-    return o.createdAt?.startsWith(today);
+    return getLocalDateKey(new Date(o.createdAt)) === today;
   });
-  const todayKey = getLocalDateKey(new Date());
-  const todayRevenue = dailySales.find((d) => d.date === todayKey)?.totalRevenue ?? 0;
+  const todayRevenue = hourlyData.reduce((sum, item) => sum + (item.totalRevenue || 0), 0);
   const lowStockCount = inventory.filter((i) => i.quantity <= i.minimumStock).length;
   const pendingOrders = orders.filter((o) => o.status === ORDER_STATUS.PENDING || o.status === ORDER_STATUS.PREPARING);
 

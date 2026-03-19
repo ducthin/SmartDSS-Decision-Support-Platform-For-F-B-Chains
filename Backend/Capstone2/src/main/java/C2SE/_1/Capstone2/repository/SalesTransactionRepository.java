@@ -28,17 +28,26 @@ public interface SalesTransactionRepository extends JpaRepository<SalesTransacti
     @Query("SELECT st FROM SalesTransaction st WHERE st.cashier.id = :cashierId")
     List<SalesTransaction> findByCashierId(@Param("cashierId") Long cashierId);
 
-    @Query(value = "SELECT HOUR(st.created_at) as h, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
-           "FROM sales_transactions st WHERE st.created_at BETWEEN :start AND :end " +
-           "AND st.payment_method IN ('CASH', 'QR') " +
-           "GROUP BY HOUR(st.created_at) ORDER BY h", nativeQuery = true)
-    List<Object[]> findHourlySales(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    @Query("SELECT st FROM SalesTransaction st " +
+           "WHERE st.paymentMethod IN ('CASH', 'QR') " +
+           "AND COALESCE(st.paidAt, st.updatedAt, st.createdAt) BETWEEN :start AND :end")
+    List<SalesTransaction> findPaidTransactionsInRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query(value = "SELECT DATE(st.created_at) as d, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
-           "FROM sales_transactions st WHERE st.created_at BETWEEN :start AND :end " +
+    @Query(value = "SELECT HOUR(DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE)) as h, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
+           "FROM sales_transactions st WHERE DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE) BETWEEN :start AND :end " +
            "AND st.payment_method IN ('CASH', 'QR') " +
-           "GROUP BY DATE(st.created_at) ORDER BY d", nativeQuery = true)
-    List<Object[]> findDailySalesGrouped(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+           "GROUP BY HOUR(DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE)) ORDER BY h", nativeQuery = true)
+    List<Object[]> findHourlySales(@Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end,
+                                   @Param("tzMinutes") int tzMinutes);
+
+    @Query(value = "SELECT DATE(DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE)) as d, COUNT(*) as cnt, COALESCE(SUM(st.total_amount), 0) as rev " +
+           "FROM sales_transactions st WHERE DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE) BETWEEN :start AND :end " +
+           "AND st.payment_method IN ('CASH', 'QR') " +
+           "GROUP BY DATE(DATE_ADD(COALESCE(st.paid_at, st.updated_at, st.created_at), INTERVAL :tzMinutes MINUTE)) ORDER BY d", nativeQuery = true)
+    List<Object[]> findDailySalesGrouped(@Param("start") LocalDateTime start,
+                                         @Param("end") LocalDateTime end,
+                                         @Param("tzMinutes") int tzMinutes);
 
     @Query(value = "SELECT DATE(st.paid_at) as d, COUNT(*) as cnt, " +
             "COALESCE(SUM(st.net_amount), 0) as net, " +

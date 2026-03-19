@@ -5,6 +5,7 @@ import C2SE._1.Capstone2.dto.DailySalesReportDTO;
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.TaxReportItemDTO;
 import C2SE._1.Capstone2.dto.TaxReportResponseDTO;
+import C2SE._1.Capstone2.entity.SalesTransaction;
 import C2SE._1.Capstone2.mapper.InventoryMapper;
 import C2SE._1.Capstone2.repository.InventoryRepository;
 import C2SE._1.Capstone2.repository.SalesItemRepository;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,51 +36,73 @@ public class ReportServiceImpl implements ReportService {
     private final InventoryMapper inventoryMapper;
     @Value("${app.timezone:Asia/Ho_Chi_Minh}")
     private String appTimezone;
+    @Value("${app.db.timezone:UTC}")
+    private String dbTimezone;
 
     @Override
     public List<DailySalesReportDTO> getDailySalesReport(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now(resolveZoneId());
-        LocalDateTime start = target.atStartOfDay();
-        LocalDateTime end = target.atTime(LocalTime.MAX);
-
-        List<Object[]> results = salesTransactionRepository.findDailySalesGrouped(start, end);
-
-        if (results.isEmpty()) {
-            return List.of(DailySalesReportDTO.builder()
-                    .date(target.toString())
-                    .totalOrders(0L)
-                    .totalRevenue(BigDecimal.ZERO)
-                    .build());
-        }
-
-        Object[] row = results.get(0);
+        List<SalesTransaction> txList = fetchPaidTransactionsForDateRange(target, target);
+        long totalOrders = txList.stream()
+                .map(this::toAppBusinessDateTime)
+                .filter(Objects::nonNull)
+                .filter(dt -> dt.toLocalDate().equals(target))
+                .count();
+        BigDecimal totalRevenue = txList.stream()
+                .filter(tx -> {
+                    LocalDateTime dt = toAppBusinessDateTime(tx);
+                    return dt != null && dt.toLocalDate().equals(target);
+                })
+                .map(tx -> tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         return List.of(DailySalesReportDTO.builder()
                 .date(target.toString())
-                .totalOrders(((Number) row[1]).longValue())
-                .totalRevenue(toBigDecimal(row[2]))
+                .totalOrders(totalOrders)
+                .totalRevenue(totalRevenue)
                 .build());
     }
 
     @Override
     public List<DailySalesReportDTO> getHourlySalesReport(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now(resolveZoneId());
-        LocalDateTime start = target.atStartOfDay();
-        LocalDateTime end = target.atTime(LocalTime.MAX);
+        int maxDisplayHour = target.equals(LocalDate.now(resolveZoneId()))
+                ? LocalTime.now(resolveZoneId()).getHour()
+                : 23;
 
-        List<Object[]> results = salesTransactionRepository.findHourlySales(start, end);
+        List<SalesTransaction> txList = fetchPaidTransactionsForDateRange(target, target);
 
         Map<Integer, DailySalesReportDTO> hourMap = new HashMap<>();
-        for (Object[] row : results) {
-            int hour = ((Number) row[0]).intValue();
-            hourMap.put(hour, DailySalesReportDTO.builder()
-                    .date(String.format("%02d:00", hour))
-                    .totalOrders(((Number) row[1]).longValue())
-                    .totalRevenue(toBigDecimal(row[2]))
-                    .build());
+        for (SalesTransaction tx : txList) {
+            LocalDateTime businessTime = toAppBusinessDateTime(tx);
+            if (businessTime == null || !businessTime.toLocalDate().equals(target)) {
+                continue;
+            }
+            int hour = businessTime.getHour();
+            if (hour > maxDisplayHour) continue;
+            DailySalesReportDTO existing = hourMap.get(hour);
+            BigDecimal amount = tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount();
+            if (existing == null) {
+                hourMap.put(hour, DailySalesReportDTO.builder()
+                        .date(String.format("%02d:00", hour))
+                        .totalOrders(1L)
+                        .totalRevenue(amount)
+                        .build());
+            } else {
+                existing.setTotalOrders(existing.getTotalOrders() + 1);
+                existing.setTotalRevenue(existing.getTotalRevenue().add(amount));
+            }
         }
 
         List<DailySalesReportDTO> reports = new ArrayList<>();
         for (int h = 0; h < 24; h++) {
+            if (h > maxDisplayHour) {
+                reports.add(DailySalesReportDTO.builder()
+                        .date(String.format("%02d:00", h))
+                        .totalOrders(0L)
+                        .totalRevenue(BigDecimal.ZERO)
+                        .build());
+                continue;
+            }
             reports.add(hourMap.getOrDefault(h, DailySalesReportDTO.builder()
                     .date(String.format("%02d:00", h))
                     .totalOrders(0L)
@@ -92,19 +116,27 @@ public class ReportServiceImpl implements ReportService {
     public List<DailySalesReportDTO> getWeeklySalesReport(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now(resolveZoneId());
         LocalDate weekStart = target.minusDays(6);
-        LocalDateTime start = weekStart.atStartOfDay();
-        LocalDateTime end = target.atTime(LocalTime.MAX);
-
-        List<Object[]> results = salesTransactionRepository.findDailySalesGrouped(start, end);
+        List<SalesTransaction> txList = fetchPaidTransactionsForDateRange(weekStart, target);
 
         Map<String, DailySalesReportDTO> dateMap = new HashMap<>();
-        for (Object[] row : results) {
-            String dateStr = row[0].toString();
-            dateMap.put(dateStr, DailySalesReportDTO.builder()
-                    .date(dateStr)
-                    .totalOrders(((Number) row[1]).longValue())
-                    .totalRevenue(toBigDecimal(row[2]))
-                    .build());
+        for (SalesTransaction tx : txList) {
+            LocalDateTime businessTime = toAppBusinessDateTime(tx);
+            if (businessTime == null) continue;
+            LocalDate d = businessTime.toLocalDate();
+            if (d.isBefore(weekStart) || d.isAfter(target)) continue;
+            String dateStr = d.toString();
+            DailySalesReportDTO existing = dateMap.get(dateStr);
+            BigDecimal amount = tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount();
+            if (existing == null) {
+                dateMap.put(dateStr, DailySalesReportDTO.builder()
+                        .date(dateStr)
+                        .totalOrders(1L)
+                        .totalRevenue(amount)
+                        .build());
+            } else {
+                existing.setTotalOrders(existing.getTotalOrders() + 1);
+                existing.setTotalRevenue(existing.getTotalRevenue().add(amount));
+            }
         }
 
         List<DailySalesReportDTO> reports = new ArrayList<>();
@@ -204,5 +236,38 @@ public class ReportServiceImpl implements ReportService {
         } catch (Exception ex) {
             return ZoneId.of("Asia/Ho_Chi_Minh");
         }
+    }
+
+    private ZoneId resolveDbZoneId() {
+        try {
+            return ZoneId.of(dbTimezone);
+        } catch (Exception ex) {
+            return ZoneId.of("UTC");
+        }
+    }
+
+    private List<SalesTransaction> fetchPaidTransactionsForDateRange(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime appStart = fromDate.atStartOfDay();
+        LocalDateTime appEnd = toDate.atTime(LocalTime.MAX);
+        LocalDateTime dbStart = toDbLocalDateTime(appStart);
+        LocalDateTime dbEnd = toDbLocalDateTime(appEnd);
+        return salesTransactionRepository.findPaidTransactionsInRange(dbStart, dbEnd);
+    }
+
+    private LocalDateTime toDbLocalDateTime(LocalDateTime appLocalDateTime) {
+        ZoneId appZone = resolveZoneId();
+        ZoneId dbZone = resolveDbZoneId();
+        ZonedDateTime zoned = appLocalDateTime.atZone(appZone).withZoneSameInstant(dbZone);
+        return zoned.toLocalDateTime();
+    }
+
+    private LocalDateTime toAppBusinessDateTime(SalesTransaction tx) {
+        if (tx == null) return null;
+        LocalDateTime source = tx.getPaidAt() != null ? tx.getPaidAt()
+                : (tx.getUpdatedAt() != null ? tx.getUpdatedAt() : tx.getCreatedAt());
+        if (source == null) return null;
+        ZoneId dbZone = resolveDbZoneId();
+        ZoneId appZone = resolveZoneId();
+        return source.atZone(dbZone).withZoneSameInstant(appZone).toLocalDateTime();
     }
 }
