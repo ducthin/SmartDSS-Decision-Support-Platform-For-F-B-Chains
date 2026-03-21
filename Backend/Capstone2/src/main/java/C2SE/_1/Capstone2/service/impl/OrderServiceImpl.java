@@ -10,6 +10,7 @@ import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
 import C2SE._1.Capstone2.service.OrderService;
+import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final SalesTransactionRepository salesTransactionRepository;
     private final OrderMapper orderMapper;
     private final SimpMessagingTemplate messagingTemplate;
+    private final DrinkOrderPricingHelper drinkOrderPricingHelper;
     @Value("${app.tax.vat.rate-percent:8}")
     private BigDecimal vatRatePercent;
     @Value("${app.tax.vat.price-includes-vat:true}")
@@ -103,7 +105,12 @@ public class OrderServiceImpl implements OrderService {
             MenuItem menuItem = menuItemRepository.findById(itemDTO.getMenuItemId())
                     .orElseThrow(() -> new ResourceNotFoundException("MenuItem", "id", itemDTO.getMenuItemId()));
 
-            BigDecimal unitPrice = menuItem.getPrice();
+            DrinkOrderPricingHelper.ResolvedDrinkLine resolved = drinkOrderPricingHelper.resolve(
+                    menuItem,
+                    itemDTO.getSelectedSizeCode(),
+                    itemDTO.getSelectedToppingCodes());
+
+            BigDecimal unitPrice = resolved.unitPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemDTO.getQuantity()));
 
             OrderItem orderItem = OrderItem.builder()
@@ -112,6 +119,9 @@ public class OrderServiceImpl implements OrderService {
                     .quantity(itemDTO.getQuantity())
                     .unitPrice(unitPrice)
                     .subtotal(subtotal)
+                    .selectedSizeCode(resolved.sizeCode())
+                    .selectedSizeLabel(resolved.sizeLabel())
+                    .selectedToppingsJson(resolved.toppingsJson())
                     .build();
 
             orderItems.add(orderItem);
@@ -125,6 +135,9 @@ public class OrderServiceImpl implements OrderService {
 
         OrderDTO result = orderMapper.toDTO(orderRepository.save(order));
         messagingTemplate.convertAndSend("/topic/orders", result);
+        if (result.getQrClientSessionId() != null && !result.getQrClientSessionId().isBlank()) {
+            messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
+        }
         return result;
     }
 
@@ -166,6 +179,9 @@ public class OrderServiceImpl implements OrderService {
 
         OrderDTO result = orderMapper.toDTO(savedOrder);
         messagingTemplate.convertAndSend("/topic/orders", result);
+        if (result.getQrClientSessionId() != null && !result.getQrClientSessionId().isBlank()) {
+            messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
+        }
         return result;
     }
 

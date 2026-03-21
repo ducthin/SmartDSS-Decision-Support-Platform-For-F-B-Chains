@@ -37,6 +37,25 @@ public class MenuItem extends BaseEntity {
     @Column(nullable = false)
     private Boolean available = true;
 
+    /** When true, client must pick a size; optional toppings from {@link #drinkToppingsJson}. */
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean drink = false;
+
+    @Column(name = "drink_sizes_json", columnDefinition = "TEXT")
+    private String drinkSizesJson;
+
+    @Column(name = "drink_toppings_json", columnDefinition = "TEXT")
+    private String drinkToppingsJson;
+
+    @Builder.Default
+    @Column(name = "badge_new", nullable = false)
+    private Boolean badgeNew = false;
+
+    @Builder.Default
+    @Column(name = "badge_best_seller", nullable = false)
+    private Boolean badgeBestSeller = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

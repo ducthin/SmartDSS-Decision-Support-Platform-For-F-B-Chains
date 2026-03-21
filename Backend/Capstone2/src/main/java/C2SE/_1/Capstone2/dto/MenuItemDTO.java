@@ -3,6 +3,8 @@ package C2SE._1.Capstone2.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +35,22 @@ public class MenuItemDTO {
     private Long categoryId;
     private String categoryName;
     private List<RecipeDTO> recipes;
+
+    /** If true, POS/QR must send {@code selectedSizeCode} when ordering. */
+    private Boolean drink;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<DrinkSizeOptionDTO> drinkSizes;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<DrinkToppingOptionDTO> drinkToppings;
+
+    /** Hiển thị nhãn “Món mới” trên menu khách. */
+    private Boolean badgeNew;
+
+    /** Hiển thị nhãn “Best seller” trên menu khách. */
+    private Boolean badgeBestSeller;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

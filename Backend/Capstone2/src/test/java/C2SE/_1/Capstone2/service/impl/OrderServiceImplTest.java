@@ -7,6 +7,7 @@ import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -39,6 +41,7 @@ class OrderServiceImplTest {
     @Mock private SalesTransactionRepository salesTransactionRepository;
     @Mock private OrderMapper orderMapper;
     @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private DrinkOrderPricingHelper drinkOrderPricingHelper;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -59,6 +62,16 @@ class OrderServiceImplTest {
                 .id(1L).name("Cà phê sữa đá").price(BigDecimal.valueOf(29000))
                 .available(true).category(category)
                 .build();
+
+        lenient().when(drinkOrderPricingHelper.resolve(any(MenuItem.class), nullable(String.class), any()))
+                .thenAnswer(inv -> {
+                    MenuItem mi = inv.getArgument(0);
+                    BigDecimal p = mi.getPrice() != null ? mi.getPrice() : BigDecimal.ZERO;
+                    return new DrinkOrderPricingHelper.ResolvedDrinkLine(p, null, null, null);
+                });
+
+        ReflectionTestUtils.setField(orderService, "vatRatePercent", BigDecimal.valueOf(8));
+        ReflectionTestUtils.setField(orderService, "priceIncludesVat", true);
     }
 
     @Test

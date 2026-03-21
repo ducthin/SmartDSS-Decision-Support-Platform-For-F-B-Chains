@@ -10,7 +10,8 @@ import toast from 'react-hot-toast';
 import { StatusBadge } from './DashboardPage';
 import type { Order } from '@/types';
 import { ORDER_STATUS } from '@/utils/constants';
-import { calculateVatBreakdown, getApiErrorMessage, formatCurrency } from '@/utils/helpers';
+import { calculateVatBreakdown, getApiErrorMessage, formatCurrency, drinkCartLineKey, unitPriceWithDrinkOptions, formatOrderItemExtras } from '@/utils/helpers';
+import DrinkCustomizeModal from '@/components/DrinkCustomizeModal';
 import Pagination from '@/components/ui/Pagination';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,8 +23,11 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 interface CartItem {
+  key: string;
   menuItem: MenuItem;
   quantity: number;
+  selectedSizeCode?: string;
+  selectedToppingCodes?: string[];
 }
 
 type PosPaymentMethod = 'CASH' | 'QR';
@@ -46,9 +50,11 @@ export default function OrdersPage() {
   const canUsePOS = ['ADMIN', 'MANAGER', 'WAITER'].includes(userRole);
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">Đơn hàng</h1>
-        <div className="flex bg-gray-100 rounded-lg p-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Đơn hàng</h1>
+        </div>
+        <div className="flex shrink-0 bg-gray-100 rounded-lg p-1">
           {canUsePOS && (
             <button onClick={() => setTab('pos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pos' ? 'bg-white shadow' : ''}`}>POS</button>
           )}
@@ -65,6 +71,7 @@ function POSView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [drinkModalItem, setDrinkModalItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
@@ -86,20 +93,44 @@ function POSView() {
   const filteredItems = selectedCat ? menuItems.filter((m) => m.categoryId === selectedCat) : menuItems;
 
   const addToCart = (item: MenuItem) => {
+    if (item.drink) {
+      setDrinkModalItem(item);
+      return;
+    }
+    const key = drinkCartLineKey(item.id, undefined, []);
     setCart((prev) => {
-      const existing = prev.find((c) => c.menuItem.id === item.id);
-      if (existing) return prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      return [...prev, { menuItem: item, quantity: 1 }];
+      const existing = prev.find((c) => c.key === key);
+      if (existing) return prev.map((c) => (c.key === key ? { ...c, quantity: c.quantity + 1 } : c));
+      return [...prev, { key, menuItem: item, quantity: 1 }];
     });
   };
 
-  const updateQty = (id: number, delta: number) => {
-    setCart((prev) => prev.map((c) => c.menuItem.id === id ? { ...c, quantity: Math.max(1, c.quantity + delta) } : c));
+  const addDrinkLineToCart = (sizeCode: string, toppingCodes: string[]) => {
+    if (!drinkModalItem) return;
+    const item = drinkModalItem;
+    const key = drinkCartLineKey(item.id, sizeCode, toppingCodes);
+    setCart((prev) => {
+      const existing = prev.find((c) => c.key === key);
+      if (existing) return prev.map((c) => (c.key === key ? { ...c, quantity: c.quantity + 1 } : c));
+      return [...prev, { key, menuItem: item, quantity: 1, selectedSizeCode: sizeCode, selectedToppingCodes: toppingCodes }];
+    });
+    setDrinkModalItem(null);
   };
 
-  const removeFromCart = (id: number) => setCart((prev) => prev.filter((c) => c.menuItem.id !== id));
+  const updateQty = (lineKey: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((c) => (c.key === lineKey ? { ...c, quantity: Math.max(1, c.quantity + delta) } : c))
+        .filter((c) => c.quantity > 0),
+    );
+  };
 
-  const subtotal = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0);
+  const removeFromCart = (lineKey: string) => setCart((prev) => prev.filter((c) => c.key !== lineKey));
+
+  const subtotal = cart.reduce(
+    (s, c) => s + unitPriceWithDrinkOptions(c.menuItem, c.selectedSizeCode, c.selectedToppingCodes) * c.quantity,
+    0,
+  );
   const vat = calculateVatBreakdown(subtotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
 
 
@@ -107,7 +138,13 @@ function POSView() {
     if (cart.length === 0) return toast.error('Giỏ hàng trống');
     setSubmitting(true);
     const orderForm: OrderForm = {
-      orderItems: cart.map((c) => ({ menuItemId: c.menuItem.id, quantity: c.quantity })),
+      orderItems: cart.map((c) => ({
+        menuItemId: c.menuItem.id,
+        quantity: c.quantity,
+        ...(c.menuItem.drink && c.selectedSizeCode
+          ? { selectedSizeCode: c.selectedSizeCode, selectedToppingCodes: c.selectedToppingCodes || [] }
+          : {}),
+      })),
     };
     try {
       await orderService.create(orderForm);
@@ -124,6 +161,12 @@ function POSView() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <DrinkCustomizeModal
+        open={!!drinkModalItem}
+        item={drinkModalItem}
+        onClose={() => setDrinkModalItem(null)}
+        onConfirm={addDrinkLineToCart}
+      />
       {/* Menu */}
       <div className="lg:col-span-2 space-y-4">
         {/* Category filter */}
@@ -167,20 +210,45 @@ function POSView() {
           <p className="text-sm text-gray-400 text-center py-8">Chọn món để thêm vào giỏ</p>
         ) : (
           <div className="space-y-3">
-            {cart.map((c) => (
-              <div key={c.menuItem.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.menuItem.name}</p>
-                  <p className="text-xs text-gray-500">{formatCurrency(c.menuItem.price)}</p>
+            {cart.map((c) => {
+              const lineUnit = unitPriceWithDrinkOptions(c.menuItem, c.selectedSizeCode, c.selectedToppingCodes);
+              const sizeLabel = c.menuItem.drinkSizes?.find((s) => s.code === c.selectedSizeCode)?.label;
+              const extras =
+                c.menuItem.drink && (sizeLabel || (c.selectedToppingCodes?.length ?? 0) > 0)
+                  ? formatOrderItemExtras({
+                      selectedSizeLabel: sizeLabel,
+                      selectedToppings: (c.selectedToppingCodes || [])
+                        .map((code) => {
+                          const t = c.menuItem.drinkToppings?.find((x) => x.code === code);
+                          return t ? { label: t.label } : null;
+                        })
+                        .filter(Boolean) as { label: string }[],
+                    })
+                  : '';
+              return (
+                <div key={c.key} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {c.menuItem.name}
+                      {extras && <span className="text-gray-500 font-normal">{extras}</span>}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatCurrency(lineUnit)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={() => updateQty(c.key, -1)} className="p-1 rounded hover:bg-gray-200">
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium">{c.quantity}</span>
+                    <button type="button" onClick={() => updateQty(c.key, 1)} className="p-1 rounded hover:bg-gray-200">
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => removeFromCart(c.key)} className="p-1 rounded hover:bg-red-50 text-red-500">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => updateQty(c.menuItem.id, -1)} className="p-1 rounded hover:bg-gray-200"><Minus size={14} /></button>
-                  <span className="w-8 text-center text-sm font-medium">{c.quantity}</span>
-                  <button onClick={() => updateQty(c.menuItem.id, 1)} className="p-1 rounded hover:bg-gray-200"><Plus size={14} /></button>
-                </div>
-                <button onClick={() => removeFromCart(c.menuItem.id)} className="p-1 rounded hover:bg-red-50 text-red-500"><Trash2 size={14} /></button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -497,7 +565,11 @@ function OrderListView() {
               <tr key={order.id} className="border-t border-gray-100">
                 <td className="py-3 px-4">{order.id}</td>
                 <td className="py-3 px-4 text-gray-600">
-                  <div>{order.orderItems?.map((i) => `${i.menuItemName} x${i.quantity}`).join(', ')}</div>
+                  <div>
+                    {order.orderItems
+                      ?.map((i) => `${i.menuItemName}${formatOrderItemExtras(i)} x${i.quantity}`)
+                      .join(', ')}
+                  </div>
                   {order.note && (
                     <div className="text-sm text-orange-600 mt-1 italic">
                       Ghi chú: {order.note}
@@ -754,7 +826,10 @@ function OrderListView() {
                 <tbody>
                   {billOrder.orderItems.map((item, idx) => (
                     <tr key={`${item.menuItemId}-${idx}`} className="border-t">
-                      <td className="px-3 py-2">{item.menuItemName || `Món #${item.menuItemId}`}</td>
+                      <td className="px-3 py-2">
+                        {item.menuItemName || `Món #${item.menuItemId}`}
+                        {formatOrderItemExtras(item)}
+                      </td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
                       <td className="px-3 py-2 text-right">{formatCurrency(item.unitPrice ?? 0)}</td>
                       <td className="px-3 py-2 text-right">{formatCurrency(item.subtotal ?? (item.unitPrice ?? 0) * item.quantity)}</td>
@@ -806,7 +881,7 @@ function OrderListView() {
 function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus): string {
   const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
   const rows = order.orderItems.map((item) => {
-    const itemName = item.menuItemName || `Món #${item.menuItemId}`;
+    const itemName = (item.menuItemName || `Món #${item.menuItemId}`) + formatOrderItemExtras(item);
     const qty = item.quantity ?? 0;
     const unitPrice = item.unitPrice ?? 0;
     const subtotal = item.subtotal ?? unitPrice * qty;

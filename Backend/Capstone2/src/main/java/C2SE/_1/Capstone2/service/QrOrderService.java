@@ -17,7 +17,7 @@ public interface QrOrderService {
 
     OrderDTO placeOrder(String qrToken, QrOrderDTO qrOrderDTO);
 
-    List<OrderDTO> getTableOrders(String qrToken);
+    List<OrderDTO> getTableOrders(String qrToken, String clientSessionId);
 
     StaffCallDTO callStaff(String qrToken, QrStaffCallDTO callDTO);
 }

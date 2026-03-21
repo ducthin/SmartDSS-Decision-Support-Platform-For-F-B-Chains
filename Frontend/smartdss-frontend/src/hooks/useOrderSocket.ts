@@ -2,7 +2,29 @@ import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import type { Order } from '@/types';
 
-export function useOrderSocket(onOrderUpdate: (data?: Order) => void) {
+type UseOrderSocketOptions = {
+  /** QR/public pages should not send JWT on WS CONNECT */
+  publicMode?: boolean;
+  /** Custom STOMP topic; default for staff dashboards is /topic/orders */
+  topicDestination?: string;
+};
+
+function isLikelyJwtExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return false;
+    const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(payloadBase64)) as { exp?: number };
+    if (!payload.exp) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    // 5s buffer
+    return payload.exp <= nowSec + 5;
+  } catch {
+    return false;
+  }
+}
+
+export function useOrderSocket(onOrderUpdate: (data?: Order) => void, options?: UseOrderSocketOptions) {
   const callbackRef = useRef(onOrderUpdate);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -11,11 +33,14 @@ export function useOrderSocket(onOrderUpdate: (data?: Order) => void) {
   }, [onOrderUpdate]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const publicMode = options?.publicMode === true;
+    const token = publicMode ? null : localStorage.getItem('token');
+    const canUseBearer = !!token && !isLikelyJwtExpired(token);
+    const destination = options?.topicDestination || '/topic/orders';
 
     const client = new Client({
       brokerURL: import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws',
-      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      connectHeaders: canUseBearer ? { Authorization: `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       onStompError: (frame) => {
         console.error('STOMP error', frame.headers['message'], frame.body);
@@ -24,7 +49,7 @@ export function useOrderSocket(onOrderUpdate: (data?: Order) => void) {
         console.error('WebSocket error', evt);
       },
       onConnect: () => {
-        const subscription = client.subscribe('/topic/orders', (message) => {
+        const subscription = client.subscribe(destination, (message) => {
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           let orderData: Order | undefined;
           try {
@@ -53,5 +78,5 @@ export function useOrderSocket(onOrderUpdate: (data?: Order) => void) {
       sub?.unsubscribe?.();
       client.deactivate();
     };
-  }, []);
+  }, [options?.publicMode, options?.topicDestination]);
 }

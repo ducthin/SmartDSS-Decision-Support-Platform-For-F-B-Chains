@@ -38,8 +38,10 @@ public class QrOrderController {
     }
 
     @GetMapping("/{token}/orders")
-    public ResponseEntity<ApiResponse<List<OrderDTO>>> getTableOrders(@PathVariable String token) {
-        return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token)));
+    public ResponseEntity<ApiResponse<List<OrderDTO>>> getTableOrders(
+            @PathVariable String token,
+            @RequestParam(name = "sessionId", required = false) String sessionId) {
+        return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token, sessionId)));
     }
 
     @PostMapping("/{token}/call")

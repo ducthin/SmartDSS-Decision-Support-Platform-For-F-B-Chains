@@ -110,7 +110,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"note\": \"Ít đá\",\n  \"orderItems\": [\n    { \"menuItemId\": 1, \"quantity\": 1 },\n    { \"menuItemId\": 2, \"quantity\": 2 }\n  ]\n}"
+              "raw": "{\n  \"clientSessionId\": \"{{qrClientSession}}\",\n  \"note\": \"Ít đá\",\n  \"orderItems\": [\n    { \"menuItemId\": 1, \"quantity\": 1 },\n    { \"menuItemId\": 2, \"quantity\": 2 }\n  ]\n}"
             },
             "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/order"
           }
@@ -120,7 +120,7 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/orders"
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/orders?sessionId={{qrClientSession}}"
           }
         },
         {

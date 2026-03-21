@@ -34,6 +34,13 @@ public class Order extends BaseEntity {
     @Column(length = 50)
     private String tableNumber;
 
+    /**
+     * Phiên khách quét QR (UUID từ trình duyệt). Đơn POS thường để null.
+     * Dùng để tab "Đơn của tôi" chỉ hiện đơn của đúng người/điện thoại đặt.
+     */
+    @Column(name = "qr_client_session_id", length = 64)
+    private String qrClientSessionId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

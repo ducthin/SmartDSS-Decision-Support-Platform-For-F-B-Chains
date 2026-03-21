@@ -5,9 +5,12 @@ import C2SE._1.Capstone2.entity.*;
 import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.InsufficientStockException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
+import C2SE._1.Capstone2.mapper.MenuItemMapper;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
 import C2SE._1.Capstone2.service.QrOrderService;
+import C2SE._1.Capstone2.util.DrinkOptionsJsonMapper;
+import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,9 @@ public class QrOrderServiceImpl implements QrOrderService {
     private final InventoryRepository inventoryRepository;
     private final OrderMapper orderMapper;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MenuItemMapper menuItemMapper;
+    private final DrinkOptionsJsonMapper drinkOptionsJsonMapper;
+    private final DrinkOrderPricingHelper drinkOrderPricingHelper;
 
     private DiningTable validateAndGetTable(String qrToken) {
         DiningTable table = diningTableRepository.findByQrToken(qrToken)
@@ -58,17 +64,13 @@ public class QrOrderServiceImpl implements QrOrderService {
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getMenuForTable(String qrToken) {
         validateAndGetTable(qrToken);
-        List<MenuItem> items = menuItemRepository.findByAvailableTrue();
-        return items.stream().map(item -> MenuItemDTO.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .description(item.getDescription())
-                .price(item.getPrice())
-                .imageUrl(item.getImageUrl())
-                .available(item.getAvailable())
-                .categoryId(item.getCategory().getId())
-                .categoryName(item.getCategory().getName())
-                .build()).toList();
+        return menuItemRepository.findByAvailableTrue().stream()
+                .map(item -> {
+                    MenuItemDTO dto = menuItemMapper.toDTO(item);
+                    drinkOptionsJsonMapper.attachDrinkLists(dto, item);
+                    return dto;
+                })
+                .toList();
     }
 
     @Override
@@ -79,6 +81,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                 .status(OrderStatus.PENDING)
                 .note(qrOrderDTO.getNote())
                 .tableNumber(table.getName())
+                .qrClientSessionId(qrOrderDTO.getClientSessionId().trim())
                 .createdBy(null)
                 .totalAmount(BigDecimal.ZERO)
                 .build();
@@ -94,7 +97,12 @@ public class QrOrderServiceImpl implements QrOrderService {
                 throw new BadRequestException("Món \"" + menuItem.getName() + "\" hiện không còn phục vụ");
             }
 
-            BigDecimal unitPrice = menuItem.getPrice();
+            DrinkOrderPricingHelper.ResolvedDrinkLine resolved = drinkOrderPricingHelper.resolve(
+                    menuItem,
+                    itemDTO.getSelectedSizeCode(),
+                    itemDTO.getSelectedToppingCodes());
+
+            BigDecimal unitPrice = resolved.unitPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemDTO.getQuantity()));
 
             OrderItem orderItem = OrderItem.builder()
@@ -103,6 +111,9 @@ public class QrOrderServiceImpl implements QrOrderService {
                     .quantity(itemDTO.getQuantity())
                     .unitPrice(unitPrice)
                     .subtotal(subtotal)
+                    .selectedSizeCode(resolved.sizeCode())
+                    .selectedSizeLabel(resolved.sizeLabel())
+                    .selectedToppingsJson(resolved.toppingsJson())
                     .build();
 
             orderItems.add(orderItem);
@@ -117,16 +128,30 @@ public class QrOrderServiceImpl implements QrOrderService {
         Order saved = orderRepository.save(order);
         OrderDTO result = orderMapper.toDTO(saved);
         messagingTemplate.convertAndSend("/topic/orders", result);
+        if (result.getQrClientSessionId() != null && !result.getQrClientSessionId().isBlank()) {
+            messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
+        }
         return result;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrderDTO> getTableOrders(String qrToken) {
+    public List<OrderDTO> getTableOrders(String qrToken, String clientSessionId) {
         DiningTable table = diningTableRepository.findByQrToken(qrToken)
                 .orElseThrow(() -> new ResourceNotFoundException("DiningTable", "qrToken", qrToken));
-        List<Order> orders = orderRepository.findByTableNumberOrderByCreatedAtDesc(table.getName());
-        return orderMapper.toDTOList(orders);
+        if (clientSessionId == null || clientSessionId.isBlank()) {
+            return List.of();
+        }
+        String sid = clientSessionId.trim();
+        if (sid.length() < 8 || sid.length() > 64 || !sid.matches("[a-zA-Z0-9\\-]+")) {
+            return List.of();
+        }
+        List<Order> orders = orderRepository.findByTableNumberAndQrClientSessionIdOrderByCreatedAtDesc(table.getName(), sid);
+        List<OrderDTO> dtos = orderMapper.toDTOList(orders);
+        // Lọc lần 2 phòng query/Spring Data lệch — không bao giờ trả nhầm đơn bàn khác session
+        return dtos.stream()
+                .filter(d -> d.getQrClientSessionId() != null && sid.equals(d.getQrClientSessionId()))
+                .toList();
     }
 
     @Override

@@ -43,4 +43,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Order> findByTableNumberOrderByCreatedAtDesc(String tableNumber);
+
+    @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+    List<Order> findByTableNumberAndQrClientSessionIdOrderByCreatedAtDesc(String tableNumber, String qrClientSessionId);
 }

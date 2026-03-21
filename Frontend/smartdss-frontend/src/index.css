@@ -5,3 +5,12 @@
     @apply bg-gray-50 text-gray-900 antialiased;
   }
 }
+
+/* QR menu: ẩn thanh cuộn ngang danh mục */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

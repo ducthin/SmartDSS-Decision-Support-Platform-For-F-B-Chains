@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { menuService, categoryService, recipeService } from '@/services/menuService';
-import type { MenuItem, MenuItemForm, Category, PageResponse, Recipe } from '@/types';
+import type { MenuItem, MenuItemForm, Category, PageResponse, Recipe, DrinkSizeOption, DrinkToppingOption } from '@/types';
 import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
@@ -9,7 +9,19 @@ import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/contexts/AuthContext';
 
-const emptyForm: MenuItemForm = { name: '', description: '', price: 0, imageUrl: '', available: true, categoryId: 0 };
+const emptyForm: MenuItemForm = {
+  name: '',
+  description: '',
+  price: 0,
+  imageUrl: '',
+  available: true,
+  categoryId: 0,
+  drink: false,
+  drinkSizes: [],
+  drinkToppings: [],
+  badgeNew: false,
+  badgeBestSeller: false,
+};
 
 export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -61,7 +73,19 @@ export default function MenuPage() {
   const openEdit = (item: MenuItem) => {
     if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
     setEditing(item);
-    setForm({ name: item.name, description: item.description, price: item.price, imageUrl: item.imageUrl, available: item.available, categoryId: item.categoryId });
+    setForm({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      available: item.available,
+      categoryId: item.categoryId,
+      drink: item.drink ?? false,
+      drinkSizes: item.drinkSizes?.length ? item.drinkSizes.map((s) => ({ ...s })) : [],
+      drinkToppings: item.drinkToppings?.length ? item.drinkToppings.map((t) => ({ ...t })) : [],
+      badgeNew: item.badgeNew ?? false,
+      badgeBestSeller: item.badgeBestSeller ?? false,
+    });
     setShowModal(true);
   };
 
@@ -70,6 +94,9 @@ export default function MenuPage() {
     if (!form.name.trim()) return toast.error('Tên món không được trống');
     if (form.price <= 0) return toast.error('Giá phải > 0');
     if (!form.categoryId) return toast.error('Chọn danh mục');
+    if (form.drink && (!form.drinkSizes || form.drinkSizes.length === 0)) {
+      return toast.error('Đồ uống cần ít nhất một size (kích cỡ)');
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -175,7 +202,14 @@ export default function MenuPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{item.categoryName}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {item.categoryName}
+                      {item.drink && (
+                        <span className="ml-2 text-amber-700 font-medium">· Đồ uống (size/topping)</span>
+                      )}
+                      {item.badgeNew && <span className="ml-2 text-rose-600 font-medium">· Món mới</span>}
+                      {item.badgeBestSeller && <span className="ml-2 text-amber-600 font-medium">· Best seller</span>}
+                    </p>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {item.available ? 'Còn bán' : 'Hết hàng'}
@@ -248,6 +282,180 @@ export default function MenuPage() {
               className="rounded border-gray-300" />
             <label htmlFor="available" className="text-sm text-gray-700">Còn bán</label>
           </div>
+          <div className="flex flex-wrap gap-4 border-t pt-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!form.badgeNew}
+                onChange={(e) => setForm({ ...form, badgeNew: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-700">Món mới (⭐ menu QR)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!form.badgeBestSeller}
+                onChange={(e) => setForm({ ...form, badgeBestSeller: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-700">Best seller (🏆 menu QR)</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-2 border-t pt-3">
+            <input
+              type="checkbox"
+              id="drink"
+              checked={!!form.drink}
+              onChange={(e) => {
+                const drink = e.target.checked;
+                setForm((f) => ({
+                  ...f,
+                  drink,
+                  drinkSizes:
+                    drink && (!f.drinkSizes || f.drinkSizes.length === 0)
+                      ? [{ code: 'M', label: 'Vừa', priceExtra: 0 }]
+                      : drink
+                        ? f.drinkSizes
+                        : [],
+                  drinkToppings: drink ? f.drinkToppings : [],
+                }));
+              }}
+              className="rounded border-gray-300"
+            />
+            <label htmlFor="drink" className="text-sm text-gray-700">
+              Đồ uống — khách chọn size (bắt buộc) và topping (tuỳ chọn)
+            </label>
+          </div>
+          {form.drink && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-4">
+              <div>
+                <div className="text-sm font-medium text-gray-800 mb-2">Danh sách size</div>
+                <p className="text-xs text-gray-500 mb-2">Mã (vd: S, M, L) dùng khi đặt hàng; phụ phí cộng vào giá gốc món.</p>
+                {(form.drinkSizes || []).map((row, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
+                    <input
+                      placeholder="Mã"
+                      value={row.code}
+                      onChange={(e) => {
+                        const next = [...(form.drinkSizes || [])] as DrinkSizeOption[];
+                        next[idx] = { ...next[idx], code: e.target.value };
+                        setForm({ ...form, drinkSizes: next });
+                      }}
+                      className="col-span-3 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <input
+                      placeholder="Tên hiển thị"
+                      value={row.label}
+                      onChange={(e) => {
+                        const next = [...(form.drinkSizes || [])] as DrinkSizeOption[];
+                        next[idx] = { ...next[idx], label: e.target.value };
+                        setForm({ ...form, drinkSizes: next });
+                      }}
+                      className="col-span-5 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Phụ phí"
+                      value={row.priceExtra}
+                      onChange={(e) => {
+                        const next = [...(form.drinkSizes || [])] as DrinkSizeOption[];
+                        next[idx] = { ...next[idx], priceExtra: Number(e.target.value) };
+                        setForm({ ...form, drinkSizes: next });
+                      }}
+                      className="col-span-3 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          drinkSizes: (form.drinkSizes || []).filter((_, i) => i !== idx),
+                        })
+                      }
+                      className="col-span-1 text-red-500 text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      drinkSizes: [...(form.drinkSizes || []), { code: '', label: '', priceExtra: 0 }],
+                    })
+                  }
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  + Thêm size
+                </button>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-800 mb-2">Topping (tuỳ chọn)</div>
+                {(form.drinkToppings || []).map((row, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
+                    <input
+                      placeholder="Mã"
+                      value={row.code}
+                      onChange={(e) => {
+                        const next = [...(form.drinkToppings || [])] as DrinkToppingOption[];
+                        next[idx] = { ...next[idx], code: e.target.value };
+                        setForm({ ...form, drinkToppings: next });
+                      }}
+                      className="col-span-3 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <input
+                      placeholder="Tên"
+                      value={row.label}
+                      onChange={(e) => {
+                        const next = [...(form.drinkToppings || [])] as DrinkToppingOption[];
+                        next[idx] = { ...next[idx], label: e.target.value };
+                        setForm({ ...form, drinkToppings: next });
+                      }}
+                      className="col-span-5 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Giá"
+                      value={row.price}
+                      onChange={(e) => {
+                        const next = [...(form.drinkToppings || [])] as DrinkToppingOption[];
+                        next[idx] = { ...next[idx], price: Number(e.target.value) };
+                        setForm({ ...form, drinkToppings: next });
+                      }}
+                      className="col-span-3 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          drinkToppings: (form.drinkToppings || []).filter((_, i) => i !== idx),
+                        })
+                      }
+                      className="col-span-1 text-red-500 text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      drinkToppings: [...(form.drinkToppings || []), { code: '', label: '', price: 0 }],
+                    })
+                  }
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  + Thêm topping
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex gap-3 justify-end">
             <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
             <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">

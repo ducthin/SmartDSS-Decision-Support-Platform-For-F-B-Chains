@@ -4,8 +4,11 @@ import C2SE._1.Capstone2.dto.*;
 import C2SE._1.Capstone2.entity.*;
 import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
+import C2SE._1.Capstone2.mapper.MenuItemMapper;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.util.DrinkOptionsJsonMapper;
+import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +36,9 @@ class QrOrderServiceImplTest {
     @Mock private InventoryRepository inventoryRepository;
     @Mock private OrderMapper orderMapper;
     @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private MenuItemMapper menuItemMapper;
+    @Mock private DrinkOptionsJsonMapper drinkOptionsJsonMapper;
+    @Mock private DrinkOrderPricingHelper drinkOrderPricingHelper;
 
     @InjectMocks
     private QrOrderServiceImpl qrOrderService;
@@ -50,6 +56,13 @@ class QrOrderServiceImplTest {
                 .id(1L).name("Cà phê sữa đá").price(BigDecimal.valueOf(29000))
                 .available(true).category(cat)
                 .build();
+
+        lenient().when(drinkOrderPricingHelper.resolve(any(MenuItem.class), nullable(String.class), any()))
+                .thenAnswer(inv -> {
+                    MenuItem mi = inv.getArgument(0);
+                    BigDecimal p = mi.getPrice() != null ? mi.getPrice() : BigDecimal.ZERO;
+                    return new DrinkOrderPricingHelper.ResolvedDrinkLine(p, null, null, null);
+                });
     }
 
     @Test
@@ -90,6 +103,7 @@ class QrOrderServiceImplTest {
     @DisplayName("Đặt hàng QR thành công")
     void placeOrder_success() {
         QrOrderDTO qrOrder = QrOrderDTO.builder()
+                .clientSessionId("sess-test-uuid-001")
                 .note("Ít đường")
                 .orderItems(List.of(OrderItemDTO.builder().menuItemId(1L).quantity(2).build()))
                 .build();
@@ -120,6 +134,7 @@ class QrOrderServiceImplTest {
         testMenuItem.setAvailable(false);
 
         QrOrderDTO qrOrder = QrOrderDTO.builder()
+                .clientSessionId("sess-test-uuid-002")
                 .orderItems(List.of(OrderItemDTO.builder().menuItemId(1L).quantity(1).build()))
                 .build();
 

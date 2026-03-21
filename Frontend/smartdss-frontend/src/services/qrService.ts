@@ -14,8 +14,10 @@ export const qrService = {
     qrApi.get<ApiResponse<MenuItem[]>>(`/${token}/menu`),
   placeOrder: (token: string, data: QrOrderForm) =>
     qrApi.post<ApiResponse<Order>>(`/${token}/order`, data),
-  getOrders: (token: string) =>
-    qrApi.get<ApiResponse<Order[]>>(`/${token}/orders?_t=${Date.now()}`),
+  getOrders: (token: string, clientSessionId: string) =>
+    qrApi.get<ApiResponse<Order[]>>(`/${token}/orders`, {
+      params: { sessionId: clientSessionId, _t: Date.now() },
+    }),
   callStaff: (token: string, data?: QrStaffCallForm) =>
     qrApi.post<ApiResponse<StaffCall>>(`/${token}/call`, data || {}),
   submitFeedback: (token: string, data: QrFeedbackForm) => {

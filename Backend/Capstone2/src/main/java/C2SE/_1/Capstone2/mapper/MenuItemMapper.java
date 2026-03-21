@@ -11,6 +11,8 @@ public interface MenuItemMapper {
 
     @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(target = "drinkSizes", ignore = true)
+    @Mapping(target = "drinkToppings", ignore = true)
     MenuItemDTO toDTO(MenuItem menuItem);
 
     List<MenuItemDTO> toDTOList(List<MenuItem> menuItems);
@@ -19,6 +21,11 @@ public interface MenuItemMapper {
     @Mapping(target = "recipes", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "drinkSizesJson", ignore = true)
+    @Mapping(target = "drinkToppingsJson", ignore = true)
+    @Mapping(target = "drink", source = "drink", defaultExpression = "java(Boolean.FALSE)")
+    @Mapping(target = "badgeNew", source = "badgeNew", defaultExpression = "java(Boolean.FALSE)")
+    @Mapping(target = "badgeBestSeller", source = "badgeBestSeller", defaultExpression = "java(Boolean.FALSE)")
     MenuItem toEntity(MenuItemDTO menuItemDTO);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -26,5 +33,7 @@ public interface MenuItemMapper {
     @Mapping(target = "recipes", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "drinkSizesJson", ignore = true)
+    @Mapping(target = "drinkToppingsJson", ignore = true)
     void updateEntityFromDTO(MenuItemDTO dto, @MappingTarget MenuItem menuItem);
 }

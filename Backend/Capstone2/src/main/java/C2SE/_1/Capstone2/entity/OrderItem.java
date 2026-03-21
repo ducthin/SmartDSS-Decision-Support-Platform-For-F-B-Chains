@@ -35,4 +35,13 @@ public class OrderItem extends BaseEntity {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(name = "selected_size_code", length = 50)
+    private String selectedSizeCode;
+
+    @Column(name = "selected_size_label", length = 100)
+    private String selectedSizeLabel;
+
+    @Column(name = "selected_toppings_json", columnDefinition = "TEXT")
+    private String selectedToppingsJson;
 }

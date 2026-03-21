@@ -64,6 +64,19 @@ export interface CategoryForm {
   description: string;
 }
 
+// Drink options (when menu item is a beverage)
+export interface DrinkSizeOption {
+  code: string;
+  label: string;
+  priceExtra: number;
+}
+
+export interface DrinkToppingOption {
+  code: string;
+  label: string;
+  price: number;
+}
+
 // Menu Item
 export interface MenuItem {
   id: number;
@@ -74,6 +87,14 @@ export interface MenuItem {
   available: boolean;
   categoryId: number;
   categoryName: string;
+  /** When true, orders must include selectedSizeCode; toppings optional. */
+  drink?: boolean;
+  drinkSizes?: DrinkSizeOption[];
+  drinkToppings?: DrinkToppingOption[];
+  /** Nhãn “Món mới” trên menu */
+  badgeNew?: boolean;
+  /** Nhãn “Best seller” */
+  badgeBestSeller?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -85,6 +106,11 @@ export interface MenuItemForm {
   imageUrl?: string;
   available: boolean;
   categoryId: number;
+  drink?: boolean;
+  drinkSizes?: DrinkSizeOption[];
+  drinkToppings?: DrinkToppingOption[];
+  badgeNew?: boolean;
+  badgeBestSeller?: boolean;
 }
 
 // Ingredient
@@ -151,6 +177,12 @@ export interface InventoryItemForm {
 // Order
 export type OrderStatus = 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
 
+export interface OrderToppingLine {
+  code: string;
+  label: string;
+  price: number;
+}
+
 export interface OrderItem {
   id?: number;
   menuItemId: number;
@@ -158,6 +190,10 @@ export interface OrderItem {
   quantity: number;
   unitPrice?: number;
   subtotal?: number;
+  selectedSizeCode?: string;
+  selectedSizeLabel?: string;
+  /** Response only — snapshot of toppings on the line */
+  selectedToppings?: OrderToppingLine[];
 }
 
 export interface Order {
@@ -166,14 +202,23 @@ export interface Order {
   totalAmount: number;
   status: OrderStatus;
   tableNumber?: string;
+  /** Đơn QR: khớp với phiên trình duyệt */
+  qrClientSessionId?: string | null;
   createdByName: string;
   createdAt: string;
   note?: string;
   updatedAt: string;
 }
 
+export interface OrderLineRequest {
+  menuItemId: number;
+  quantity: number;
+  selectedSizeCode?: string;
+  selectedToppingCodes?: string[];
+}
+
 export interface OrderForm {
-  orderItems: { menuItemId: number; quantity: number }[];
+  orderItems: OrderLineRequest[];
 }
 
 // Dining Table
@@ -193,8 +238,9 @@ export interface DiningTableForm {
 
 // QR Order
 export interface QrOrderForm {
+  clientSessionId: string;
   note?: string;
-  orderItems: { menuItemId: number; quantity: number }[];
+  orderItems: OrderLineRequest[];
 }
 
 // Staff Call (from QR)

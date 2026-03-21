@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
@@ -19,6 +20,11 @@ public class OrderDTO {
     private BigDecimal totalAmount;
     private String note;
     private String tableNumber;
+    /**
+     * Đơn QR: mã phiên thiết bị. Luôn xuất hiện trong JSON (kể cả null) để client lọc đúng.
+     */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private String qrClientSessionId;
     private Long createdById;
     private String createdByName;
 
