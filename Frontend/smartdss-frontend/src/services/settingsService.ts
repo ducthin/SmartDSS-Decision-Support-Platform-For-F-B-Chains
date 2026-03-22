@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse } from '@/types';
+import type { ApiResponse, StoreLocation, StoreLocationUpdate } from '@/types';
 
 export interface StaffCallSoundSetting {
   soundUrl: string | null;
@@ -28,5 +28,9 @@ export const settingsService = {
   },
   clearStaffCallSound: () =>
     api.delete<ApiResponse<StaffCallSoundSetting>>('/settings/staff-call-sound'),
+  getStoreLocation: () =>
+    api.get<ApiResponse<StoreLocation>>('/settings/store-location'),
+  updateStoreLocation: (payload: StoreLocationUpdate) =>
+    api.put<ApiResponse<StoreLocation>>('/settings/store-location', payload),
 };
 

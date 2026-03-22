@@ -140,6 +140,7 @@ public class SecurityConfig {
                                 RoleName.WAITER.name()
                         )
                         .requestMatchers(HttpMethod.POST, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
 
                         // Sales

@@ -332,6 +332,19 @@ export interface TaxPolicy {
   priceIncludesVat: boolean;
 }
 
+// Settings
+export interface StoreLocation {
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+}
+
+export interface StoreLocationUpdate {
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+}
+
 export type PaymentState = 'PENDING' | 'PAID';
 export type PaymentMethod = 'PENDING' | 'CASH' | 'QR';
 
@@ -453,4 +466,24 @@ export interface HolidayCalendarForm {
   holidayType: HolidayType;
   recurring: boolean;
   description: string;
+}
+
+export type AreaBusynessLevel = 'IT_DONG' | 'TRUNG_BINH' | 'DONG_DUC';
+export type AreaBusynessSourceType = 'REALTIME' | 'CACHE' | 'FALLBACK';
+
+export interface AreaBusyness {
+  level: AreaBusynessLevel;
+  score: number;
+  poiCount: number;
+  foodCount: number;
+  transitCount: number;
+  commerceCount: number;
+  educationCount: number;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  recommendation: string;
+  source: string;
+  sourceType?: AreaBusynessSourceType;
+  analyzedAt: string;
 }

@@ -10,9 +10,11 @@ import { getRoleKey } from '@/utils/helpers';
 import { weatherService } from '@/services/weatherService';
 import { eventService } from '@/services/eventService';
 import { holidayService } from '@/services/holidayService';
+import { areaBusynessService } from '@/services/areaBusynessService';
 import type {
   WeatherData, Event, EventForm, EventType, ImpactLevel,
   HolidayCalendar, HolidayCalendarForm, HolidayType,
+  AreaBusyness,
 } from '@/types';
 import WeatherTab from '@/components/external/WeatherTab';
 import EventModal from '@/components/external/EventModal';
@@ -65,6 +67,8 @@ export default function ExternalFactorsPage() {
   const [tab, setTab] = useState<Tab>('calendar');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherRange, setWeatherRange] = useState<WeatherData[]>([]);
+  const [areaBusyness, setAreaBusyness] = useState<AreaBusyness | null>(null);
+  const [loadingAreaBusyness, setLoadingAreaBusyness] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Calendar state
@@ -129,19 +133,45 @@ export default function ExternalFactorsPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
+      setLoadingAreaBusyness(true);
+
+      const today = new Date();
+      const from = toLocalDateStr(today);
+      const to7 = new Date(today); to7.setDate(to7.getDate() + 6);
+
       try {
-        const res = await weatherService.getToday().catch(() => ({ data: { data: null } }));
-        setWeather(res.data.data);
-        const today = new Date();
-        const from = toLocalDateStr(today);
-        const to7 = new Date(today); to7.setDate(to7.getDate() + 6);
-        const rangeRes = await weatherService.getRange(from, toLocalDateStr(to7)).catch(() => ({ data: { data: [] } }));
-        setWeatherRange(rangeRes.data.data || []);
-      } finally { setLoading(false); }
+        // Tải thời tiết song song để giảm thời gian khởi tạo màn hình.
+        const [todayRes, rangeRes] = await Promise.all([
+          weatherService.getToday().catch(() => ({ data: { data: null } })),
+          weatherService.getRange(from, toLocalDateStr(to7)).catch(() => ({ data: { data: [] } })),
+        ]);
+
+        if (!cancelled) {
+          setWeather(todayRes.data.data);
+          setWeatherRange(rangeRes.data.data || []);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+
+      // Dữ liệu mật độ khu vực thường chậm hơn, tải nền để không block UI.
+      areaBusynessService.getCurrent()
+        .then((res) => {
+          if (!cancelled) setAreaBusyness(res.data.data);
+        })
+        .catch(() => {
+          if (!cancelled) setAreaBusyness(null);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingAreaBusyness(false);
+        });
     };
     load();
+    return () => { cancelled = true; };
   }, []);
 
   const loadCalendar = useCallback(() => {
@@ -253,6 +283,19 @@ export default function ExternalFactorsPage() {
     } catch { toast.error('Lỗi cập nhật thời tiết'); }
   };
 
+  const fetchAreaBusyness = async () => {
+    setLoadingAreaBusyness(true);
+    try {
+      const res = await areaBusynessService.getCurrent();
+      setAreaBusyness(res.data.data);
+      toast.success('Đã cập nhật phân tích mật độ khu vực');
+    } catch {
+      toast.error('Không thể phân tích mật độ khu vực. Hãy kiểm tra vị trí quán trong Cài đặt.');
+    } finally {
+      setLoadingAreaBusyness(false);
+    }
+  };
+
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
   const selectedHolidays = selectedDate ? holidaysForDate(selectedDate) : [];
 
@@ -291,8 +334,11 @@ export default function ExternalFactorsPage() {
         <WeatherTab
           weather={weather}
           weatherRange={weatherRange}
+          areaBusyness={areaBusyness}
+          loadingAreaBusyness={loadingAreaBusyness}
           canEdit={canEdit}
           onFetchNow={fetchWeatherNow}
+          onRefreshAreaBusyness={fetchAreaBusyness}
         />
       )}
 

@@ -2,7 +2,11 @@ package C2SE._1.Capstone2.controller;
 
 import C2SE._1.Capstone2.dto.ApiResponse;
 import C2SE._1.Capstone2.dto.StaffCallSoundSettingDTO;
+import C2SE._1.Capstone2.dto.StoreLocationDTO;
+import C2SE._1.Capstone2.dto.StoreLocationUpdateDTO;
 import C2SE._1.Capstone2.service.AppSettingService;
+import C2SE._1.Capstone2.service.StoreLocationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,11 +37,23 @@ public class SettingsController {
     private static final long MAX_SOUND_BYTES = 5L * 1024 * 1024; // 5MB
 
     private final AppSettingService appSettingService;
+    private final StoreLocationService storeLocationService;
 
     @GetMapping("/staff-call-sound")
     public ResponseEntity<ApiResponse<StaffCallSoundSettingDTO>> getStaffCallSound() {
         String url = appSettingService.getValue(STAFF_CALL_SOUND_KEY);
         return ResponseEntity.ok(ApiResponse.success(StaffCallSoundSettingDTO.builder().soundUrl(url).build()));
+    }
+
+    @GetMapping("/store-location")
+    public ResponseEntity<ApiResponse<StoreLocationDTO>> getStoreLocation() {
+        return ResponseEntity.ok(ApiResponse.success(storeLocationService.getStoreLocation()));
+    }
+
+    @PutMapping("/store-location")
+    public ResponseEntity<ApiResponse<StoreLocationDTO>> updateStoreLocation(
+            @Valid @RequestBody StoreLocationUpdateDTO dto) {
+        return ResponseEntity.ok(ApiResponse.success(storeLocationService.updateStoreLocation(dto)));
     }
 
     @PostMapping(value = "/staff-call-sound", consumes = "multipart/form-data")
