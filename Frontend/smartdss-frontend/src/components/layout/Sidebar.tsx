@@ -5,7 +5,7 @@ import { getRoleKey, formatRoleName } from '@/utils/helpers';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
-  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText
+  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain
 } from 'lucide-react';
 
 const navItems = [
@@ -15,8 +15,9 @@ const navItems = [
   { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },
   { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'BARISTA', 'WAITER'] },
   { path: '/inventory', label: 'Kho hàng', icon: Package, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/reports', label: 'Báo cáo', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/feedbacks', label: 'Feedback KH', icon: MessageSquareText, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
+  { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },
+  { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },
   { path: '/external-factors', label: 'Yếu tố ngoài', icon: CloudSun, roles: ['ADMIN', 'MANAGER'] },
   { path: '/tables', label: 'Quản lý bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
   { path: '/settings', label: 'Cài đặt', icon: Settings, roles: ['ADMIN'] },

@@ -24,14 +24,28 @@ Microservice bằng Python/FastAPI chuyên đảm nhiệm việc chạy mô hìn
    pip install -r requirements.txt
    ```
 
-3. Khởi chạy API Server:
+3. Khởi chạy API Server (luôn `cd` vào thư mục `ml-service` trước):
    ```bash
-   python app/main.py
-   # Hoặc dùng dòng lệnh: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   # Hoặc: python app/main.py  (đã thêm sys.path để import đúng package app)
    ```
 
 4. Truy cập tài liệu API tự động đẹp mắt bằng Swagger UI (Tính năng mạnh nhất của FastAPI): 
    - `http://localhost:8000/docs`
+
+## 2.1 Ghi chú Windows / phiên bản scikit-learn
+- Nếu thấy cảnh báo **InconsistentVersionWarning** khi load `artifacts/model.joblib`: môi trường đang dùng sklearn **cũ hơn** bản đã train. Chạy `pip install -U "scikit-learn>=1.8.0"` (trùng `requirements.txt`) rồi khởi động lại service.
+
+## 2.2 Đánh giá mô hình (nghiêm ngặt theo thời gian)
+
+Script `scripts/train_model.py` **không shuffle** ngẫu nhiên: giữ thứ tự ngày, lấy một **hold-out cuối cùng** làm tập test (mặc định ~15% ngày, tối thiểu 45 ngày). Như vậy `sales_1_day_ago` / `sales_7_days_ago` trên tập test vẫn là quá khứ thật so với từng ngày dự báo — tránh đánh giá quá lạc quan so với shuffle.
+
+- TimeSeries CV trên **chỉ** phần train: báo cáo MAE trung bình ± độ lệch.
+- Metric test: MAE, RMSE, MAPE (%), R² cho doanh thu và số đơn.
+- Có thể chỉnh:  
+  `python scripts/train_model.py --test-ratio 0.12 --min-test-days 60 --cv-splits 5`
+
+`model.joblib` lưu thêm metadata (`test_mae_revenue`, `test_mape_revenue_pct`, khoảng ngày test, …). API inference dùng **MAPE test** để hiệu chỉnh `confidence_score` (không còn cố định 0.85).
 
 ## 3. Quy trình làm việc với Data (Workflow)
 - **Bước 1**: Từ Project Java/MySQL hiện tại, Export toàn bộ lịch sử bán hàng ra file `.csv`, lưu vào thư mục `/data`.

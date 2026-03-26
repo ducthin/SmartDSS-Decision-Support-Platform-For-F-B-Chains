@@ -487,3 +487,34 @@ export interface AreaBusyness {
   sourceType?: AreaBusynessSourceType;
   analyzedAt: string;
 }
+
+/** So sánh tùy chọn với OpenAI (khi gọi API kèm compareLlm=true) */
+export interface LlmComparison {
+  status: 'ok' | 'skipped' | 'error';
+  model?: string;
+  comment_vi?: string;
+  rough_revenue_vnd?: number | null;
+  rough_orders?: number | null;
+  vs_ml?: string;
+  detail?: string;
+}
+
+// AI Prediction (DSS Thông minh - Hỗ trợ Ra Quyết định)
+export interface AIPrediction {
+  predicted_revenue: number;
+  predicted_orders: number;
+  predicted_inventory_demand: Record<string, number>;
+  confidence_score: number;
+  message: string;
+  llm_comparison?: LlmComparison | null;
+  /** Giờ chạy phân tích (server, app.timezone) */
+  analysis_at_local?: string;
+  /** full_day_ml | eod_adjusted */
+  prediction_kind?: string;
+  /** 0–1 tiến độ ngày ước (cùng ngày) */
+  day_progress_fraction?: number | null;
+  actual_revenue_so_far?: number | null;
+  actual_orders_so_far?: number | null;
+  ml_baseline_revenue?: number | null;
+  ml_baseline_orders?: number | null;
+}

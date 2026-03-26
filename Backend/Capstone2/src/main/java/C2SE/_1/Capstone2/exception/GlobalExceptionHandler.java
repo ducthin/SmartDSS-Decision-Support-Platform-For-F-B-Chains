@@ -59,6 +59,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Không thể xóa vì dữ liệu đang được sử dụng bởi bản ghi khác"));
     }
 
+    @ExceptionHandler(AiPredictionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAiPrediction(AiPredictionException ex) {
+        log.warn("[AI Prediction] {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);

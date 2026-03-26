@@ -33,8 +33,6 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
     private static final String SOURCE_CACHE = "CACHE";
     private static final String SOURCE_FALLBACK = "FALLBACK";
 
-    private static final int DEFAULT_RETRY_ATTEMPTS = 2;
-    private static final long DEFAULT_BACKOFF_MS = 600;
     private static final long DEFAULT_TIMEOUT_MS = 5000;
     private static final long DEFAULT_CIRCUIT_OPEN_SECONDS = 120;
     private static final int CIRCUIT_THRESHOLD = 3;
@@ -243,8 +241,9 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
     }
 
     private String fetchOverpassWithRetry(String query) throws IOException, InterruptedException {
-        int attempts = Math.max(retryMaxAttempts, DEFAULT_RETRY_ATTEMPTS);
-        long backoffMs = Math.max(retryBackoffMs, DEFAULT_BACKOFF_MS);
+        // Tổng số lần gọi HTTP (1 = không retry). Phải tôn trọng cấu hình, không ép tối thiểu 2 như trước.
+        int attempts = Math.max(1, retryMaxAttempts);
+        long backoffMs = Math.max(0L, retryBackoffMs);
 
         Exception lastException = null;
         for (int attempt = 1; attempt <= attempts; attempt++) {

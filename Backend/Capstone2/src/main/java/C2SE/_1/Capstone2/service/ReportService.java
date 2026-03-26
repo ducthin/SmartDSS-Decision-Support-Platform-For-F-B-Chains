@@ -12,6 +12,8 @@ public interface ReportService {
 
     List<DailySalesReportDTO> getDailySalesReport(LocalDate date);
 
+    List<DailySalesReportDTO> getDailyOperationalSalesReport(LocalDate date);
+
     List<DailySalesReportDTO> getHourlySalesReport(LocalDate date);
 
     List<DailySalesReportDTO> getWeeklySalesReport(LocalDate date);

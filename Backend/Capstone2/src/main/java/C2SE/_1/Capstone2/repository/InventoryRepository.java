@@ -16,6 +16,13 @@ import java.util.Optional;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
+    /**
+     * Dùng cho AI prediction / báo cáo: nạp ingredient trong cùng query, tránh LazyInitializationException
+     * khi session đã đóng sau {@link #findAll()}.
+     */
+    @Query("SELECT DISTINCT i FROM Inventory i JOIN FETCH i.ingredient")
+    List<Inventory> findAllWithIngredient();
+
      Optional<Inventory> findByIngredientId(Long ingredientId);
 
      @Lock(LockModeType.PESSIMISTIC_WRITE)

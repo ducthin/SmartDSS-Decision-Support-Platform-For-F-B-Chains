@@ -5,9 +5,12 @@ import C2SE._1.Capstone2.dto.DailySalesReportDTO;
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.TaxReportItemDTO;
 import C2SE._1.Capstone2.dto.TaxReportResponseDTO;
+import C2SE._1.Capstone2.entity.Order;
+import C2SE._1.Capstone2.entity.OrderStatus;
 import C2SE._1.Capstone2.entity.SalesTransaction;
 import C2SE._1.Capstone2.mapper.InventoryMapper;
 import C2SE._1.Capstone2.repository.InventoryRepository;
+import C2SE._1.Capstone2.repository.OrderRepository;
 import C2SE._1.Capstone2.repository.SalesItemRepository;
 import C2SE._1.Capstone2.repository.SalesTransactionRepository;
 import C2SE._1.Capstone2.service.ReportService;
@@ -33,6 +36,7 @@ public class ReportServiceImpl implements ReportService {
     private final SalesTransactionRepository salesTransactionRepository;
     private final SalesItemRepository salesItemRepository;
     private final InventoryRepository inventoryRepository;
+    private final OrderRepository orderRepository;
     private final InventoryMapper inventoryMapper;
     @Value("${app.timezone:Asia/Ho_Chi_Minh}")
     private String appTimezone;
@@ -54,6 +58,29 @@ public class ReportServiceImpl implements ReportService {
                     return dt != null && dt.toLocalDate().equals(target);
                 })
                 .map(tx -> tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return List.of(DailySalesReportDTO.builder()
+                .date(target.toString())
+                .totalOrders(totalOrders)
+                .totalRevenue(totalRevenue)
+                .build());
+    }
+
+    @Override
+    public List<DailySalesReportDTO> getDailyOperationalSalesReport(LocalDate date) {
+        LocalDate target = date != null ? date : LocalDate.now(resolveZoneId());
+        List<Order> orders = fetchCompletedOrdersForDateRange(target, target);
+        long totalOrders = orders.stream()
+                .map(this::toAppBusinessDateTime)
+                .filter(Objects::nonNull)
+                .filter(dt -> dt.toLocalDate().equals(target))
+                .count();
+        BigDecimal totalRevenue = orders.stream()
+                .filter(order -> {
+                    LocalDateTime dt = toAppBusinessDateTime(order);
+                    return dt != null && dt.toLocalDate().equals(target);
+                })
+                .map(order -> order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return List.of(DailySalesReportDTO.builder()
                 .date(target.toString())
@@ -254,6 +281,14 @@ public class ReportServiceImpl implements ReportService {
         return salesTransactionRepository.findPaidTransactionsInRange(dbStart, dbEnd);
     }
 
+    private List<Order> fetchCompletedOrdersForDateRange(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime appStart = fromDate.atStartOfDay();
+        LocalDateTime appEnd = toDate.atTime(LocalTime.MAX);
+        LocalDateTime dbStart = toDbLocalDateTime(appStart);
+        LocalDateTime dbEnd = toDbLocalDateTime(appEnd);
+        return orderRepository.findByStatusInBusinessRange(OrderStatus.COMPLETED, dbStart, dbEnd);
+    }
+
     private LocalDateTime toDbLocalDateTime(LocalDateTime appLocalDateTime) {
         ZoneId appZone = resolveZoneId();
         ZoneId dbZone = resolveDbZoneId();
@@ -265,6 +300,15 @@ public class ReportServiceImpl implements ReportService {
         if (tx == null) return null;
         LocalDateTime source = tx.getPaidAt() != null ? tx.getPaidAt()
                 : (tx.getUpdatedAt() != null ? tx.getUpdatedAt() : tx.getCreatedAt());
+        if (source == null) return null;
+        ZoneId dbZone = resolveDbZoneId();
+        ZoneId appZone = resolveZoneId();
+        return source.atZone(dbZone).withZoneSameInstant(appZone).toLocalDateTime();
+    }
+
+    private LocalDateTime toAppBusinessDateTime(Order order) {
+        if (order == null) return null;
+        LocalDateTime source = order.getUpdatedAt() != null ? order.getUpdatedAt() : order.getCreatedAt();
         if (source == null) return null;
         ZoneId dbZone = resolveDbZoneId();
         ZoneId appZone = resolveZoneId();

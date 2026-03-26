@@ -38,6 +38,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+    @Query("""
+            SELECT o FROM Order o
+            WHERE o.status = :status
+            AND COALESCE(o.updatedAt, o.createdAt) BETWEEN :start AND :end
+            """)
+    List<Order> findByStatusInBusinessRange(@Param("status") OrderStatus status,
+                                            @Param("start") LocalDateTime start,
+                                            @Param("end") LocalDateTime end);
+
     List<Order> findByCreatedById(Long userId);
 
     List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);

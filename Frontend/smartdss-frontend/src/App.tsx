@@ -18,6 +18,7 @@ import ExternalFactorsPage from '@/pages/ExternalFactorsPage';
 import TablesPage from '@/pages/TablesPage';
 import SettingsPage from '@/pages/SettingsPage';
 import QrOrderPage from '@/pages/QrOrderPage';
+import AIPredictionPage from '@/pages/AIPredictionPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { getRoleKey } from '@/utils/helpers';
 
@@ -45,6 +46,7 @@ function App() {
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/inventory" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InventoryPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ReportsPage /></ProtectedRoute>} />
+            <Route path="/ai-prediction" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><AIPredictionPage /></ProtectedRoute>} />
             <Route path="/feedbacks" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><FeedbacksPage /></ProtectedRoute>} />
             <Route path="/external-factors" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
             <Route path="/tables" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><TablesPage /></ProtectedRoute>} />

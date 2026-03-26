@@ -224,6 +224,14 @@ public class DataSeeder implements CommandLineRunner {
         createIngredientWithInventory("Bột matcha", "g", 1500);
         createIngredientWithInventory("Trà lài", "g", 2500);
         createIngredientWithInventory("Chuối", "g", 5000);
+        createIngredientWithInventory("Thạch trái cây", "g", 2500);
+        createIngredientWithInventory("Thạch dừa", "g", 2500);
+        createIngredientWithInventory("Phô mai tươi", "g", 1800);
+        createIngredientWithInventory("Pudding trứng", "phần", 120);
+        createIngredientWithInventory("Bánh flan", "phần", 80);
+        createIngredientWithInventory("Nha đam", "g", 1800);
+        createIngredientWithInventory("Sương sáo", "g", 1800);
+        createIngredientWithInventory("Bột đậu đỏ", "g", 1500);
     }
 
     private void createIngredientWithInventory(String name, String unit, double initialQty) {
@@ -707,19 +715,34 @@ public class DataSeeder implements CommandLineRunner {
         createMenuItem("Gà popcorn cay", "Snack cay nhẹ", 32000, snack, false, true, false, null, null);
 
         // --- TOPPING ---
-        createMenuItem("Phô mai tươi (topping)", "Thêm 1 phần", 8000, toppingCat, false, false, true, null, null);
-        createMenuItem("Trân châu hoàng kim", "Thêm 1 phần", 8000, toppingCat, false, false, true, null, null);
-        createMenuItem("Trân châu đen", "Thêm 1 phần", 4000, toppingCat, false, false, false, null, null);
-        createMenuItem("Trân châu đường đen", "Thêm 1 phần", 8000, toppingCat, false, true, false, null, null);
-        createMenuItem("Thạch trái cây", "Thêm 1 phần", 4000, toppingCat, false, false, false, null, null);
-        createMenuItem("Thạch dừa", "Thêm 1 phần", 6000, toppingCat, false, false, false, null, null);
+        MenuItem phoMaiTuoi = createMenuItem("Phô mai tươi (topping)", "Thêm 1 phần", 8000, toppingCat, false, false, true, null, null);
+        addRecipe(phoMaiTuoi, "Phô mai tươi", 25);
+        MenuItem tranChauHoangKim = createMenuItem("Trân châu hoàng kim", "Thêm 1 phần", 8000, toppingCat, false, false, true, null, null);
+        addRecipe(tranChauHoangKim, "Trân châu", 35);
+        MenuItem tranChauDen = createMenuItem("Trân châu đen", "Thêm 1 phần", 4000, toppingCat, false, false, false, null, null);
+        addRecipe(tranChauDen, "Trân châu", 30);
+        MenuItem tranChauDuongDen = createMenuItem("Trân châu đường đen", "Thêm 1 phần", 8000, toppingCat, false, true, false, null, null);
+        addRecipe(tranChauDuongDen, "Trân châu", 30);
+        addRecipe(tranChauDuongDen, "Đường", 8);
+        MenuItem thachTraiCay = createMenuItem("Thạch trái cây", "Thêm 1 phần", 4000, toppingCat, false, false, false, null, null);
+        addRecipe(thachTraiCay, "Thạch trái cây", 30);
+        MenuItem thachDua = createMenuItem("Thạch dừa", "Thêm 1 phần", 6000, toppingCat, false, false, false, null, null);
+        addRecipe(thachDua, "Thạch dừa", 30);
         createMenuItem("Thạch phô mai", "Thêm 1 phần", 2000, toppingCat, false, false, true, null, null);
-        createMenuItem("Kem cheese (thêm)", "Thêm 1 phần", 10000, toppingCat, false, false, false, null, null);
-        createMenuItem("Pudding trứng (thêm)", "Thêm 1 phần", 8000, toppingCat, false, false, false, null, null);
-        createMenuItem("Bánh flan (thêm)", "Thêm 1 phần", 10000, toppingCat, false, false, false, null, null);
-        createMenuItem("Nha đam (thêm)", "Thêm 1 phần", 6000, toppingCat, false, true, false, null, null);
-        createMenuItem("Sương sáo (thêm)", "Thêm 1 phần", 5000, toppingCat, false, false, false, null, null);
-        createMenuItem("Bột đậu đỏ (thêm)", "Thêm 1 phần", 6000, toppingCat, false, false, false, null, null);
+        MenuItem kemCheese = createMenuItem("Kem cheese (thêm)", "Thêm 1 phần", 10000, toppingCat, false, false, false, null, null);
+        addRecipe(kemCheese, "Kem whip", 25);
+        MenuItem pudding = createMenuItem("Pudding trứng (thêm)", "Thêm 1 phần", 8000, toppingCat, false, false, false, null, null);
+        addRecipe(pudding, "Pudding trứng", 1);
+        MenuItem flan = createMenuItem("Bánh flan (thêm)", "Thêm 1 phần", 10000, toppingCat, false, false, false, null, null);
+        addRecipe(flan, "Bánh flan", 1);
+        MenuItem nhaDam = createMenuItem("Nha đam (thêm)", "Thêm 1 phần", 6000, toppingCat, false, true, false, null, null);
+        addRecipe(nhaDam, "Nha đam", 25);
+        MenuItem suongSao = createMenuItem("Sương sáo (thêm)", "Thêm 1 phần", 5000, toppingCat, false, false, false, null, null);
+        addRecipe(suongSao, "Sương sáo", 25);
+        MenuItem botDauDo = createMenuItem("Bột đậu đỏ (thêm)", "Thêm 1 phần", 6000, toppingCat, false, false, false, null, null);
+        addRecipe(botDauDo, "Bột đậu đỏ", 20);
+        MenuItem kemTuoi = createMenuItem("Kem tươi (thêm)", "Thêm 1 phần", 7000, toppingCat, false, false, false, null, null);
+        addRecipe(kemTuoi, "Kem whip", 20);
 
         log.info("Seeded {} menu items with recipes", menuItemRepository.count());
     }

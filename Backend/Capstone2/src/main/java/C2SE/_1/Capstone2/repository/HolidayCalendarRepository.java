@@ -23,4 +23,7 @@ public interface HolidayCalendarRepository extends JpaRepository<HolidayCalendar
     List<HolidayCalendar> findByMonth(@Param("month") int month, @Param("year") int year);
 
     boolean existsByHolidayDateAndName(LocalDate holidayDate, String name);
+
+    /** Có ít nhất một ngày lễ trong lịch hệ thống trùng {@code date} (cho AI dự báo). */
+    boolean existsByHolidayDate(LocalDate holidayDate);
 }
