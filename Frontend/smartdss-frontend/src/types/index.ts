@@ -366,6 +366,37 @@ export interface PaymentInit {
   paymentStatus: PaymentStatus;
 }
 
+export interface TableSettlementSummary {
+  tableNumber: string;
+  pendingCount: number;
+  preparingCount: number;
+  completedUnpaidCount: number;
+  completedUnpaidTotal: number;
+  completedUnpaidOrderIds: number[];
+  latestOrderAt: string;
+}
+
+export interface TableCashSettlementResult {
+  tableNumber: string;
+  settledCount: number;
+  settledOrderIds: number[];
+  settledTotalAmount: number;
+  paidAt: string;
+}
+
+export interface TableQrInit {
+  tableNumber: string;
+  representativeOrderId: number;
+  includedOrderIds: number[];
+  amount: number;
+  transferContent: string;
+  qrImageUrl: string;
+  qrCode?: string;
+  checkoutUrl?: string;
+  provider?: 'PAYOS' | 'VIETQR';
+  expiresAt: string;
+}
+
 // Reports
 export interface DailySalesReport {
   date: string;

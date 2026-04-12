@@ -2,6 +2,9 @@ package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.PaymentInitDTO;
 import C2SE._1.Capstone2.dto.PaymentStatusDTO;
+import C2SE._1.Capstone2.dto.TableCashSettlementResultDTO;
+import C2SE._1.Capstone2.dto.TableQrInitDTO;
+import C2SE._1.Capstone2.dto.TableSettlementSummaryDTO;
 import C2SE._1.Capstone2.dto.PaymentWebhookDTO;
 import C2SE._1.Capstone2.entity.Order;
 import C2SE._1.Capstone2.entity.OrderStatus;
@@ -41,6 +44,7 @@ import java.util.Map;
 public class PaymentServiceImpl implements PaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
+    private static final String TABLE_QR_MARKER_PREFIX = "TABLEQR:";
 
     private final OrderRepository orderRepository;
     private final SalesTransactionRepository salesTransactionRepository;
@@ -111,6 +115,91 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public TableQrInitDTO initTableQrPayment(String tableNumber) {
+        String normalizedTableNumber = tableNumber == null ? "" : tableNumber.trim();
+        if (normalizedTableNumber.isEmpty()) {
+            throw new BadRequestException("Tên bàn không được để trống");
+        }
+
+        List<Order> completedTableOrders = orderRepository.findByTableNumberOrderByCreatedAtDesc(normalizedTableNumber)
+                .stream()
+                .filter(order -> order.getStatus() == OrderStatus.COMPLETED)
+                .toList();
+
+        if (completedTableOrders.isEmpty()) {
+            throw new BadRequestException("Bàn này không có đơn COMPLETED để tạo QR thanh toán");
+        }
+
+        List<SalesTransaction> unpaidTransactions = new ArrayList<>();
+        List<Long> includedOrderIds = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (Order order : completedTableOrders) {
+            SalesTransaction tx = getTransactionForUpdate(order.getId());
+            if (isPaid(tx.getPaymentMethod())) {
+                continue;
+            }
+            tx.setPaymentMethod("PENDING");
+            tx.setPaidAt(null);
+            unpaidTransactions.add(tx);
+            includedOrderIds.add(order.getId());
+            totalAmount = totalAmount.add(tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount());
+        }
+
+        if (unpaidTransactions.isEmpty()) {
+            throw new BadRequestException("Bàn này không còn đơn COMPLETED chưa thanh toán");
+        }
+
+        Long representativeOrderId = includedOrderIds.get(0);
+        LocalDateTime expiresAt = now().plusMinutes(Math.max(1, qrExpireMinutes));
+        String transferContent = buildTableTransferContent(normalizedTableNumber, representativeOrderId);
+
+        String provider = "VIETQR";
+        String qrCode = null;
+        String checkoutUrl = null;
+        String qrImageUrl = buildVietQrImageUrl(totalAmount, transferContent);
+
+        if (isPayosConfigured()) {
+            long payosOrderCode = buildPayosOrderCode(representativeOrderId);
+            String marker = buildTableQrMarker(payosOrderCode);
+            PayosLinkResult payosLink = createPayosPaymentLink(totalAmount, transferContent, expiresAt, payosOrderCode);
+            qrCode = payosLink.qrCode;
+            checkoutUrl = payosLink.checkoutUrl;
+            expiresAt = payosLink.expiresAt;
+            provider = "PAYOS";
+            qrImageUrl = buildQrImageFromContent(qrCode);
+
+            for (SalesTransaction tx : unpaidTransactions) {
+                tx.setProviderTransactionId(marker);
+                tx.setPayosQrCode(qrCode);
+                tx.setPayosCheckoutUrl(checkoutUrl);
+                tx.setPayosQrExpiresAt(expiresAt);
+            }
+        } else {
+            for (SalesTransaction tx : unpaidTransactions) {
+                tx.setProviderTransactionId(null);
+                tx.setPayosQrCode(null);
+                tx.setPayosCheckoutUrl(null);
+                tx.setPayosQrExpiresAt(expiresAt);
+            }
+        }
+
+        salesTransactionRepository.saveAll(unpaidTransactions);
+        return TableQrInitDTO.builder()
+                .tableNumber(normalizedTableNumber)
+                .representativeOrderId(representativeOrderId)
+                .includedOrderIds(includedOrderIds)
+                .amount(totalAmount)
+                .transferContent(transferContent)
+                .qrImageUrl(qrImageUrl)
+                .qrCode(qrCode)
+                .checkoutUrl(checkoutUrl)
+                .provider(provider)
+                .expiresAt(expiresAt)
+                .build();
+    }
+
+    @Override
     public PaymentStatusDTO markCashPaid(Long orderId) {
         log.info("Mark cash paid requested for order {}", orderId);
         SalesTransaction tx = getTransactionForUpdate(orderId);
@@ -130,6 +219,61 @@ public class PaymentServiceImpl implements PaymentService {
         broadcastStatus(statusDTO);
         log.info("Marked order {} as CASH paid", orderId);
         return statusDTO;
+    }
+
+    @Override
+    public TableCashSettlementResultDTO markTableCashPaid(String tableNumber) {
+        String normalizedTableNumber = tableNumber == null ? "" : tableNumber.trim();
+        if (normalizedTableNumber.isEmpty()) {
+            throw new BadRequestException("Tên bàn không được để trống");
+        }
+
+        List<Order> tableOrders = orderRepository.findByTableNumberOrderByCreatedAtDesc(normalizedTableNumber)
+                .stream()
+                .filter(order -> order.getStatus() == OrderStatus.COMPLETED)
+                .toList();
+
+        if (tableOrders.isEmpty()) {
+            throw new BadRequestException("Bàn này không có đơn COMPLETED để thanh toán");
+        }
+
+        LocalDateTime paidAt = now();
+        List<SalesTransaction> toUpdate = new ArrayList<>();
+        List<Long> settledOrderIds = new ArrayList<>();
+        BigDecimal settledTotalAmount = BigDecimal.ZERO;
+
+        for (Order order : tableOrders) {
+            SalesTransaction tx = getTransactionForUpdate(order.getId());
+            String currentMethod = normalizeMethod(tx.getPaymentMethod());
+
+            // Skip orders already settled by other flows/concurrent cashiers.
+            if (isPaid(currentMethod)) {
+                continue;
+            }
+
+            tx.setPaymentMethod("CASH");
+            tx.setPaidAt(paidAt);
+            toUpdate.add(tx);
+            settledOrderIds.add(order.getId());
+            settledTotalAmount = settledTotalAmount.add(tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount());
+        }
+
+        if (toUpdate.isEmpty()) {
+            throw new BadRequestException("Bàn này không còn đơn COMPLETED chưa thanh toán");
+        }
+
+        salesTransactionRepository.saveAll(toUpdate);
+        for (SalesTransaction tx : toUpdate) {
+            broadcastStatus(toStatusDTO(tx));
+        }
+
+        return TableCashSettlementResultDTO.builder()
+                .tableNumber(normalizedTableNumber)
+                .settledCount(settledOrderIds.size())
+                .settledOrderIds(settledOrderIds)
+                .settledTotalAmount(settledTotalAmount)
+                .paidAt(paidAt)
+                .build();
     }
 
     @Override
@@ -177,6 +321,84 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<TableSettlementSummaryDTO> getTableSettlementSummary() {
+        List<Order> tableOrders = orderRepository.findTableOrdersForSettlement(OrderStatus.CANCELLED);
+        if (tableOrders.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> completedOrderIds = tableOrders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.COMPLETED)
+                .map(Order::getId)
+                .toList();
+
+        Map<Long, Boolean> paidByOrderId = new HashMap<>();
+        if (!completedOrderIds.isEmpty()) {
+            List<SalesTransaction> txList = salesTransactionRepository.findByOrderIdIn(completedOrderIds);
+            for (SalesTransaction tx : txList) {
+                if (tx.getOrder() != null && tx.getOrder().getId() != null) {
+                    paidByOrderId.put(tx.getOrder().getId(), isPaid(tx.getPaymentMethod()));
+                }
+            }
+        }
+
+        Map<String, TableSummaryAccumulator> grouped = new HashMap<>();
+        for (Order order : tableOrders) {
+            String tableNumber = order.getTableNumber() == null ? "" : order.getTableNumber().trim();
+            if (tableNumber.isEmpty()) {
+                continue;
+            }
+
+            TableSummaryAccumulator summary = grouped.computeIfAbsent(
+                    tableNumber,
+                    key -> new TableSummaryAccumulator(key, order.getCreatedAt())
+            );
+            summary.bumpLatest(order.getCreatedAt());
+
+            if (order.getStatus() == OrderStatus.PENDING) {
+                summary.pendingCount++;
+                continue;
+            }
+
+            if (order.getStatus() == OrderStatus.PREPARING) {
+                summary.preparingCount++;
+                continue;
+            }
+
+            if (order.getStatus() == OrderStatus.COMPLETED) {
+                boolean paid = Boolean.TRUE.equals(paidByOrderId.get(order.getId()));
+                if (!paid) {
+                    summary.completedUnpaidCount++;
+                    summary.completedUnpaidOrderIds.add(order.getId());
+                    summary.completedUnpaidTotal = summary.completedUnpaidTotal.add(
+                            order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount()
+                    );
+                }
+            }
+        }
+
+        return grouped.values().stream()
+                .filter(TableSummaryAccumulator::hasAnyTrackedOrder)
+                .sorted((left, right) -> {
+                    LocalDateTime leftLatest = left.latestOrderAt;
+                    LocalDateTime rightLatest = right.latestOrderAt;
+                    if (leftLatest == null && rightLatest == null) {
+                        return 0;
+                    }
+                    if (leftLatest == null) {
+                        return 1;
+                    }
+                    if (rightLatest == null) {
+                        return -1;
+                    }
+                    return rightLatest.compareTo(leftLatest);
+                })
+                .map(TableSummaryAccumulator::toDTO)
+                .toList();
+    }
+
+    @Override
     public PaymentStatusDTO handleWebhook(PaymentWebhookDTO webhookDTO, String webhookSecretHeader) {
         log.debug("Handle generic webhook for orderId={}, status={}, hasAmount={}",
                 webhookDTO.getOrderId(), webhookDTO.getStatus(), webhookDTO.getAmount() != null);
@@ -213,6 +435,11 @@ public class PaymentServiceImpl implements PaymentService {
         if (!"PAID".equals(status)) {
             log.info("Ignore webhook update because status is not PAID for orderId={}", webhookDTO.getOrderId());
             return toStatusDTO(tx);
+        }
+
+        String tableQrMarker = normalizeProviderTransactionId(tx.getProviderTransactionId());
+        if (isTableQrMarker(tableQrMarker)) {
+            return applyTableQrWebhook(tx, tableQrMarker, webhookDTO, providerTxId);
         }
 
         BigDecimal expectedAmount = tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount();
@@ -258,6 +485,108 @@ public class PaymentServiceImpl implements PaymentService {
         broadcastStatus(statusDTO);
         log.info("Order {} marked as QR paid from webhook, providerTransactionId={}", webhookDTO.getOrderId(), providerTxId);
         return statusDTO;
+    }
+
+    private PaymentStatusDTO applyTableQrWebhook(
+            SalesTransaction anchorTx,
+            String tableQrMarker,
+            PaymentWebhookDTO webhookDTO,
+            String incomingProviderTransactionId
+    ) {
+        String tableNumber = "";
+        if (anchorTx.getOrder() != null && anchorTx.getOrder().getTableNumber() != null) {
+            tableNumber = anchorTx.getOrder().getTableNumber().trim();
+        }
+        if (tableNumber.isEmpty()) {
+            throw new BadRequestException("Webhook bàn không hợp lệ: thiếu tableNumber");
+        }
+
+        List<Order> completedTableOrders = orderRepository.findByTableNumberOrderByCreatedAtDesc(tableNumber)
+                .stream()
+                .filter(order -> order.getStatus() == OrderStatus.COMPLETED)
+                .toList();
+
+        List<SalesTransaction> groupedTransactions = new ArrayList<>();
+        for (Order order : completedTableOrders) {
+            SalesTransaction tx = getTransactionForUpdate(order.getId());
+            if (tableQrMarker.equals(normalizeProviderTransactionId(tx.getProviderTransactionId()))) {
+                groupedTransactions.add(tx);
+            }
+        }
+
+        if (groupedTransactions.isEmpty()) {
+            throw new BadRequestException("Không tìm thấy nhóm giao dịch theo QR bàn");
+        }
+
+        for (SalesTransaction tx : groupedTransactions) {
+            if ("CASH".equalsIgnoreCase(tx.getPaymentMethod())) {
+                throw new BadRequestException("Có đơn trong bàn đã thu tiền mặt, không thể chốt QR gộp");
+            }
+        }
+
+        BigDecimal expectedAmount = BigDecimal.ZERO;
+        List<SalesTransaction> toSettle = new ArrayList<>();
+        for (SalesTransaction tx : groupedTransactions) {
+            expectedAmount = expectedAmount.add(tx.getTotalAmount() == null ? BigDecimal.ZERO : tx.getTotalAmount());
+            if (!isPaid(tx.getPaymentMethod())) {
+                toSettle.add(tx);
+            }
+        }
+
+        if (webhookDTO.getAmount() == null) {
+            incrementWebhookMetric("rejected", "amount_missing");
+            throw new BadRequestException("Thiếu số tiền thanh toán trong webhook");
+        }
+
+        BigDecimal expectedAmountForProvider = expectedAmount.setScale(0, RoundingMode.HALF_UP);
+        BigDecimal actualAmountForProvider = webhookDTO.getAmount().setScale(0, RoundingMode.HALF_UP);
+        if (actualAmountForProvider.compareTo(expectedAmountForProvider) != 0) {
+            log.warn("Reject grouped webhook amount mismatch for orderId={}, table={}, expectedProviderAmount={}, actualProviderAmount={}",
+                    webhookDTO.getOrderId(), tableNumber, expectedAmountForProvider, actualAmountForProvider);
+            incrementWebhookMetric("rejected", "amount_mismatch");
+            throw new BadRequestException("Số tiền thanh toán không khớp tổng đơn của bàn");
+        }
+
+        if (toSettle.isEmpty()) {
+            String existingProviderTxId = normalizeProviderTransactionId(anchorTx.getProviderTransactionId());
+            if (incomingProviderTransactionId == null || existingProviderTxId == null || incomingProviderTransactionId.equals(existingProviderTxId)) {
+                log.info("Ignore duplicate grouped PAID webhook for table={}, orderId={}, providerTransactionId={}",
+                        tableNumber, webhookDTO.getOrderId(), incomingProviderTransactionId);
+                incrementWebhookMetric("duplicate", "provider_retry");
+                return toStatusDTO(anchorTx);
+            }
+            incrementWebhookMetric("rejected", "provider_tx_conflict");
+            throw new BadRequestException("Webhook bị trùng với providerTransactionId khác");
+        }
+
+        LocalDateTime paidAt = now();
+        for (SalesTransaction tx : toSettle) {
+            tx.setPaymentMethod("QR");
+            tx.setProviderTransactionId(incomingProviderTransactionId);
+            tx.setPaidAt(paidAt);
+        }
+
+        salesTransactionRepository.saveAll(toSettle);
+        PaymentStatusDTO anchorStatus = null;
+        for (SalesTransaction tx : toSettle) {
+            PaymentStatusDTO statusDTO = toStatusDTO(tx);
+            if (anchorTx.getOrder() != null && tx.getOrder() != null && anchorTx.getOrder().getId().equals(tx.getOrder().getId())) {
+                anchorStatus = statusDTO;
+            }
+            broadcastStatus(statusDTO);
+        }
+
+        if (anchorStatus == null) {
+            anchorStatus = PaymentStatusDTO.builder()
+                    .orderId(webhookDTO.getOrderId())
+                    .status("PAID")
+                    .paymentMethod("QR")
+                    .build();
+        }
+
+        log.info("Grouped table webhook settled table={}, settledCount={}, providerTransactionId={}",
+                tableNumber, toSettle.size(), incomingProviderTransactionId);
+        return anchorStatus;
     }
 
     private PaymentStatusDTO toStatusDTO(SalesTransaction tx) {
@@ -375,6 +704,40 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
+    private PayosLinkResult createPayosPaymentLink(
+            BigDecimal amount,
+            String transferContent,
+            LocalDateTime expiresAt,
+            long payosOrderCode
+    ) {
+        Long amountInVnd = amount.setScale(0, RoundingMode.HALF_UP).longValue();
+        if (amountInVnd <= 0) {
+            throw new BadRequestException("Số tiền thanh toán không hợp lệ");
+        }
+
+        try {
+            PayOS payOS = new PayOS(payosClientId.trim(), payosApiKey.trim(), payosChecksumKey.trim());
+            CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
+                    .orderCode(payosOrderCode)
+                    .amount(amountInVnd)
+                    .description(truncatePayosDescription(transferContent))
+                    .returnUrl(payosReturnUrl)
+                    .cancelUrl(payosCancelUrl)
+                    .expiredAt(toEpochSecond(expiresAt))
+                    .build();
+
+            CreatePaymentLinkResponse response = payOS.paymentRequests().create(request);
+            return new PayosLinkResult(
+                    response.getQrCode(),
+                    response.getCheckoutUrl(),
+                    toLocalDateTime(response.getExpiredAt(), expiresAt)
+            );
+        } catch (Exception ex) {
+            log.error("PayOS init failed for grouped table payment: {}", ex.getMessage());
+            throw new BadRequestException("Không thể tạo QR PayOS: " + ex.getMessage());
+        }
+    }
+
     private PaymentInitDTO buildInitResponse(
             Long orderId,
             BigDecimal amount,
@@ -450,6 +813,22 @@ public class PaymentServiceImpl implements PaymentService {
         return normalized.isEmpty() ? null : normalized;
     }
 
+    private String buildTableTransferContent(String tableNumber, Long representativeOrderId) {
+        String compactTable = tableNumber.replaceAll("\\s+", "");
+        if (compactTable.length() > 12) {
+            compactTable = compactTable.substring(0, 12);
+        }
+        return "TABLE-" + compactTable + "-" + representativeOrderId;
+    }
+
+    private String buildTableQrMarker(long payosOrderCode) {
+        return TABLE_QR_MARKER_PREFIX + payosOrderCode;
+    }
+
+    private boolean isTableQrMarker(String providerTransactionId) {
+        return providerTransactionId != null && providerTransactionId.startsWith(TABLE_QR_MARKER_PREFIX);
+    }
+
     private boolean hasReusablePayosLink(SalesTransaction tx) {
         if (tx == null || tx.getPayosQrCode() == null || tx.getPayosQrCode().isBlank() || tx.getPayosCheckoutUrl() == null || tx.getPayosCheckoutUrl().isBlank()) {
             return false;
@@ -490,6 +869,58 @@ public class PaymentServiceImpl implements PaymentService {
             return ZoneId.of(appTimezone);
         } catch (Exception ex) {
             return ZoneId.of("Asia/Ho_Chi_Minh");
+        }
+    }
+
+    private static final class TableSummaryAccumulator {
+        private final String tableNumber;
+        private int pendingCount;
+        private int preparingCount;
+        private int completedUnpaidCount;
+        private BigDecimal completedUnpaidTotal = BigDecimal.ZERO;
+        private final List<Long> completedUnpaidOrderIds = new ArrayList<>();
+        private LocalDateTime latestOrderAt;
+
+        private TableSummaryAccumulator(String tableNumber, LocalDateTime latestOrderAt) {
+            this.tableNumber = tableNumber;
+            this.latestOrderAt = latestOrderAt;
+        }
+
+        private void bumpLatest(LocalDateTime candidate) {
+            if (candidate == null) {
+                return;
+            }
+            if (latestOrderAt == null || candidate.isAfter(latestOrderAt)) {
+                latestOrderAt = candidate;
+            }
+        }
+
+        private boolean hasAnyTrackedOrder() {
+            return pendingCount > 0 || preparingCount > 0 || completedUnpaidCount > 0;
+        }
+
+        private TableSettlementSummaryDTO toDTO() {
+            return TableSettlementSummaryDTO.builder()
+                    .tableNumber(tableNumber)
+                    .pendingCount(pendingCount)
+                    .preparingCount(preparingCount)
+                    .completedUnpaidCount(completedUnpaidCount)
+                    .completedUnpaidTotal(completedUnpaidTotal)
+                    .completedUnpaidOrderIds(completedUnpaidOrderIds)
+                    .latestOrderAt(latestOrderAt)
+                    .build();
+        }
+    }
+
+    private static final class PayosLinkResult {
+        private final String qrCode;
+        private final String checkoutUrl;
+        private final LocalDateTime expiresAt;
+
+        private PayosLinkResult(String qrCode, String checkoutUrl, LocalDateTime expiresAt) {
+            this.qrCode = qrCode;
+            this.checkoutUrl = checkoutUrl;
+            this.expiresAt = expiresAt;
         }
     }
 

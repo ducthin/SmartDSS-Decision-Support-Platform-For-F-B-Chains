@@ -1,8 +1,11 @@
 package C2SE._1.Capstone2.controller;
 
 import C2SE._1.Capstone2.dto.ApiResponse;
+import C2SE._1.Capstone2.dto.TableCashSettlementResultDTO;
 import C2SE._1.Capstone2.dto.PaymentInitDTO;
 import C2SE._1.Capstone2.dto.PaymentStatusDTO;
+import C2SE._1.Capstone2.dto.TableQrInitDTO;
+import C2SE._1.Capstone2.dto.TableSettlementSummaryDTO;
 import C2SE._1.Capstone2.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,18 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success(paymentService.markCashPaid(orderId)));
     }
 
+    @PostMapping("/tables/cash")
+    public ResponseEntity<ApiResponse<TableCashSettlementResultDTO>> markTableCashPaid(
+            @RequestParam(name = "tableNumber") String tableNumber) {
+        return ResponseEntity.ok(ApiResponse.success(paymentService.markTableCashPaid(tableNumber)));
+    }
+
+    @PostMapping("/tables/qr")
+    public ResponseEntity<ApiResponse<TableQrInitDTO>> initTableQrPayment(
+            @RequestParam(name = "tableNumber") String tableNumber) {
+        return ResponseEntity.ok(ApiResponse.success(paymentService.initTableQrPayment(tableNumber)));
+    }
+
     @GetMapping("/orders/{orderId}/status")
     public ResponseEntity<ApiResponse<PaymentStatusDTO>> getOrderPaymentStatus(@PathVariable Long orderId) {
         return ResponseEntity.ok(ApiResponse.success(paymentService.getOrderPaymentStatus(orderId)));
@@ -36,5 +51,10 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<List<PaymentStatusDTO>>> getOrderPaymentStatuses(
             @RequestParam(name = "orderIds") List<Long> orderIds) {
         return ResponseEntity.ok(ApiResponse.success(paymentService.getOrderPaymentStatuses(orderIds)));
+    }
+
+    @GetMapping("/tables/settlement-summary")
+    public ResponseEntity<ApiResponse<List<TableSettlementSummaryDTO>>> getTableSettlementSummary() {
+        return ResponseEntity.ok(ApiResponse.success(paymentService.getTableSettlementSummary()));
     }
 }

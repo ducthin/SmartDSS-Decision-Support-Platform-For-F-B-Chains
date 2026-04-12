@@ -5,23 +5,31 @@ import { getRoleKey, formatRoleName } from '@/utils/helpers';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
-  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain
+  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet
 } from 'lucide-react';
 
 const navItems = [
+  // Tổng quan
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/categories', label: 'Danh mục', icon: FolderTree, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },
+
+  // Vận hành hằng ngày
   { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/table-settlement', label: 'Quản lý Bàn', icon: Wallet, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/tables', label: 'Quản lý QR bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/categories', label: 'Danh mục', icon: FolderTree, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },
   { path: '/inventory', label: 'Kho hàng', icon: Package, roles: ['ADMIN', 'MANAGER'] },
+
+  // Phân tích và tối ưu
   { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
   { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },
-  { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },
   { path: '/external-factors', label: 'Yếu tố ngoài', icon: CloudSun, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/tables', label: 'Quản lý bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/settings', label: 'Cài đặt', icon: Settings, roles: ['ADMIN'] },
+  { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },
+
+  // Quản trị hệ thống
   { path: '/users', label: 'Nhân viên', icon: Users, roles: ['ADMIN'] },
+  { path: '/settings', label: 'Cài đặt', icon: Settings, roles: ['ADMIN'] },
 ];
 
 export default function Sidebar() {
@@ -102,7 +110,8 @@ export function MobileHeader() {
           <div className="w-64 bg-white h-full p-4 space-y-2" onClick={(e) => e.stopPropagation()}>
             <div className="text-xl font-bold text-blue-600 mb-6">SmartDSS</div>
             {filteredNav.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path));
               return (
                 <Link key={item.path} to={item.path} onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium

@@ -75,6 +75,12 @@ function POSView() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
+  const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>('CASH');
+  const [paymentData, setPaymentData] = useState<CurrentPaymentData | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
+  const [refreshingPayment, setRefreshingPayment] = useState(false);
+  const [showCashConfirm, setShowCashConfirm] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -133,6 +139,114 @@ function POSView() {
   );
   const vat = calculateVatBreakdown(subtotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
 
+  const openPaymentModal = (order: Order) => {
+    setPaymentOrder(order);
+    setPaymentMethod('CASH');
+    setPaymentData(null);
+    setPaymentStatus({ orderId: order.id, status: 'PENDING', paymentMethod: 'PENDING' });
+    setShowCashConfirm(false);
+  };
+
+  const initQrPayment = async (order: Order) => {
+    try {
+      setRefreshingPayment(true);
+      const res = await paymentService.initQr(order.id);
+      const data = res.data.data;
+      setPaymentData({
+        orderId: data.orderId,
+        qrImageUrl: data.qrImageUrl,
+        qrCode: data.qrCode,
+        checkoutUrl: data.checkoutUrl,
+        provider: data.provider,
+        transferContent: data.transferContent,
+        amount: data.amount,
+        expiresAt: data.expiresAt,
+      });
+      setPaymentStatus(data.paymentStatus);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không khởi tạo được QR thanh toán'));
+      setPaymentData(null);
+      setPaymentMethod('CASH');
+    } finally {
+      setRefreshingPayment(false);
+    }
+  };
+
+  const selectPaymentMethod = async (method: PosPaymentMethod) => {
+    if (!paymentOrder) return;
+    if (method === 'QR') {
+      setShowCashConfirm(false);
+      setPaymentMethod('QR');
+      if (!paymentData || paymentData.orderId !== paymentOrder.id) {
+        await initQrPayment(paymentOrder);
+      }
+      return;
+    }
+    setShowCashConfirm(false);
+    setPaymentMethod('CASH');
+  };
+
+  const refreshPaymentStatus = useCallback(async (orderId: number, silent = false) => {
+    setRefreshingPayment(true);
+    try {
+      const res = await paymentService.getStatus(orderId);
+      const status = res.data.data;
+      setPaymentStatus(status);
+      if (status.status === 'PAID') {
+        toast.success(`Đơn #${orderId} đã thanh toán thành công`);
+        setPaymentOrder(null);
+        setPaymentData(null);
+      } else if (!silent) {
+        toast('Chưa nhận được thanh toán, vui lòng thử lại sau vài giây', { icon: '⏳' });
+      }
+      return status;
+    } finally {
+      setRefreshingPayment(false);
+    }
+  }, []);
+
+  const confirmCashPayment = async () => {
+    if (!paymentOrder) return;
+    try {
+      setRefreshingPayment(true);
+      const res = await paymentService.markCashPaid(paymentOrder.id);
+      setPaymentStatus(res.data.data);
+      toast.success(`Đã ghi nhận thanh toán tiền mặt cho đơn #${paymentOrder.id}`);
+      setShowCashConfirm(false);
+      setPaymentOrder(null);
+      setPaymentData(null);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không thể xác nhận tiền mặt'));
+    } finally {
+      setRefreshingPayment(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!paymentOrder || paymentMethod !== 'QR') return;
+    const orderId = paymentOrder.id;
+    const timer = window.setInterval(() => {
+      refreshPaymentStatus(orderId, true).catch(() => {
+        // Ignore polling transient errors.
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [paymentOrder, paymentMethod, refreshPaymentStatus]);
+
+  useEffect(() => {
+    if (paymentStatus?.status === 'PAID') {
+      setShowCashConfirm(false);
+      setPaymentOrder(null);
+      setPaymentData(null);
+    }
+  }, [paymentStatus]);
+
+  useEffect(() => {
+    if (!paymentOrder) {
+      setShowCashConfirm(false);
+    }
+  }, [paymentOrder]);
+
 
   const placeOrder = async () => {
     if (cart.length === 0) return toast.error('Giỏ hàng trống');
@@ -146,12 +260,21 @@ function POSView() {
           : {}),
       })),
     };
+    let createdOrder: Order | null = null;
     try {
-      await orderService.create(orderForm);
-      toast.success('Đặt hàng thành công!');
+      createdOrder = (await orderService.create(orderForm)).data.data;
+      await orderService.updateStatus(createdOrder.id, ORDER_STATUS.PREPARING);
+      const completedOrder = (await orderService.updateStatus(createdOrder.id, ORDER_STATUS.COMPLETED)).data.data;
+
+      toast.success('Đặt hàng thành công, mời thanh toán');
       setCart([]);
+      openPaymentModal(completedOrder);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Lỗi đặt hàng'));
+      if (createdOrder) {
+        toast.error(getApiErrorMessage(error, `Đã tạo đơn #${createdOrder.id} nhưng chưa thể tự động chuyển hoàn thành, vui lòng kiểm tra tab Danh sách`));
+      } else {
+        toast.error(getApiErrorMessage(error, 'Lỗi đặt hàng'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -271,6 +394,161 @@ function POSView() {
           </button>
         </div>
       </div>
+
+      <Modal
+        open={!!paymentOrder}
+        onClose={() => {
+          setPaymentOrder(null);
+          setPaymentData(null);
+        }}
+        title={paymentOrder ? `Thanh toán đơn #${paymentOrder.id}` : 'Thanh toán'}
+        maxWidth="max-w-lg"
+      >
+        {paymentOrder && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <p>Bàn: <span className="font-medium">{paymentOrder.tableNumber || 'POS'}</span></p>
+              <p>Giờ tạo: <span className="font-medium">{new Date(paymentOrder.createdAt).toLocaleString('vi-VN')}</span></p>
+              <p className="col-span-2 font-semibold">Tổng thanh toán: {formatCurrency(paymentOrder.totalAmount)}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  selectPaymentMethod('CASH').catch(() => {
+                    // no-op
+                  });
+                }}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+              >
+                <span className="inline-flex items-center gap-1"><Wallet size={16} /> Tiền mặt</span>
+              </button>
+              <button
+                onClick={() => {
+                  selectPaymentMethod('QR').catch(() => {
+                    // errors are handled in initQrPayment
+                  });
+                }}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+              >
+                <span className="inline-flex items-center gap-1"><QrCode size={16} /> QR chuyển khoản</span>
+              </button>
+            </div>
+
+            {paymentMethod === 'QR' && (
+              <div className="py-1">
+                <div className="mx-auto w-full max-w-[380px]">
+                  {paymentData?.qrCode ? (
+                    <div className="flex justify-center">
+                      <QRCodeSVG
+                        value={paymentData.qrCode}
+                        size={340}
+                        level="M"
+                        includeMargin
+                        className="h-auto max-w-full"
+                      />
+                    </div>
+                  ) : paymentData?.qrImageUrl ? (
+                    <img src={paymentData.qrImageUrl} alt={`QR thanh toán đơn ${paymentOrder.id}`} className="w-full h-auto object-contain" />
+                  ) : (
+                    <div className="h-56 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+                      Đang tải mã QR...
+                    </div>
+                  )}
+                </div>
+                {paymentData?.checkoutUrl && (
+                  <div className="text-center mt-3">
+                    <a
+                      href={paymentData.checkoutUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-xs font-medium"
+                    >
+                      Mở trang thanh toán PayOS
+                    </a>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Khách quét QR để chuyển khoản đúng số tiền của đơn.
+                </p>
+                <p className="text-xs text-gray-500 text-center mt-1">
+                  Nội dung CK: <span className="font-medium">{paymentData?.transferContent || `BILL-${paymentOrder.id}`}</span>
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowCashConfirm(false);
+                  setPaymentOrder(null);
+                  setPaymentData(null);
+                }}
+                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Đóng
+              </button>
+              {paymentMethod === 'CASH' ? (
+                <button
+                  onClick={() => setShowCashConfirm(true)}
+                  disabled={refreshingPayment}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                >
+                  <CheckCircle2 size={16} /> {refreshingPayment ? 'Đang xử lý...' : 'Xác nhận đã thu tiền mặt'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => refreshPaymentStatus(paymentOrder.id).catch(() => toast.error('Không thể kiểm tra trạng thái'))}
+                  disabled={refreshingPayment}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  <CheckCircle2 size={16} /> {refreshingPayment ? 'Đang kiểm tra...' : 'Kiểm tra trạng thái'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={showCashConfirm && !!paymentOrder}
+        onClose={() => setShowCashConfirm(false)}
+        title="Xác nhận thanh toán tiền mặt"
+        maxWidth="max-w-md"
+      >
+        {paymentOrder && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              Xác nhận đã thu tiền mặt cho đơn <span className="font-semibold">#{paymentOrder.id}</span>?
+            </p>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p>Bàn: <span className="font-semibold">{paymentOrder.tableNumber || 'POS'}</span></p>
+              <p>Số tiền: <span className="font-semibold">{formatCurrency(paymentOrder.totalAmount)}</span></p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCashConfirm(false)}
+                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmCashPayment().catch(() => {
+                    // no-op
+                  });
+                }}
+                disabled={refreshingPayment}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                <Wallet size={16} /> {refreshingPayment ? 'Đang xử lý...' : 'Xác nhận thu tiền'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -289,6 +567,7 @@ function OrderListView() {
   const [paymentData, setPaymentData] = useState<CurrentPaymentData | null>(null);
   const [paymentStatusByOrder, setPaymentStatusByOrder] = useState<Record<number, PaymentStatus>>({});
   const [refreshingPayment, setRefreshingPayment] = useState(false);
+  const [showCashConfirm, setShowCashConfirm] = useState(false);
   const lastReloadRef = useRef(0);
   const { user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
@@ -394,6 +673,7 @@ function OrderListView() {
     setPaymentOrder(order);
     setPaymentMethod('CASH');
     setPaymentData(null);
+    setShowCashConfirm(false);
   };
 
   const initQrPayment = async (order: Order) => {
@@ -427,12 +707,14 @@ function OrderListView() {
   const selectPaymentMethod = async (method: PosPaymentMethod) => {
     if (!paymentOrder) return;
     if (method === 'QR') {
+      setShowCashConfirm(false);
       setPaymentMethod('QR');
       if (!paymentData || paymentData.orderId !== paymentOrder.id) {
         await initQrPayment(paymentOrder);
       }
       return;
     }
+    setShowCashConfirm(false);
     setPaymentMethod('CASH');
   };
 
@@ -463,6 +745,7 @@ function OrderListView() {
       const res = await paymentService.markCashPaid(paymentOrder.id);
       setPaymentStatusByOrder((prev) => ({ ...prev, [paymentOrder.id]: res.data.data }));
       toast.success(`Đã ghi nhận thanh toán tiền mặt cho đơn #${paymentOrder.id}`);
+      setShowCashConfirm(false);
       setPaymentOrder(null);
       setPaymentData(null);
       loadOrders();
@@ -488,10 +771,17 @@ function OrderListView() {
     if (!paymentOrder) return;
     const current = paymentStatusByOrder[paymentOrder.id];
     if (current?.status === 'PAID') {
+      setShowCashConfirm(false);
       setPaymentOrder(null);
       setPaymentData(null);
     }
   }, [paymentOrder, paymentStatusByOrder]);
+
+  useEffect(() => {
+    if (!paymentOrder) {
+      setShowCashConfirm(false);
+    }
+  }, [paymentOrder]);
 
   const printBill = (order: Order) => {
     const payment = paymentStatusByOrder[order.id];
@@ -761,6 +1051,7 @@ function OrderListView() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
+                  setShowCashConfirm(false);
                   setPaymentOrder(null);
                   setPaymentData(null);
                 }}
@@ -770,7 +1061,7 @@ function OrderListView() {
               </button>
               {paymentMethod === 'CASH' ? (
                 <button
-                  onClick={confirmCashPayment}
+                  onClick={() => setShowCashConfirm(true)}
                   disabled={refreshingPayment}
                   className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
                 >
@@ -785,6 +1076,46 @@ function OrderListView() {
                   <CheckCircle2 size={16} /> {refreshingPayment ? 'Đang kiểm tra...' : 'Kiểm tra trạng thái'}
                 </button>
               )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={showCashConfirm && !!paymentOrder}
+        onClose={() => setShowCashConfirm(false)}
+        title="Xác nhận thanh toán tiền mặt"
+        maxWidth="max-w-md"
+      >
+        {paymentOrder && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              Xác nhận đã thu tiền mặt cho đơn <span className="font-semibold">#{paymentOrder.id}</span>?
+            </p>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p>Bàn: <span className="font-semibold">{paymentOrder.tableNumber || 'POS'}</span></p>
+              <p>Số tiền: <span className="font-semibold">{formatCurrency(paymentOrder.totalAmount)}</span></p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCashConfirm(false)}
+                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmCashPayment().catch(() => {
+                    // no-op
+                  });
+                }}
+                disabled={refreshingPayment}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                <Wallet size={16} /> {refreshingPayment ? 'Đang xử lý...' : 'Xác nhận thu tiền'}
+              </button>
             </div>
           </div>
         )}

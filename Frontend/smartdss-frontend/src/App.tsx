@@ -9,6 +9,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import CategoriesPage from '@/pages/CategoriesPage';
 import MenuPage from '@/pages/MenuPage';
 import OrdersPage from '@/pages/OrdersPage';
+import TableSettlementPage from '@/pages/TableSettlementPage';
 import InventoryPage from '@/pages/InventoryPage';
 import ReportsPage from '@/pages/ReportsPage';
 import FeedbacksPage from '@/pages/FeedbacksPage';
@@ -44,6 +45,7 @@ function App() {
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/recipes" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><RecipesPage /></ProtectedRoute>} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/table-settlement" element={<ProtectedRoute roles={['ADMIN', 'MANAGER', 'STAFF']}><TableSettlementPage /></ProtectedRoute>} />
             <Route path="/inventory" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InventoryPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ReportsPage /></ProtectedRoute>} />
             <Route path="/ai-prediction" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><AIPredictionPage /></ProtectedRoute>} />
