@@ -85,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO createOrder(OrderDTO orderDTO) {
-        requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.WAITER);
+        requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.STAFF);
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -158,9 +158,9 @@ public class OrderServiceImpl implements OrderService {
 
         // Permission by action
         if (newStatus == OrderStatus.PREPARING || newStatus == OrderStatus.COMPLETED) {
-            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.BARISTA);
+            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.STAFF);
         } else if (newStatus == OrderStatus.CANCELLED) {
-            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.WAITER);
+            requireAnyRole(RoleName.ADMIN, RoleName.MANAGER, RoleName.STAFF);
         }
 
         if (newStatus == OrderStatus.PREPARING) {

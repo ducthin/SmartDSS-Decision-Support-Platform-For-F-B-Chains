@@ -97,33 +97,29 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
                         .requestMatchers(HttpMethod.PUT, "/api/v1/orders/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
 
                         // Payments
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
 
                         // Dining Tables - GET: authenticated, CUD: ADMIN/MANAGER
@@ -136,8 +132,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
                         .requestMatchers(HttpMethod.POST, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/settings/**").hasRole(RoleName.ADMIN.name())
@@ -147,13 +142,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/sales/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.BARISTA.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
                         .requestMatchers(HttpMethod.POST, "/api/v1/sales/**").hasAnyRole(
                                 RoleName.ADMIN.name(),
                                 RoleName.MANAGER.name(),
-                                RoleName.WAITER.name()
+                                RoleName.STAFF.name()
                         )
 
                         // Inventory - ADMIN, MANAGER

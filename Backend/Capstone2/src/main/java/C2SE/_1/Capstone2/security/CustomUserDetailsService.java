@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.security;
 
+import C2SE._1.Capstone2.entity.RoleName;
 import C2SE._1.Capstone2.entity.User;
 import C2SE._1.Capstone2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +25,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        RoleName normalizedRole = RoleName.fromInput(user.getRole().getName().name());
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
                 user.getActive(),
                 true, true, true,
                 Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().name())
+                        new SimpleGrantedAuthority("ROLE_" + normalizedRole.name())
                 )
         );
     }

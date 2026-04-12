@@ -1,11 +1,45 @@
 import { useEffect, useState, useCallback } from 'react';
 import { reportService } from '@/services/reportService';
-import type { DailySalesReport, BestProduct, Inventory, TaxReportResponse } from '@/types';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type {
+  DailySalesReport,
+  BestProduct,
+  Inventory,
+  TaxReportResponse,
+  MlTrainingDataQuality,
+  MlTrainingDataOutlierStats,
+} from '@/types';
+import { BarChart, Bar, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AlertTriangle, Calendar, Download } from 'lucide-react';
 import { formatCurrency } from '@/utils/helpers';
 
 const DAY_NAMES = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const FIELD_LABELS: Record<string, string> = {
+  date: 'Ngày',
+  day_of_week: 'Thứ trong tuần',
+  is_weekend: 'Cuối tuần',
+  is_holiday: 'Ngày lễ',
+  holiday_name: 'Tên ngày lễ',
+  temperature: 'Nhiệt độ',
+  rainfall: 'Lượng mưa',
+  event_impact_level: 'Mức ảnh hưởng sự kiện',
+  area_density_score: 'Điểm mật độ khu vực',
+  sales_1_day_ago: 'Doanh thu T-1',
+  sales_7_days_ago: 'Doanh thu T-7',
+  revenue: 'Doanh thu',
+  orders: 'Số đơn',
+};
+
+const EMPTY_QUALITY: MlTrainingDataQuality = {
+  fromDate: '',
+  toDate: '',
+  expectedDays: 0,
+  totalRows: 0,
+  datasetCoverageRatePct: 0,
+  missingCountByField: {},
+  missingRatePctByField: {},
+  outlierStatsByField: {},
+  monthlyCoverage: [],
+};
 
 function formatWeeklyDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -20,13 +54,23 @@ function toLocalDateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function fieldLabel(field: string) {
+  return FIELD_LABELS[field] || field;
+}
+
+function formatPct(value: number | undefined | null) {
+  if (value == null || Number.isNaN(value)) return '0.00%';
+  return `${Number(value).toFixed(2)}%`;
+}
+
 export default function ReportsPage() {
-  const [tab, setTab] = useState<'daily' | 'weekly' | 'best' | 'low' | 'tax'>('daily');
+  const [tab, setTab] = useState<'daily' | 'weekly' | 'best' | 'low' | 'tax' | 'quality'>('daily');
   const [hourlyData, setHourlyData] = useState<DailySalesReport[]>([]);
   const [weeklyData, setWeeklyData] = useState<DailySalesReport[]>([]);
   const [bestProducts, setBestProducts] = useState<BestProduct[]>([]);
   const [lowStock, setLowStock] = useState<Inventory[]>([]);
   const [taxReport, setTaxReport] = useState<TaxReportResponse>({ summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] });
+  const [trainingQuality, setTrainingQuality] = useState<MlTrainingDataQuality>(EMPTY_QUALITY);
   const [loading, setLoading] = useState(true);
   const [dailyDate, setDailyDate] = useState(() => toLocalDateInputValue(new Date()));
   const [weeklyDate, setWeeklyDate] = useState(() => toLocalDateInputValue(new Date()));
@@ -36,6 +80,12 @@ export default function ReportsPage() {
     return toLocalDateInputValue(d);
   });
   const [taxToDate, setTaxToDate] = useState(() => toLocalDateInputValue(new Date()));
+  const [qualityFromDate, setQualityFromDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 365);
+    return toLocalDateInputValue(d);
+  });
+  const [qualityToDate, setQualityToDate] = useState(() => toLocalDateInputValue(new Date()));
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -47,14 +97,18 @@ export default function ReportsPage() {
       reportService.taxReport(taxFromDate, taxToDate).catch(() => ({
         data: { data: { summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] } },
       })),
-    ]).then(([h, w, b, l, t]) => {
+      reportService.trainingDataQuality(qualityFromDate, qualityToDate).catch(() => ({
+        data: { data: EMPTY_QUALITY },
+      })),
+    ]).then(([h, w, b, l, t, q]) => {
       setHourlyData(h.data.data || []);
       setWeeklyData((w.data.data || []).map((d: DailySalesReport) => ({ ...d, label: formatWeeklyDate(d.date) })));
       setBestProducts(b.data.data || []);
       setLowStock(l.data.data || []);
       setTaxReport(t.data.data || { summary: { date: '', totalOrders: 0, netAmount: 0, vatAmount: 0, totalAmount: 0 }, items: [] });
+      setTrainingQuality(q.data.data || EMPTY_QUALITY);
     }).finally(() => setLoading(false));
-  }, [dailyDate, weeklyDate, taxFromDate, taxToDate]);
+  }, [dailyDate, weeklyDate, taxFromDate, taxToDate, qualityFromDate, qualityToDate]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -65,10 +119,26 @@ export default function ReportsPage() {
   const tabs = [
     { key: 'daily', label: 'Doanh thu ngày' },
     { key: 'weekly', label: 'Doanh thu tuần' },
+    { key: 'quality', label: 'Chất lượng train data' },
     { key: 'tax', label: 'Báo cáo thuế' },
     { key: 'best', label: 'Bán chạy nhất' },
     { key: 'low', label: 'Sắp hết hàng' },
   ] as const;
+
+  const missingRateRows = Object.entries(trainingQuality.missingRatePctByField || {})
+    .map(([field, missingRatePct]) => ({
+      field,
+      missingRatePct,
+      missingCount: trainingQuality.missingCountByField?.[field] || 0,
+    }))
+    .sort((a, b) => b.missingRatePct - a.missingRatePct);
+
+  const topOutlierRows: Array<{ field: string; stats: MlTrainingDataOutlierStats }> = Object.entries(trainingQuality.outlierStatsByField || {})
+    .map(([field, stats]) => ({ field, stats }))
+    .sort((a, b) => (b.stats?.outlierRatePct || 0) - (a.stats?.outlierRatePct || 0))
+    .slice(0, 5);
+
+  const monthlyCoverageChartData = trainingQuality.monthlyCoverage || [];
 
   const exportTaxReportExcel = async () => {
     const ExcelJS = await import('exceljs');
@@ -239,6 +309,139 @@ export default function ReportsPage() {
                 </BarChart>
               </ResponsiveContainer>
             ) : <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>}
+          </div>
+        )}
+
+        {tab === 'quality' && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Chất lượng dữ liệu train AI</h2>
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-400" />
+                <input
+                  type="date"
+                  value={qualityFromDate}
+                  onChange={(e) => setQualityFromDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <span className="text-gray-400 text-sm">đến</span>
+                <input
+                  type="date"
+                  value={qualityToDate}
+                  onChange={(e) => setQualityToDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Số ngày kỳ vọng</p>
+                <p className="text-xl font-semibold">{trainingQuality.expectedDays || 0}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Số dòng thực tế</p>
+                <p className="text-xl font-semibold">{trainingQuality.totalRows || 0}</p>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-sm text-emerald-700">Coverage toàn tập</p>
+                <p className="text-xl font-semibold text-emerald-800">{formatPct(trainingQuality.datasetCoverageRatePct)}</p>
+              </div>
+            </div>
+
+            {monthlyCoverageChartData.length > 0 ? (
+              <div>
+                <h3 className="text-base font-medium mb-3">Coverage theo tháng</h3>
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={monthlyCoverageChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="yearMonth" tick={{ fontSize: 11 }} />
+                    <YAxis yAxisId="left" allowDecimals={false} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'Coverage (%)') {
+                          return [formatPct(Number(value)), name];
+                        }
+                        return [value, name];
+                      }}
+                    />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="expectedDays" name="Số ngày kỳ vọng" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                    <Bar yAxisId="left" dataKey="rows" name="Số dòng thực tế" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="coverageRatePct" name="Coverage (%)" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-8">Không có dữ liệu coverage theo tháng.</p>
+            )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <div>
+                <h3 className="text-base font-medium mb-3">Missing rate theo trường</h3>
+                {missingRateRows.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Trường</th>
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Thiếu (dòng)</th>
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Thiếu (%)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {missingRateRows.map((row) => (
+                          <tr key={row.field} className="border-b border-gray-100">
+                            <td className="py-2 px-2">{fieldLabel(row.field)}</td>
+                            <td className="py-2 px-2">{row.missingCount}</td>
+                            <td className={`py-2 px-2 font-medium ${row.missingRatePct > 5 ? 'text-red-600' : 'text-gray-700'}`}>
+                              {formatPct(row.missingRatePct)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-400 py-6">Không có dữ liệu missing rate.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-base font-medium mb-3">Top trường có outlier</h3>
+                {topOutlierRows.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Trường</th>
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Outlier (%)</th>
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Outlier / Mẫu</th>
+                          <th className="text-left py-2 px-2 font-medium text-gray-500">Fence (IQR)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topOutlierRows.map(({ field, stats }) => (
+                          <tr key={field} className="border-b border-gray-100">
+                            <td className="py-2 px-2">{fieldLabel(field)}</td>
+                            <td className={`py-2 px-2 font-medium ${stats.outlierRatePct > 10 ? 'text-amber-700' : 'text-gray-700'}`}>
+                              {formatPct(stats.outlierRatePct)}
+                            </td>
+                            <td className="py-2 px-2">{stats.outlierCount} / {stats.samples}</td>
+                            <td className="py-2 px-2 text-gray-600">
+                              [{stats.lowerFence.toFixed(2)}, {stats.upperFence.toFixed(2)}]
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-400 py-6">Không có dữ liệu outlier.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

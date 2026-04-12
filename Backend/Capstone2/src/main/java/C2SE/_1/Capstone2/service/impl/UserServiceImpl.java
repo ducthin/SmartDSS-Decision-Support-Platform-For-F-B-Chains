@@ -5,6 +5,7 @@ import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Role;
 import C2SE._1.Capstone2.entity.RoleName;
 import C2SE._1.Capstone2.entity.User;
+import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.DuplicateResourceException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.UserMapper;
@@ -67,7 +68,8 @@ public class UserServiceImpl implements UserService {
             throw new DuplicateResourceException("Email already exists: " + userDTO.getEmail());
         }
 
-        Role role = roleRepository.findByName(RoleName.valueOf(userDTO.getRoleName()))
+        RoleName roleName = resolveRoleName(userDTO.getRoleName());
+        Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Role", "name", userDTO.getRoleName()));
 
         User user = userMapper.toEntity(userDTO);
@@ -102,7 +104,8 @@ public class UserServiceImpl implements UserService {
             user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         }
         if (userDTO.getRoleName() != null) {
-            Role role = roleRepository.findByName(RoleName.valueOf(userDTO.getRoleName()))
+            RoleName roleName = resolveRoleName(userDTO.getRoleName());
+            Role role = roleRepository.findByName(roleName)
                     .orElseThrow(() -> new ResourceNotFoundException("Role", "name", userDTO.getRoleName()));
             user.setRole(role);
         }
@@ -116,5 +119,13 @@ public class UserServiceImpl implements UserService {
             throw new ResourceNotFoundException("User", "id", id);
         }
         userRepository.deleteById(id);
+    }
+
+    private RoleName resolveRoleName(String roleName) {
+        try {
+            return RoleName.fromInput(roleName);
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid role: " + roleName);
+        }
     }
 }

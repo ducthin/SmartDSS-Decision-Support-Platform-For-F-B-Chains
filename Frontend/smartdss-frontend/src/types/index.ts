@@ -386,6 +386,40 @@ export interface TaxReportResponse {
   items: TaxReportItem[];
 }
 
+export interface MlTrainingDataOutlierStats {
+  samples: number;
+  q1: number;
+  q3: number;
+  iqr: number;
+  lowerFence: number;
+  upperFence: number;
+  outlierCount: number;
+  outlierRatePct: number;
+}
+
+export interface MlTrainingDataMonthlyCoverage {
+  yearMonth: string;
+  fromDate: string;
+  toDate: string;
+  expectedDays: number;
+  rows: number;
+  coverageRatePct: number;
+  totalRevenue: number;
+  totalOrders: number;
+}
+
+export interface MlTrainingDataQuality {
+  fromDate: string;
+  toDate: string;
+  expectedDays: number;
+  totalRows: number;
+  datasetCoverageRatePct: number;
+  missingCountByField: Record<string, number>;
+  missingRatePctByField: Record<string, number>;
+  outlierStatsByField: Record<string, MlTrainingDataOutlierStats>;
+  monthlyCoverage: MlTrainingDataMonthlyCoverage[];
+}
+
 export interface BestProduct {
   menuItemName: string;
   totalQuantitySold: number;

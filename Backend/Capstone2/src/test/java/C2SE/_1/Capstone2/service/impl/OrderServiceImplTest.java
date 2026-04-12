@@ -51,10 +51,10 @@ class OrderServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        Role role = Role.builder().id(1L).name(RoleName.WAITER).build();
+        Role role = Role.builder().id(1L).name(RoleName.STAFF).build();
         testUser = User.builder()
-                .id(1L).username("waiter").fullName("Waiter")
-                .email("waiter@test.com").active(true).role(role)
+                .id(1L).username("staff").fullName("Staff")
+                .email("staff@test.com").active(true).role(role)
                 .build();
 
         Category category = Category.builder().id(1L).name("Cà phê").build();
@@ -80,9 +80,9 @@ class OrderServiceImplTest {
         // Arrange
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "waiter",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
 
         OrderItemDTO itemDTO = OrderItemDTO.builder()
@@ -90,7 +90,7 @@ class OrderServiceImplTest {
         OrderDTO orderDTO = OrderDTO.builder()
                 .orderItems(List.of(itemDTO)).note("Test order").build();
 
-        when(userRepository.findByUsername("waiter")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername("staff")).thenReturn(Optional.of(testUser));
         when(menuItemRepository.findById(1L)).thenReturn(Optional.of(testMenuItem));
         when(recipeRepository.findByMenuItemId(anyLong())).thenReturn(List.of());
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
@@ -120,7 +120,7 @@ class OrderServiceImplTest {
                 new UsernamePasswordAuthenticationToken(
                         "unknown",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
 
         OrderDTO orderDTO = OrderDTO.builder()
@@ -138,16 +138,16 @@ class OrderServiceImplTest {
     void createOrder_menuItemNotFound() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "waiter",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_WAITER"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
 
         OrderDTO orderDTO = OrderDTO.builder()
                 .orderItems(List.of(OrderItemDTO.builder().menuItemId(999L).quantity(1).build()))
                 .build();
 
-        when(userRepository.findByUsername("waiter")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername("staff")).thenReturn(Optional.of(testUser));
         when(menuItemRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(orderDTO))
@@ -161,9 +161,9 @@ class OrderServiceImplTest {
 
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "barista",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
 
         when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
@@ -183,9 +183,9 @@ class OrderServiceImplTest {
         Order order = Order.builder().id(1L).status(OrderStatus.COMPLETED).build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "barista",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
         when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
@@ -200,9 +200,9 @@ class OrderServiceImplTest {
         Order order = Order.builder().id(1L).status(OrderStatus.PENDING).build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "barista",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
         when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
@@ -216,9 +216,9 @@ class OrderServiceImplTest {
         Order order = Order.builder().id(1L).status(OrderStatus.PENDING).build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "barista",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
         when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
@@ -233,9 +233,9 @@ class OrderServiceImplTest {
         // Arrange
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
-                        "barista",
+                        "staff",
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_BARISTA"))
+                        List.of(new SimpleGrantedAuthority("ROLE_STAFF"))
                 ));
         Ingredient ingredient = Ingredient.builder().id(1L).name("Cà phê xay").build();
         Recipe recipe = Recipe.builder()

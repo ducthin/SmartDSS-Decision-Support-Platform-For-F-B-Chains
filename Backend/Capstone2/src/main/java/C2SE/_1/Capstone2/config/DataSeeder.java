@@ -76,7 +76,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedRoles() {
-        for (RoleName roleName : RoleName.values()) {
+        for (RoleName roleName : RoleName.activeRoles()) {
             if (roleRepository.findByName(roleName).isEmpty()) {
                 Role role = Role.builder()
                         .name(roleName)
@@ -123,38 +123,21 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Created manager user: manager");
         }
 
-        if (!userRepository.existsByUsername("barista")) {
-            Role baristaRole = roleRepository.findByName(RoleName.BARISTA)
-                    .orElseThrow(() -> new RuntimeException("BARISTA role not found"));
+        if (!userRepository.existsByUsername("staff")) {
+            Role staffRole = roleRepository.findByName(RoleName.STAFF)
+                .orElseThrow(() -> new RuntimeException("STAFF role not found"));
 
-            User barista = User.builder()
-                    .username("barista")
-                    .password(passwordEncoder.encode("barista123"))
-                    .fullName("Barista")
-                    .email("barista@smartdss.com")
-                    .phone("0901234569")
-                    .active(true)
-                    .role(baristaRole)
-                    .build();
-            userRepository.save(barista);
-            log.info("Created barista user: barista");
-        }
-
-        if (!userRepository.existsByUsername("waiter")) {
-            Role waiterRole = roleRepository.findByName(RoleName.WAITER)
-                    .orElseThrow(() -> new RuntimeException("WAITER role not found"));
-
-            User waiter = User.builder()
-                    .username("waiter")
-                    .password(passwordEncoder.encode("waiter123"))
-                    .fullName("Waiter")
-                    .email("waiter@smartdss.com")
-                    .phone("0901234570")
-                    .active(true)
-                    .role(waiterRole)
-                    .build();
-            userRepository.save(waiter);
-            log.info("Created waiter user: waiter");
+            User staff = User.builder()
+                .username("staff")
+                .password(passwordEncoder.encode("staff123"))
+                .fullName("Staff")
+                .email("staff@smartdss.com")
+                .phone("0901234569")
+                .active(true)
+                .role(staffRole)
+                .build();
+            userRepository.save(staff);
+            log.info("Created staff user: staff");
         }
     }
 

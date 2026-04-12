@@ -47,6 +47,31 @@ Script `scripts/train_model.py` **không shuffle** ngẫu nhiên: giữ thứ t�
 
 `model.joblib` lưu thêm metadata (`test_mae_revenue`, `test_mape_revenue_pct`, khoảng ngày test, …). API inference dùng **MAPE test** để hiệu chỉnh `confidence_score` (không còn cố định 0.85).
 
+## 2.3 Lấy dữ liệu thật từ Backend (khuyến nghị cho đồ án)
+- Backend đã hỗ trợ endpoint xuất CSV train thực tế: `GET /api/v1/reports/ml-training-data.csv`
+- Endpoint thống kê chất lượng dữ liệu train (missing rate, outlier IQR, coverage theo tháng): `GET /api/v1/reports/ml-training-data/quality`
+- Endpoint cần JWT của tài khoản `MANAGER` hoặc `ADMIN`.
+- `area_density_score` trong CSV hiện được hiệu chỉnh theo ngữ cảnh ngày (tháng + thứ + holiday + event impact), đồng bộ cùng logic backend khi gọi dự báo AI.
+
+Bạn có thể kéo CSV tự động về đúng file train bằng script:
+
+```bash
+# Cách 1: dùng token có sẵn
+python scripts/fetch_real_training_data.py --token <JWT_TOKEN>
+
+# Cách 2: để script tự login
+python scripts/fetch_real_training_data.py --username manager --password manager123
+
+# Tuỳ chọn ngày
+python scripts/fetch_real_training_data.py --token <JWT_TOKEN> --from-date 2025-01-01 --to-date 2026-01-01
+```
+
+Sau khi có dữ liệu thật, train lại model:
+
+```bash
+python scripts/train_model.py
+```
+
 ## 3. Quy trình làm việc với Data (Workflow)
 - **Bước 1**: Từ Project Java/MySQL hiện tại, Export toàn bộ lịch sử bán hàng ra file `.csv`, lưu vào thư mục `/data`.
 - **Bước 2**: Dùng Jupyter Notebook (Hoặc file Python tách rời) dùng Pandas và Scikit-Learn để train Model nhận diện quy luật ăn uống của khách hàng.

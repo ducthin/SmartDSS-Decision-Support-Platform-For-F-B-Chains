@@ -8,13 +8,12 @@ import { getApiErrorMessage, getRoleKey } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
-const emptyForm: UserForm = { username: '', password: '', fullName: '', email: '', phone: '', active: true, roleName: 'WAITER' };
+const emptyForm: UserForm = { username: '', password: '', fullName: '', email: '', phone: '', active: true, roleName: 'STAFF' };
 
 const roleOptions = [
   { name: 'ADMIN' },
   { name: 'MANAGER' },
-  { name: 'BARISTA' },
-  { name: 'WAITER' },
+  { name: 'STAFF' },
 ];
 
 export default function UsersPage() {
@@ -47,7 +46,7 @@ export default function UsersPage() {
   const openEdit = (u: User) => {
     setEditing(u);
     setForm({ username: u.username, fullName: u.fullName, email: u.email, phone: u.phone, active: u.active,
-      roleName: getRoleKey(u.roleName) || 'WAITER' });
+      roleName: getRoleKey(u.roleName) || 'STAFF' });
     setShowModal(true);
   };
 

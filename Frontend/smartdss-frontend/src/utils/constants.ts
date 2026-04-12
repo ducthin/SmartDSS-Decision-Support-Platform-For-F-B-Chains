@@ -22,6 +22,5 @@ export const ORDER_STATUS_STYLES: Record<string, string> = {
 export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Quản trị viên',
   MANAGER: 'Quản lý',
-  BARISTA: 'Staff (Barista)',
-  WAITER: 'Staff (Waiter)',
+  STAFF: 'Nhân viên',
 };

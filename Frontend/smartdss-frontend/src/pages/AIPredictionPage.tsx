@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { AIPrediction } from '@/types';
 import { predictionService } from '@/services/predictionService';
+import { reportService } from '@/services/reportService';
 import { formatCurrency } from '@/utils/helpers';
 
 const CONFIDENCE_STYLES = {
@@ -23,6 +24,12 @@ function todayISO() {
   return new Date().toISOString().split('T')[0];
 }
 
+function daysAgoISO(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+}
+
 function dayOfWeekVN(dateStr: string) {
   const days = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
   return days[new Date(dateStr + 'T00:00:00').getDay()];
@@ -35,6 +42,10 @@ export default function AIPredictionPage() {
   const [selectedDate, setSelectedDate] = useState<string>(todayISO());
   const [analysedDate, setAnalysedDate] = useState<string | null>(null);
   const [compareLlm, setCompareLlm] = useState(false);
+  const [exportFromDate, setExportFromDate] = useState<string>(daysAgoISO(365));
+  const [exportToDate, setExportToDate] = useState<string>(todayISO());
+  const [exportingDataset, setExportingDataset] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const isFuture = selectedDate > todayISO();
 
@@ -54,6 +65,37 @@ export default function AIPredictionPage() {
         );
       })
       .finally(() => setLoading(false));
+  };
+
+  const handleExportTrainingData = async () => {
+    setExportingDataset(true);
+    setExportError(null);
+    try {
+      const res = await reportService.downloadMlTrainingCsv(exportFromDate, exportToDate);
+      const contentDisposition = (res.headers?.['content-disposition'] ?? '') as string;
+      const filenameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+      const fileName = filenameMatch?.[1] || `training_data_real_${exportFromDate}_${exportToDate}.csv`;
+
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const maybeAxiosErr = err as {
+        response?: { data?: { message?: string } };
+      };
+      setExportError(
+        maybeAxiosErr?.response?.data?.message ||
+        'Không tải được dữ liệu thật từ backend. Kiểm tra đăng nhập Manager/Admin và server backend.'
+      );
+    } finally {
+      setExportingDataset(false);
+    }
   };
 
   const conf = prediction ? confidenceLabel(prediction.confidence_score) : null;
@@ -175,6 +217,53 @@ export default function AIPredictionPage() {
             </div>
           </div>
         )}
+
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-emerald-800">Xuất dữ liệu thật để train AI</h3>
+            <span className="text-xs text-emerald-700">CSV chuẩn theo schema training_data.csv</span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-emerald-900 mb-1">Từ ngày</label>
+              <input
+                type="date"
+                value={exportFromDate}
+                onChange={(e) => setExportFromDate(e.target.value)}
+                className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-emerald-900 mb-1">Đến ngày</label>
+              <input
+                type="date"
+                value={exportToDate}
+                onChange={(e) => setExportToDate(e.target.value)}
+                className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <button
+              onClick={handleExportTrainingData}
+              disabled={exportingDataset}
+              className={`h-10 rounded-lg text-sm font-semibold transition-colors ${
+                exportingDataset
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              {exportingDataset ? 'Đang xuất CSV...' : 'Tải dữ liệu thật'}
+            </button>
+          </div>
+
+          {exportError && (
+            <p className="mt-3 text-xs text-red-600">{exportError}</p>
+          )}
+
+          <p className="mt-2 text-xs text-emerald-700">
+            Gồm các cột: weather, holiday, event impact, lag sales, revenue, orders để huấn luyện mô hình tại ml-service.
+          </p>
+        </div>
       </div>
 
       {/* ── Error ───────────────────────────────────────────── */}

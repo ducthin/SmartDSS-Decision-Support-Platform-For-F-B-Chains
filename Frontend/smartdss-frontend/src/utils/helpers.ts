@@ -2,13 +2,21 @@ import type { AxiosError } from 'axios';
 import type { MenuItem } from '@/types';
 import { ROLE_LABELS } from './constants';
 
-export function formatRoleName(roleName: string | undefined): string {
+function normalizeRole(roleName: string | undefined): string {
   const role = roleName?.replace('ROLE_', '') ?? '';
+  if (role === 'WAITER' || role === 'BARISTA') {
+    return 'STAFF';
+  }
+  return role;
+}
+
+export function formatRoleName(roleName: string | undefined): string {
+  const role = normalizeRole(roleName);
   return ROLE_LABELS[role] ?? role;
 }
 
 export function getRoleKey(roleName: string | undefined): string {
-  return roleName?.replace('ROLE_', '') ?? '';
+  return normalizeRole(roleName);
 }
 
 export function formatCurrency(n: number): string {

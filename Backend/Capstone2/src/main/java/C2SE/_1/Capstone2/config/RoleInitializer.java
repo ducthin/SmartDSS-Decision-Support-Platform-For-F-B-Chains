@@ -22,7 +22,7 @@ public class RoleInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         int created = 0;
-        for (RoleName roleName : RoleName.values()) {
+        for (RoleName roleName : RoleName.activeRoles()) {
             if (roleRepository.findByName(roleName).isEmpty()) {
                 roleRepository.save(Role.builder()
                         .name(roleName)

@@ -53,9 +53,9 @@ function playAlertBeep() {
 export default function MainLayout() {
   const { token, loading, user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
-  const canReceiveStaffCalls = ['ADMIN', 'MANAGER', 'WAITER', 'BARISTA'].includes(userRole);
+  const canReceiveStaffCalls = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   const canReceiveFeedbackAlerts = ['ADMIN', 'MANAGER'].includes(userRole);
-  const canReceiveQrOrderAlerts = ['ADMIN', 'MANAGER', 'WAITER', 'BARISTA'].includes(userRole);
+  const canReceiveQrOrderAlerts = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   const lastCallIdRef = useRef<number | null>(null);
   const lastFeedbackAlertIdRef = useRef<number | null>(null);
   const lastQrOrderIdRef = useRef<number | null>(null);

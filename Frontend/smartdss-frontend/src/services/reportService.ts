@@ -1,5 +1,12 @@
 import api from './api';
-import type { ApiResponse, Sales, DailySalesReport, BestProduct, TaxReportResponse } from '@/types';
+import type {
+  ApiResponse,
+  Sales,
+  DailySalesReport,
+  BestProduct,
+  TaxReportResponse,
+  MlTrainingDataQuality,
+} from '@/types';
 
 export const salesService = {
   getAll: () => api.get<ApiResponse<Sales[]>>('/sales'),
@@ -19,6 +26,16 @@ export const reportService = {
     api.get<ApiResponse<Inventory[]>>('/reports/low-stock'),
   taxReport: (fromDate?: string, toDate?: string) =>
     api.get<ApiResponse<TaxReportResponse>>('/reports/tax', { params: { fromDate, toDate } }),
+  trainingDataQuality: (fromDate?: string, toDate?: string, areaDensityScore?: number) =>
+    api.get<ApiResponse<MlTrainingDataQuality>>('/reports/ml-training-data/quality', {
+      params: { fromDate, toDate, areaDensityScore },
+    }),
+  downloadMlTrainingCsv: (fromDate?: string, toDate?: string, areaDensityScore?: number) =>
+    api.get<Blob>('/reports/ml-training-data.csv', {
+      params: { fromDate, toDate, areaDensityScore },
+      responseType: 'blob',
+      timeout: 120000,
+    }),
 };
 
 type Inventory = import('@/types').Inventory;

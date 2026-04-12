@@ -11,9 +11,9 @@ import {
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER'] },
   { path: '/categories', label: 'Danh mục', icon: FolderTree, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'BARISTA', 'WAITER'] },
+  { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'BARISTA', 'WAITER'] },
+  { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/inventory', label: 'Kho hàng', icon: Package, roles: ['ADMIN', 'MANAGER'] },
   { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
   { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },

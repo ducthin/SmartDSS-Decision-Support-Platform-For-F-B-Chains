@@ -9,14 +9,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * One-time migration to remove legacy STAFF role in DB.
- * Reassigns STAFF users to WAITER by default (or BARISTA if username contains 'barista'),
- * then removes STAFF role record.
+ * One-time migration to merge legacy WAITER/BARISTA roles into STAFF.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "app.roles.migrate-remove-staff", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.roles.migrate-merge-service-roles", havingValue = "true", matchIfMissing = true)
 public class StaffRoleMigration implements CommandLineRunner {
 
     private final JdbcTemplate jdbcTemplate;
@@ -24,24 +22,33 @@ public class StaffRoleMigration implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        Integer staffRoleId = queryRoleId("STAFF");
-        if (staffRoleId == null) return;
+        Integer staffRoleId = ensureRole("STAFF");
+        Integer waiterRoleId = queryRoleId("WAITER");
+        Integer baristaRoleId = queryRoleId("BARISTA");
 
-        Integer waiterRoleId = ensureRole("WAITER");
-        Integer baristaRoleId = ensureRole("BARISTA");
+        int fromWaiter = 0;
+        int fromBarista = 0;
+        int deletedWaiter = 0;
+        int deletedBarista = 0;
 
-        int toBarista = jdbcTemplate.update(
-                "UPDATE users u SET u.role_id = ? WHERE u.role_id = ? AND LOWER(u.username) LIKE '%barista%'",
-                baristaRoleId, staffRoleId
-        );
-        int toWaiter = jdbcTemplate.update(
-                "UPDATE users u SET u.role_id = ? WHERE u.role_id = ?",
-                waiterRoleId, staffRoleId
-        );
+        if (waiterRoleId != null) {
+            fromWaiter = jdbcTemplate.update(
+                    "UPDATE users u SET u.role_id = ? WHERE u.role_id = ?",
+                    staffRoleId, waiterRoleId
+            );
+            deletedWaiter = jdbcTemplate.update("DELETE FROM roles WHERE id = ?", waiterRoleId);
+        }
 
-        int deleted = jdbcTemplate.update("DELETE FROM roles WHERE id = ?", staffRoleId);
-        log.info("StaffRoleMigration: reassigned {} to BARISTA, {} to WAITER, deleted STAFF role={}",
-                toBarista, toWaiter, deleted);
+        if (baristaRoleId != null) {
+            fromBarista = jdbcTemplate.update(
+                    "UPDATE users u SET u.role_id = ? WHERE u.role_id = ?",
+                    staffRoleId, baristaRoleId
+            );
+            deletedBarista = jdbcTemplate.update("DELETE FROM roles WHERE id = ?", baristaRoleId);
+        }
+
+        log.info("StaffRoleMigration: merged users waiter={} barista={} into STAFF, deleted roles waiter={} barista={}",
+                fromWaiter, fromBarista, deletedWaiter, deletedBarista);
     }
 
     private Integer queryRoleId(String roleName) {

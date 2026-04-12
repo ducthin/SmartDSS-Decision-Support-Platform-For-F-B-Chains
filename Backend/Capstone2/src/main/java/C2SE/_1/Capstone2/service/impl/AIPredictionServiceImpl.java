@@ -27,6 +27,7 @@ import C2SE._1.Capstone2.service.EventService;
 import C2SE._1.Capstone2.service.OpenAiComparisonService;
 import C2SE._1.Capstone2.service.ReportService;
 import C2SE._1.Capstone2.service.WeatherService;
+import C2SE._1.Capstone2.util.AreaDensityScoreEstimator;
 import C2SE._1.Capstone2.util.DrinkOptionsJsonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +124,7 @@ public class AIPredictionServiceImpl implements AIPredictionService {
         int isWeekend = (dayOfWeek == 6 || dayOfWeek == 7) ? 1 : 0;
 
         ImpactSnapshot impact = resolveEventsAndHoliday(targetDate);
-        int areaDensityScore = resolveAreaDensityScore();
+        int areaDensityScore = resolveAreaDensityScore(targetDate, impact);
 
         double sales1DayAgo = fetchOrEstimateSales(targetDate.minusDays(1));
         double sales7DaysAgo = fetchOrEstimateSales(targetDate.minusDays(7));
@@ -410,18 +411,28 @@ public class AIPredictionServiceImpl implements AIPredictionService {
         return new ImpactSnapshot(isHoliday, maxImpact);
     }
 
-    private int resolveAreaDensityScore() {
+    private int resolveAreaDensityScore(LocalDate targetDate, ImpactSnapshot impact) {
+        int baseScore = 60;
         try {
             AreaBusynessDTO busyness = areaBusynessService.analyzeCurrentArea();
             if (busyness != null && busyness.getScore() != null) {
-                return busyness.getScore();
+                baseScore = busyness.getScore();
             }
         } catch (BadRequestException e) {
             log.warn("[AIPrediction] Chua cau hinh vi tri quan - dung diem mat do mac dinh 60.");
         } catch (Exception e) {
             log.warn("[AIPrediction] Loi mat do khu vuc: {}", e.getMessage());
         }
-        return 60;
+
+        int normalizedBase = AreaDensityScoreEstimator.normalizeBaseScore(baseScore, 60);
+        int adjustedScore = AreaDensityScoreEstimator.estimate(
+                normalizedBase,
+                targetDate,
+                impact.isHoliday(),
+                impact.maxImpact());
+        log.info("[AIPrediction] Area density base={} adjusted={} (date={} holiday={} impact={})",
+                normalizedBase, adjustedScore, targetDate, impact.isHoliday(), impact.maxImpact());
+        return adjustedScore;
     }
 
     private double fetchOrEstimateSales(LocalDate date) {

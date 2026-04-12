@@ -47,7 +47,7 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
 
-  const canUsePOS = ['ADMIN', 'MANAGER', 'WAITER'].includes(userRole);
+  const canUsePOS = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -292,8 +292,8 @@ function OrderListView() {
   const lastReloadRef = useRef(0);
   const { user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
-  const canPrepareOrComplete = ['ADMIN', 'MANAGER', 'BARISTA'].includes(userRole);
-  const canCancel = ['ADMIN', 'MANAGER', 'WAITER'].includes(userRole);
+  const canPrepareOrComplete = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
+  const canCancel = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   const canSeeTaxBreakdown = ['ADMIN', 'MANAGER'].includes(userRole);
 
   const loadOrders = useCallback(() => {
