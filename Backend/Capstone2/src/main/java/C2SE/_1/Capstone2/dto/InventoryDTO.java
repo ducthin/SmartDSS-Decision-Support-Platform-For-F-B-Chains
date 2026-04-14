@@ -17,6 +17,10 @@ public class InventoryDTO {
     private String unit;
     private BigDecimal quantity;
     private BigDecimal minimumStock;
+    private BigDecimal unitCost;
+    private BigDecimal marketUnitPrice;
+    private String marketPriceSource;
+    private LocalDateTime marketPriceUpdatedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

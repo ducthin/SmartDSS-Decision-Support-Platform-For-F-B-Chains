@@ -19,5 +19,8 @@ public class InventoryTransactionDTO {
     @DecimalMin(value = "0.01", message = "Số lượng phải > 0")
     private BigDecimal quantity;
 
+    @DecimalMin(value = "0", message = "Đơn giá phải >= 0")
+    private BigDecimal unitPrice;
+
     private String reason;
 }

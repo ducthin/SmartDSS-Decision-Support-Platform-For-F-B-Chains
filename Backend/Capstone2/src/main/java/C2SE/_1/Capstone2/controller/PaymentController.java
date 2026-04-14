@@ -5,13 +5,16 @@ import C2SE._1.Capstone2.dto.TableCashSettlementResultDTO;
 import C2SE._1.Capstone2.dto.PaymentInitDTO;
 import C2SE._1.Capstone2.dto.PaymentStatusDTO;
 import C2SE._1.Capstone2.dto.TableQrInitDTO;
+import C2SE._1.Capstone2.dto.TableSettlementDetailDTO;
 import C2SE._1.Capstone2.dto.TableSettlementSummaryDTO;
 import C2SE._1.Capstone2.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -56,5 +59,19 @@ public class PaymentController {
     @GetMapping("/tables/settlement-summary")
     public ResponseEntity<ApiResponse<List<TableSettlementSummaryDTO>>> getTableSettlementSummary() {
         return ResponseEntity.ok(ApiResponse.success(paymentService.getTableSettlementSummary()));
+    }
+
+    @GetMapping("/features")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> getPaymentFeatures() {
+        Map<String, Boolean> features = new HashMap<>();
+        features.put("tableSettlementDetail", true);
+        features.put("groupedTableQrSession", true);
+        return ResponseEntity.ok(ApiResponse.success(features));
+    }
+
+    @GetMapping("/tables/detail")
+    public ResponseEntity<ApiResponse<TableSettlementDetailDTO>> getTableSettlementDetail(
+            @RequestParam(name = "tableNumber") String tableNumber) {
+        return ResponseEntity.ok(ApiResponse.success(paymentService.getTableSettlementDetail(tableNumber)));
     }
 }

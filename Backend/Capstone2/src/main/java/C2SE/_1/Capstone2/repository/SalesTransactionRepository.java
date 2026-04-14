@@ -23,6 +23,12 @@ public interface SalesTransactionRepository extends JpaRepository<SalesTransacti
 
     List<SalesTransaction> findByOrderIdIn(List<Long> orderIds);
 
+       List<SalesTransaction> findByTablePaymentSessionKey(String tablePaymentSessionKey);
+
+       @Lock(LockModeType.PESSIMISTIC_WRITE)
+       @Query("SELECT st FROM SalesTransaction st WHERE st.tablePaymentSessionKey = :sessionKey")
+       List<SalesTransaction> findByTablePaymentSessionKeyForUpdate(@Param("sessionKey") String sessionKey);
+
     List<SalesTransaction> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT st FROM SalesTransaction st WHERE st.cashier.id = :cashierId")

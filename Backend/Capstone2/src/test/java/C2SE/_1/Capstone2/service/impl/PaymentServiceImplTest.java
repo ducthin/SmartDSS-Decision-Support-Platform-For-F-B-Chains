@@ -5,9 +5,13 @@ import C2SE._1.Capstone2.dto.PaymentWebhookDTO;
 import C2SE._1.Capstone2.entity.Order;
 import C2SE._1.Capstone2.entity.OrderStatus;
 import C2SE._1.Capstone2.entity.SalesTransaction;
+import C2SE._1.Capstone2.entity.TablePaymentSession;
 import C2SE._1.Capstone2.exception.BadRequestException;
+import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.OrderRepository;
 import C2SE._1.Capstone2.repository.SalesTransactionRepository;
+import C2SE._1.Capstone2.repository.TablePaymentSessionRepository;
+import C2SE._1.Capstone2.service.FinanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +23,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +43,12 @@ class PaymentServiceImplTest {
     private OrderRepository orderRepository;
     @Mock
     private SalesTransactionRepository salesTransactionRepository;
+    @Mock
+    private TablePaymentSessionRepository tablePaymentSessionRepository;
+    @Mock
+    private OrderMapper orderMapper;
+    @Mock
+    private FinanceService financeService;
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
@@ -104,6 +117,127 @@ class PaymentServiceImplTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Thiếu số tiền");
     }
+
+            @Test
+            @DisplayName("Grouped QR session: webhook PAID settle toàn bộ đơn trong session")
+            void handleProviderWebhook_groupedSessionSettlesAllPendingOrders() {
+            Order orderA = testOrder(201L, BigDecimal.valueOf(100000));
+            Order orderB = testOrder(202L, BigDecimal.valueOf(50000));
+
+            SalesTransaction txA = pendingTx(orderA, BigDecimal.valueOf(100000));
+            txA.setTablePaymentSessionKey("TPS-SESSION-1");
+            SalesTransaction txB = pendingTx(orderB, BigDecimal.valueOf(50000));
+            txB.setTablePaymentSessionKey("TPS-SESSION-1");
+
+            TablePaymentSession session = TablePaymentSession.builder()
+                .sessionKey("TPS-SESSION-1")
+                .tableNumber("Bàn 1")
+                .representativeOrderId(201L)
+                .expectedAmount(BigDecimal.valueOf(150000))
+                .provider("PAYOS")
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .includedOrderIds("201,202")
+                .build();
+
+            when(salesTransactionRepository.findByOrderIdForUpdate(201L)).thenReturn(Optional.of(txA));
+            when(tablePaymentSessionRepository.findBySessionKeyForUpdate("TPS-SESSION-1")).thenReturn(Optional.of(session));
+            when(salesTransactionRepository.findByTablePaymentSessionKeyForUpdate("TPS-SESSION-1")).thenReturn(List.of(txA, txB));
+            when(salesTransactionRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(tablePaymentSessionRepository.save(any(TablePaymentSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            PaymentWebhookDTO webhook = PaymentWebhookDTO.builder()
+                .orderId(201L)
+                .status("PAID")
+                .amount(BigDecimal.valueOf(150000))
+                .providerTransactionId("payos-tx-201")
+                .build();
+
+            PaymentStatusDTO result = paymentService.handleProviderWebhook(webhook);
+
+            assertThat(result.getStatus()).isEqualTo("PAID");
+            assertThat(result.getPaymentMethod()).isEqualTo("QR");
+            assertThat(txA.getPaymentMethod()).isEqualTo("QR");
+            assertThat(txB.getPaymentMethod()).isEqualTo("QR");
+            assertThat(txA.getTablePaymentSessionKey()).isNull();
+            assertThat(txB.getTablePaymentSessionKey()).isNull();
+            assertThat(session.getStatus()).isEqualTo("PAID");
+            assertThat(session.getProviderTransactionId()).isEqualTo("payos-tx-201");
+
+            verify(salesTransactionRepository).saveAll(any());
+            verify(tablePaymentSessionRepository).save(any(TablePaymentSession.class));
+            verify(messagingTemplate, times(2)).convertAndSend(eq("/topic/orders-payment"), any(PaymentStatusDTO.class));
+            }
+
+            @Test
+            @DisplayName("Grouped QR session: reject khi amount mismatch")
+            void handleProviderWebhook_groupedSessionRejectAmountMismatch() {
+            Order order = testOrder(203L, BigDecimal.valueOf(100000));
+            SalesTransaction tx = pendingTx(order, BigDecimal.valueOf(100000));
+            tx.setTablePaymentSessionKey("TPS-SESSION-2");
+
+            TablePaymentSession session = TablePaymentSession.builder()
+                .sessionKey("TPS-SESSION-2")
+                .tableNumber("Bàn 2")
+                .representativeOrderId(203L)
+                .expectedAmount(BigDecimal.valueOf(100000))
+                .provider("PAYOS")
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .includedOrderIds("203")
+                .build();
+
+            when(salesTransactionRepository.findByOrderIdForUpdate(203L)).thenReturn(Optional.of(tx));
+            when(tablePaymentSessionRepository.findBySessionKeyForUpdate("TPS-SESSION-2")).thenReturn(Optional.of(session));
+            when(salesTransactionRepository.findByTablePaymentSessionKeyForUpdate("TPS-SESSION-2")).thenReturn(List.of(tx));
+
+            PaymentWebhookDTO webhook = PaymentWebhookDTO.builder()
+                .orderId(203L)
+                .status("PAID")
+                .amount(BigDecimal.valueOf(90000))
+                .providerTransactionId("payos-tx-203")
+                .build();
+
+            assertThatThrownBy(() -> paymentService.handleProviderWebhook(webhook))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("không khớp tổng đơn của bàn");
+
+            verify(salesTransactionRepository, never()).saveAll(any());
+            verify(tablePaymentSessionRepository, never()).save(any(TablePaymentSession.class));
+            }
+
+            @Test
+            @DisplayName("markCashPaid: đóng session QR gộp đang mở")
+            void markCashPaid_closeOpenGroupedSession() {
+            Order order = testOrder(204L, BigDecimal.valueOf(120000));
+            SalesTransaction tx = pendingTx(order, BigDecimal.valueOf(120000));
+            tx.setTablePaymentSessionKey("TPS-SESSION-3");
+
+            TablePaymentSession session = TablePaymentSession.builder()
+                .sessionKey("TPS-SESSION-3")
+                .tableNumber("Bàn 3")
+                .representativeOrderId(204L)
+                .expectedAmount(BigDecimal.valueOf(120000))
+                .provider("PAYOS")
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .includedOrderIds("204")
+                .build();
+
+            when(salesTransactionRepository.findByOrderIdForUpdate(204L)).thenReturn(Optional.of(tx));
+            when(salesTransactionRepository.save(any(SalesTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(tablePaymentSessionRepository.findBySessionKeyForUpdate("TPS-SESSION-3")).thenReturn(Optional.of(session));
+            when(tablePaymentSessionRepository.save(any(TablePaymentSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            PaymentStatusDTO result = paymentService.markCashPaid(204L);
+
+            assertThat(result.getStatus()).isEqualTo("PAID");
+            assertThat(result.getPaymentMethod()).isEqualTo("CASH");
+            assertThat(tx.getTablePaymentSessionKey()).isNull();
+            assertThat(session.getStatus()).isEqualTo("CANCELLED");
+
+            verify(tablePaymentSessionRepository).save(any(TablePaymentSession.class));
+            }
 
     @Test
     @DisplayName("Webhook generic fail-closed nếu chưa cấu hình secret")

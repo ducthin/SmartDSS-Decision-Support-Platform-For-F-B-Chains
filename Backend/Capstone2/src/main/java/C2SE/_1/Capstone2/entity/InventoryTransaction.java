@@ -30,6 +30,12 @@ public class InventoryTransaction extends BaseEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
 
+    @Column(precision = 12, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal totalAmount;
+
     @Column(length = 255)
     private String reason;
 }

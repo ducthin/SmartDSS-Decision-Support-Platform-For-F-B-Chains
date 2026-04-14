@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventory")
@@ -28,4 +29,15 @@ public class Inventory extends BaseEntity {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal minimumStock;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal unitCost;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal marketUnitPrice;
+
+    @Column(length = 120)
+    private String marketPriceSource;
+
+    private LocalDateTime marketPriceUpdatedAt;
 }

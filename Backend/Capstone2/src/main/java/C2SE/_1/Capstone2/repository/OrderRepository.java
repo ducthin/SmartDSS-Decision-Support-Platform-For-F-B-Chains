@@ -55,6 +55,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.status <> :cancelledStatus AND o.tableNumber IS NOT NULL AND o.tableNumber <> ''")
     List<Order> findTableOrdersForSettlement(@Param("cancelledStatus") OrderStatus cancelledStatus);
 
+    @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     List<Order> findByTableNumberOrderByCreatedAtDesc(String tableNumber);
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})

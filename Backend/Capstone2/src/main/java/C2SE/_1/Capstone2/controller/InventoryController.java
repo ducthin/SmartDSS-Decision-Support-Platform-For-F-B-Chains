@@ -3,8 +3,11 @@ package C2SE._1.Capstone2.controller;
 import C2SE._1.Capstone2.dto.ApiResponse;
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.InventoryItemUpsertDTO;
+import C2SE._1.Capstone2.dto.InventoryMarketPriceDTO;
+import C2SE._1.Capstone2.dto.InventoryMarketPriceUpdateDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionHistoryDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionDTO;
+import C2SE._1.Capstone2.dto.InventoryUnitCostUpdateDTO;
 import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.service.InventoryService;
 import jakarta.validation.Valid;
@@ -55,6 +58,34 @@ public class InventoryController {
             @PathVariable Long inventoryId,
             @Valid @RequestBody InventoryItemUpsertDTO dto) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.updateInventoryItem(inventoryId, dto)));
+    }
+
+    @PutMapping("/{inventoryId}/market-price")
+    public ResponseEntity<ApiResponse<InventoryDTO>> updateMarketPrice(
+            @PathVariable Long inventoryId,
+            @Valid @RequestBody InventoryMarketPriceUpdateDTO dto) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.updateMarketPrice(inventoryId, dto)));
+    }
+
+    @PutMapping("/{inventoryId}/unit-cost")
+    public ResponseEntity<ApiResponse<InventoryDTO>> updateUnitCost(
+            @PathVariable Long inventoryId,
+            @Valid @RequestBody InventoryUnitCostUpdateDTO dto) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.updateUnitCost(inventoryId, dto)));
+    }
+
+    @GetMapping("/{inventoryId}/market-price")
+    public ResponseEntity<ApiResponse<InventoryMarketPriceDTO>> getMarketPrice(@PathVariable Long inventoryId) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getMarketPrice(inventoryId)));
+    }
+
+    @GetMapping("/market-prices")
+    public ResponseEntity<ApiResponse<PageResponse<InventoryMarketPriceDTO>>> getMarketPrices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
+        var pageable = PageRequest.of(page, size, Sort.by("ingredient.name").ascending());
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getMarketPrices(keyword, pageable)));
     }
 
     @GetMapping("/{inventoryId}/transactions")

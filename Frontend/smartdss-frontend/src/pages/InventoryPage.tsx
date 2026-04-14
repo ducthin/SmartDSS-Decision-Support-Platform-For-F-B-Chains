@@ -4,7 +4,7 @@ import type { Inventory, InventoryItemForm, InventoryTransactionForm, InventoryT
 import { Plus, Minus, AlertTriangle, Search, PenSquare, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
-import { getApiErrorMessage } from '@/utils/helpers';
+import { formatCurrency, getApiErrorMessage } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -28,6 +28,15 @@ export default function InventoryPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
+  const [showMarketPriceModal, setShowMarketPriceModal] = useState(false);
+  const [marketPriceSaving, setMarketPriceSaving] = useState(false);
+  const [marketPriceForm, setMarketPriceForm] = useState({
+    inventoryId: 0,
+    ingredientName: '',
+    unitCost: '',
+    marketUnitPrice: '',
+    source: '',
+  });
   const [keyword, setKeyword] = useState('');
   const [lowStockFilter, setLowStockFilter] = useState<boolean | undefined>(undefined);
   const debouncedKeyword = useDebounce(keyword);
@@ -125,6 +134,49 @@ export default function InventoryPage() {
     setShowHistoryModal(true);
   };
 
+  const openMarketPriceModal = (inv: Inventory) => {
+    setMarketPriceForm({
+      inventoryId: inv.id,
+      ingredientName: inv.ingredientName,
+      unitCost: inv.unitCost != null ? String(inv.unitCost) : '',
+      marketUnitPrice: inv.marketUnitPrice != null ? String(inv.marketUnitPrice) : '',
+      source: inv.marketPriceSource || '',
+    });
+    setShowMarketPriceModal(true);
+  };
+
+  const handleMarketPriceSubmit = async () => {
+    if (!marketPriceForm.inventoryId) return;
+    if (marketPriceForm.unitCost === '' || Number(marketPriceForm.unitCost) < 0) {
+      toast.error('Giá vốn nội bộ phải >= 0');
+      return;
+    }
+    if (marketPriceForm.marketUnitPrice === '' || Number(marketPriceForm.marketUnitPrice) < 0) {
+      toast.error('Giá thị trường phải >= 0');
+      return;
+    }
+
+    setMarketPriceSaving(true);
+    try {
+      await Promise.all([
+        inventoryService.updateUnitCost(marketPriceForm.inventoryId, {
+          unitCost: Number(marketPriceForm.unitCost),
+        }),
+        inventoryService.updateMarketPrice(marketPriceForm.inventoryId, {
+          marketUnitPrice: Number(marketPriceForm.marketUnitPrice),
+          source: marketPriceForm.source.trim() || undefined,
+        }),
+      ]);
+      toast.success('Đã cập nhật giá vốn và giá thị trường');
+      setShowMarketPriceModal(false);
+      load();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không thể cập nhật giá nguyên liệu'));
+    } finally {
+      setMarketPriceSaving(false);
+    }
+  };
+
   const loadHistory = useCallback(() => {
     if (!showHistoryModal || !selectedInventory) return;
     setHistoryLoading(true);
@@ -175,6 +227,8 @@ export default function InventoryPage() {
               <th className="text-left py-3 px-4 font-medium text-gray-500">Tồn kho</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Đơn vị</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Mức tối thiểu</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Giá vốn nội bộ</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Giá thị trường tham khảo</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
               <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
             </tr>
@@ -188,6 +242,22 @@ export default function InventoryPage() {
                   <td className="py-3 px-4">{inv.quantity}</td>
                   <td className="py-3 px-4 text-gray-500">{inv.unit}</td>
                   <td className="py-3 px-4 text-gray-500">{inv.minimumStock}</td>
+                  <td className="py-3 px-4 text-gray-700">
+                    {inv.unitCost != null ? formatCurrency(inv.unitCost) : <span className="text-gray-400">Chưa có</span>}
+                  </td>
+                  <td className="py-3 px-4 text-gray-700">
+                    {inv.marketUnitPrice != null ? (
+                      <div className="leading-tight">
+                        <div>{formatCurrency(inv.marketUnitPrice)}</div>
+                        {inv.marketPriceSource && <div className="text-xs text-gray-400">Nguồn: {inv.marketPriceSource}</div>}
+                        {inv.marketPriceUpdatedAt && (
+                          <div className="text-xs text-gray-400">Cập nhật: {new Date(inv.marketPriceUpdatedAt).toLocaleString('vi-VN')}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Chưa có</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4">
                     {isLow ? (
                       <span className="flex items-center gap-1 text-red-600 text-xs font-medium">
@@ -206,6 +276,10 @@ export default function InventoryPage() {
                       className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">
                       <PenSquare size={14} /> Sửa
                     </button>
+                    <button onClick={() => openMarketPriceModal(inv)}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs hover:bg-violet-200">
+                      <PenSquare size={14} /> Giá TT
+                    </button>
                     <button onClick={() => openModal('add', inv)}
                       className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">
                       <Plus size={14} /> Nhập
@@ -218,7 +292,7 @@ export default function InventoryPage() {
                 </tr>
               );
             })}
-            {inventory.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có nguyên liệu</td></tr>}
+            {inventory.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Chưa có nguyên liệu</td></tr>}
           </tbody>
         </table>
         {pageData && (
@@ -307,6 +381,58 @@ export default function InventoryPage() {
               className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {itemSaving ? 'Đang lưu...' : itemMode === 'create' ? 'Thêm nguyên liệu' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showMarketPriceModal}
+        onClose={() => setShowMarketPriceModal(false)}
+        title={`Cập nhật giá thị trường - ${marketPriceForm.ingredientName}`}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Giá vốn nội bộ <span className="text-red-500">*</span></label>
+            <input
+              type="number"
+              min={0}
+              value={marketPriceForm.unitCost}
+              onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, unitCost: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
+              placeholder="Ví dụ: 38000"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Giá thị trường tham khảo <span className="text-red-500">*</span></label>
+            <input
+              type="number"
+              min={0}
+              value={marketPriceForm.marketUnitPrice}
+              onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, marketUnitPrice: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
+              placeholder="Ví dụ: 42000"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nguồn giá</label>
+            <input
+              value={marketPriceForm.source}
+              onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, source: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
+              placeholder="Ví dụ: Chợ đầu mối Hòa Cường"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setShowMarketPriceModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              Hủy
+            </button>
+            <button
+              onClick={handleMarketPriceSubmit}
+              disabled={marketPriceSaving}
+              className="px-4 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
+            >
+              {marketPriceSaving ? 'Đang lưu...' : 'Lưu giá nguyên liệu'}
             </button>
           </div>
         </div>

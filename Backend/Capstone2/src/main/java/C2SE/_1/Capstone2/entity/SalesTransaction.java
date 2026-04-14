@@ -44,6 +44,9 @@ public class SalesTransaction extends BaseEntity {
     @Column(length = 100)
     private String providerTransactionId;
 
+    @Column(length = 64)
+    private String tablePaymentSessionKey;
+
     private LocalDateTime paidAt;
 
     @Column(length = 500)

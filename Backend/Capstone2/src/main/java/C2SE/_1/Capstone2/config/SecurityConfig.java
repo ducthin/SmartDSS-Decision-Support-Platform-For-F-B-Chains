@@ -156,6 +156,9 @@ public class SecurityConfig {
                         // Reports - ADMIN, MANAGER
                         .requestMatchers("/api/v1/reports/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
+                        // Finance - ADMIN, MANAGER
+                        .requestMatchers("/api/v1/finance/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
                         // Customer feedbacks - ADMIN, MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
@@ -175,6 +178,33 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
+                        // Shift management
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/my-assignments").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.STAFF.name()
+                        )
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/my-attendance").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.STAFF.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/shifts/attendance/check-in").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.STAFF.name()
+                        )
+                        .requestMatchers(HttpMethod.POST, "/api/v1/shifts/attendance/check-out").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.STAFF.name()
+                        )
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/attendance").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/work-summary").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/work-summary.csv").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers("/api/v1/shifts/templates/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers("/api/v1/shifts/assignments/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         .anyRequest().authenticated()
                 );

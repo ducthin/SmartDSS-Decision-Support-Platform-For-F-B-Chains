@@ -276,10 +276,17 @@ public class OrderServiceImpl implements OrderService {
                 inventory.setQuantity(inventory.getQuantity().subtract(totalDeduction));
                 inventoryRepository.save(inventory);
 
+                BigDecimal unitPrice = inventory.getUnitCost() == null
+                    ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                    : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
+                BigDecimal totalAmount = totalDeduction.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+
                 InventoryTransaction transaction = InventoryTransaction.builder()
                         .inventory(inventory)
                         .type(TransactionType.DEDUCT)
                         .quantity(totalDeduction)
+                    .unitPrice(unitPrice)
+                    .totalAmount(totalAmount)
                         .reason("Order #" + order.getId() + " reserved (PREPARING)")
                         .build();
                 inventoryTransactionRepository.save(transaction);
@@ -302,10 +309,17 @@ public class OrderServiceImpl implements OrderService {
                 inventory.setQuantity(inventory.getQuantity().add(totalRestore));
                 inventoryRepository.save(inventory);
 
+                BigDecimal unitPrice = inventory.getUnitCost() == null
+                    ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                    : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
+                BigDecimal totalAmount = totalRestore.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+
                 InventoryTransaction transaction = InventoryTransaction.builder()
                         .inventory(inventory)
                         .type(TransactionType.ADD)
                         .quantity(totalRestore)
+                    .unitPrice(unitPrice)
+                    .totalAmount(totalAmount)
                         .reason("Order #" + order.getId() + " cancelled (release reserved)")
                         .build();
                 inventoryTransactionRepository.save(transaction);

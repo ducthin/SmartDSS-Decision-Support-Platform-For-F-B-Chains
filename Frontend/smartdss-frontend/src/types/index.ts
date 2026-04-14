@@ -50,6 +50,114 @@ export interface UserForm {
   roleName: string;
 }
 
+// Shift management
+export type ShiftAssignmentStatus = 'ASSIGNED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED';
+
+export interface ShiftTemplate {
+  id: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShiftTemplateForm {
+  name: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: number;
+  active?: boolean;
+}
+
+export interface ShiftAssignment {
+  id: number;
+  userId: number;
+  userFullName: string;
+  shiftTemplateId: number;
+  shiftTemplateName: string;
+  shiftDate: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: number;
+  status: ShiftAssignmentStatus;
+  note?: string;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
+  checkInAt?: string;
+  checkOutAt?: string;
+  workedMinutes?: number;
+  lateMinutes?: number;
+  earlyLeaveMinutes?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ShiftAssignmentCreatePayload {
+  userId: number;
+  shiftTemplateId: number;
+  shiftDate: string;
+  note?: string;
+}
+
+export interface ShiftAssignmentUpdatePayload {
+  userId?: number;
+  shiftTemplateId?: number;
+  shiftDate?: string;
+  status?: ShiftAssignmentStatus;
+  note?: string;
+}
+
+export interface ShiftBulkAssignPayload {
+  shiftTemplateId: number;
+  userIds: number[];
+  shiftDates: string[];
+  note?: string;
+}
+
+export interface ShiftAttendance {
+  id: number;
+  assignmentId: number;
+  userId: number;
+  userFullName: string;
+  shiftTemplateName: string;
+  shiftDate: string;
+  status: ShiftAssignmentStatus;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
+  checkInAt?: string;
+  checkOutAt?: string;
+  checkInSource?: string;
+  checkOutSource?: string;
+  workedMinutes?: number;
+  lateMinutes?: number;
+  earlyLeaveMinutes?: number;
+}
+
+export interface ShiftCheckPayload {
+  assignmentId: number;
+  source?: string;
+}
+
+export interface ShiftWorkSummary {
+  userId: number;
+  userFullName: string;
+  totalAssignments: number;
+  assignedCount: number;
+  checkedInCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  absentCount: number;
+  totalWorkedMinutes: number;
+  totalLateMinutes: number;
+  totalEarlyLeaveMinutes: number;
+  totalRevenueDuringShift: number;
+  averageRevenuePerCompletedShift: number;
+  totalCashierRevenueDuringShift: number;
+}
+
 // Category
 export interface Category {
   id: number;
@@ -149,6 +257,10 @@ export interface Inventory {
   quantity: number;
   minimumStock: number;
   unit: string;
+  unitCost?: number;
+  marketUnitPrice?: number;
+  marketPriceSource?: string;
+  marketPriceUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -156,6 +268,7 @@ export interface Inventory {
 export interface InventoryTransactionForm {
   inventoryId: number;
   quantity: number;
+  unitPrice?: number;
   reason: string;
 }
 
@@ -163,6 +276,8 @@ export interface InventoryTransactionHistory {
   id: number;
   type: 'ADD' | 'DEDUCT';
   quantity: number;
+  unitPrice?: number;
+  totalAmount?: number;
   reason?: string;
   createdAt: string;
 }
@@ -172,6 +287,9 @@ export interface InventoryItemForm {
   unit: string;
   quantity: number;
   minimumStock: number;
+  unitCost?: number;
+  marketUnitPrice?: number;
+  marketPriceSource?: string;
 }
 
 // Order
@@ -395,6 +513,99 @@ export interface TableQrInit {
   checkoutUrl?: string;
   provider?: 'PAYOS' | 'VIETQR';
   expiresAt: string;
+}
+
+export interface TableSettlementDetail {
+  tableNumber: string;
+  pendingCount: number;
+  preparingCount: number;
+  completedUnpaidCount: number;
+  completedUnpaidTotal: number;
+  completedUnpaidOrderIds: number[];
+  latestOrderAt: string;
+  orders: Order[];
+  paymentStatuses: PaymentStatus[];
+}
+
+export interface PaymentFeatureFlags {
+  tableSettlementDetail: boolean;
+  groupedTableQrSession: boolean;
+}
+
+export type FinanceType = 'INCOME' | 'EXPENSE';
+
+export interface FinanceCategory {
+  id: number;
+  name: string;
+  type: FinanceType;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinanceTransaction {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  type: FinanceType;
+  amount: number;
+  occurredAt: string;
+  note?: string;
+  sourceType?: string;
+  sourceRefId?: string;
+  createdById?: number;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinanceTransactionForm {
+  categoryId: number;
+  amount: number;
+  occurredAt?: string;
+  note?: string;
+  sourceType?: string;
+  sourceRefId?: string;
+}
+
+export interface FinanceSummary {
+  fromDate: string;
+  toDate: string;
+  totalIncome: number;
+  totalExpense: number;
+  netCashflow: number;
+  totalTransactions: number;
+}
+
+export interface GrossProfitPoint {
+  period: string;
+  revenue: number;
+  cogs: number;
+  grossProfit: number;
+}
+
+export interface CashClosing {
+  id?: number;
+  businessDate: string;
+  openingBalance: number;
+  totalInflow: number;
+  totalOutflow: number;
+  expectedBalance: number;
+  actualBalance?: number;
+  variance?: number;
+  note?: string;
+  closedById?: number;
+  closedByName?: string;
+  closedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CashClosingForm {
+  businessDate?: string;
+  openingBalance?: number;
+  actualBalance: number;
+  note?: string;
 }
 
 // Reports

@@ -30,4 +30,12 @@ public class InventoryItemUpsertDTO {
     @NotNull(message = "Mức tối thiểu không được để trống")
     @DecimalMin(value = "0", message = "Mức tối thiểu phải >= 0")
     private BigDecimal minimumStock;
+
+    @DecimalMin(value = "0", message = "Đơn giá nội bộ phải >= 0")
+    private BigDecimal unitCost;
+
+    @DecimalMin(value = "0", message = "Giá thị trường phải >= 0")
+    private BigDecimal marketUnitPrice;
+
+    private String marketPriceSource;
 }

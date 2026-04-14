@@ -2,8 +2,10 @@ import api from './api';
 import type {
   ApiResponse,
   PaymentInit,
+  PaymentFeatureFlags,
   PaymentStatus,
   TableCashSettlementResult,
+  TableSettlementDetail,
   TableQrInit,
   TableSettlementSummary,
 } from '@/types';
@@ -18,7 +20,11 @@ export const paymentService = {
     params: { tableNumber },
   }),
   getStatus: (orderId: number) => api.get<ApiResponse<PaymentStatus>>(`/payments/orders/${orderId}/status`),
+  getFeatures: () => api.get<ApiResponse<PaymentFeatureFlags>>('/payments/features'),
   getTableSettlementSummary: () => api.get<ApiResponse<TableSettlementSummary[]>>('/payments/tables/settlement-summary'),
+  getTableSettlementDetail: (tableNumber: string) => api.get<ApiResponse<TableSettlementDetail>>('/payments/tables/detail', {
+    params: { tableNumber },
+  }),
   getStatuses: (orderIds: number[]) => api.get<ApiResponse<PaymentStatus[]>>('/payments/orders/statuses', {
     params: { orderIds },
     paramsSerializer: {

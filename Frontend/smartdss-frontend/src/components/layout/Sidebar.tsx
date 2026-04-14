@@ -5,7 +5,7 @@ import { getRoleKey, formatRoleName } from '@/utils/helpers';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
-  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet
+  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet, CalendarClock
 } from 'lucide-react';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
 
   // Vận hành hằng ngày
   { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/shifts', label: 'Ca làm', icon: CalendarClock, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/table-settlement', label: 'Quản lý Bàn', icon: Wallet, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/tables', label: 'Quản lý QR bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
   { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
@@ -23,6 +24,7 @@ const navItems = [
 
   // Phân tích và tối ưu
   { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
+  { path: '/finance',        label: 'Tài chính',   icon: Wallet,             roles: ['ADMIN', 'MANAGER'] },
   { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },
   { path: '/external-factors', label: 'Yếu tố ngoài', icon: CloudSun, roles: ['ADMIN', 'MANAGER'] },
   { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },

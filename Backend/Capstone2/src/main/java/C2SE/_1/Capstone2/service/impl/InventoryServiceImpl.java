@@ -2,8 +2,11 @@ package C2SE._1.Capstone2.service.impl;
 
 import C2SE._1.Capstone2.dto.InventoryDTO;
 import C2SE._1.Capstone2.dto.InventoryItemUpsertDTO;
+import C2SE._1.Capstone2.dto.InventoryMarketPriceDTO;
+import C2SE._1.Capstone2.dto.InventoryMarketPriceUpdateDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionHistoryDTO;
 import C2SE._1.Capstone2.dto.InventoryTransactionDTO;
+import C2SE._1.Capstone2.dto.InventoryUnitCostUpdateDTO;
 import C2SE._1.Capstone2.dto.PageResponse;
 import C2SE._1.Capstone2.entity.Ingredient;
 import C2SE._1.Capstone2.entity.Inventory;
@@ -24,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -61,13 +66,31 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = inventoryRepository.findByIdForUpdate(dto.getInventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", dto.getInventoryId()));
 
+        BigDecimal oldQuantity = safeMoney(inventory.getQuantity());
+        BigDecimal oldUnitCost = safeMoney(inventory.getUnitCost());
+        BigDecimal inputUnitPrice = normalizeMoney(dto.getUnitPrice());
+
+        if (inputUnitPrice != null) {
+            BigDecimal newQuantity = oldQuantity.add(dto.getQuantity());
+            if (newQuantity.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal blendedCost = oldUnitCost.multiply(oldQuantity)
+                .add(inputUnitPrice.multiply(dto.getQuantity()))
+                .divide(newQuantity, 2, RoundingMode.HALF_UP);
+            inventory.setUnitCost(blendedCost);
+            }
+        }
+
         inventory.setQuantity(inventory.getQuantity().add(dto.getQuantity()));
         inventoryRepository.save(inventory);
+
+        BigDecimal txUnitPrice = inputUnitPrice != null ? inputUnitPrice : normalizeMoney(inventory.getUnitCost());
 
         InventoryTransaction transaction = InventoryTransaction.builder()
                 .inventory(inventory)
                 .type(TransactionType.ADD)
                 .quantity(dto.getQuantity())
+            .unitPrice(txUnitPrice)
+            .totalAmount(calcTotalAmount(dto.getQuantity(), txUnitPrice))
                 .reason(dto.getReason())
                 .build();
         inventoryTransactionRepository.save(transaction);
@@ -90,10 +113,14 @@ public class InventoryServiceImpl implements InventoryService {
         inventory.setQuantity(inventory.getQuantity().subtract(dto.getQuantity()));
         inventoryRepository.save(inventory);
 
+        BigDecimal txUnitPrice = normalizeMoney(inventory.getUnitCost());
+
         InventoryTransaction transaction = InventoryTransaction.builder()
                 .inventory(inventory)
                 .type(TransactionType.DEDUCT)
                 .quantity(dto.getQuantity())
+            .unitPrice(txUnitPrice)
+            .totalAmount(calcTotalAmount(dto.getQuantity(), txUnitPrice))
                 .reason(dto.getReason())
                 .build();
         inventoryTransactionRepository.save(transaction);
@@ -120,6 +147,10 @@ public class InventoryServiceImpl implements InventoryService {
                 .ingredient(savedIngredient)
                 .quantity(dto.getQuantity())
                 .minimumStock(dto.getMinimumStock())
+            .unitCost(normalizeMoney(dto.getUnitCost()))
+            .marketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()))
+            .marketPriceSource(normalizeSource(dto.getMarketPriceSource()))
+            .marketPriceUpdatedAt(dto.getMarketUnitPrice() != null ? LocalDateTime.now() : null)
                 .build();
         Inventory savedInventory = inventoryRepository.save(inventory);
         return inventoryMapper.toDTO(savedInventory);
@@ -146,10 +177,58 @@ public class InventoryServiceImpl implements InventoryService {
         BigDecimal newQuantity = dto.getQuantity();
         inventory.setQuantity(newQuantity);
         inventory.setMinimumStock(dto.getMinimumStock());
+        if (dto.getUnitCost() != null) {
+            inventory.setUnitCost(normalizeMoney(dto.getUnitCost()));
+        }
+        if (dto.getMarketUnitPrice() != null) {
+            inventory.setMarketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()));
+            inventory.setMarketPriceSource(normalizeSource(dto.getMarketPriceSource()));
+            inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+        } else if (dto.getMarketPriceSource() != null && !dto.getMarketPriceSource().isBlank()) {
+            inventory.setMarketPriceSource(normalizeSource(dto.getMarketPriceSource()));
+            inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+        }
         Inventory savedInventory = inventoryRepository.save(inventory);
 
         saveAdjustmentTransactionIfNeeded(savedInventory, oldQuantity, newQuantity);
         return inventoryMapper.toDTO(savedInventory);
+    }
+
+    @Override
+    public InventoryDTO updateMarketPrice(Long inventoryId, InventoryMarketPriceUpdateDTO dto) {
+        Inventory inventory = inventoryRepository.findByIdForUpdate(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", inventoryId));
+
+        inventory.setMarketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()));
+        inventory.setMarketPriceSource(normalizeSource(dto.getSource()));
+        inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+
+        return inventoryMapper.toDTO(inventoryRepository.save(inventory));
+    }
+
+    @Override
+    public InventoryDTO updateUnitCost(Long inventoryId, InventoryUnitCostUpdateDTO dto) {
+        Inventory inventory = inventoryRepository.findByIdForUpdate(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", inventoryId));
+
+        inventory.setUnitCost(normalizeMoney(dto.getUnitCost()));
+        return inventoryMapper.toDTO(inventoryRepository.save(inventory));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InventoryMarketPriceDTO getMarketPrice(Long inventoryId) {
+        Inventory inventory = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory", "id", inventoryId));
+        return toMarketPriceDTO(inventory);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<InventoryMarketPriceDTO> getMarketPrices(String keyword, Pageable pageable) {
+        Page<Inventory> page = inventoryRepository.search(keyword, null, pageable);
+        List<InventoryMarketPriceDTO> items = page.getContent().stream().map(this::toMarketPriceDTO).toList();
+        return PageResponse.of(page, items);
     }
 
     @Override
@@ -164,6 +243,8 @@ public class InventoryServiceImpl implements InventoryService {
                         .id(tx.getId())
                         .type(tx.getType() == null ? null : tx.getType().name())
                         .quantity(tx.getQuantity())
+                    .unitPrice(tx.getUnitPrice())
+                    .totalAmount(tx.getTotalAmount())
                         .reason(tx.getReason())
                         .createdAt(tx.getCreatedAt())
                         .build())
@@ -182,6 +263,8 @@ public class InventoryServiceImpl implements InventoryService {
                 .inventory(inventory)
                 .type(type)
                 .quantity(diff)
+            .unitPrice(normalizeMoney(inventory.getUnitCost()))
+            .totalAmount(calcTotalAmount(diff, normalizeMoney(inventory.getUnitCost())))
                 .reason("Manual adjust from " + oldQuantity + " to " + newQuantity)
                 .build();
         inventoryTransactionRepository.save(tx);
@@ -193,5 +276,48 @@ public class InventoryServiceImpl implements InventoryService {
 
     private String normalizeUnit(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalizeSource(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.length() <= 120 ? normalized : normalized.substring(0, 120);
+    }
+
+    private BigDecimal normalizeMoney(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Giá tiền phải >= 0");
+        }
+        return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal safeMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private BigDecimal calcTotalAmount(BigDecimal quantity, BigDecimal unitPrice) {
+        if (quantity == null || unitPrice == null) {
+            return null;
+        }
+        return quantity.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private InventoryMarketPriceDTO toMarketPriceDTO(Inventory inventory) {
+        Ingredient ingredient = inventory.getIngredient();
+        return InventoryMarketPriceDTO.builder()
+                .inventoryId(inventory.getId())
+                .ingredientId(ingredient == null ? null : ingredient.getId())
+                .ingredientName(ingredient == null ? null : ingredient.getName())
+                .unit(ingredient == null ? null : ingredient.getUnit())
+                .unitCost(inventory.getUnitCost())
+                .marketUnitPrice(inventory.getMarketUnitPrice())
+                .marketPriceSource(inventory.getMarketPriceSource())
+                .marketPriceUpdatedAt(inventory.getMarketPriceUpdatedAt())
+                .build();
     }
 }

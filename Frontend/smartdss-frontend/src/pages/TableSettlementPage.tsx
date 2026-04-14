@@ -4,7 +4,7 @@ import { RefreshCw, Wallet, QrCode, CheckCircle2, ChevronRight, Printer } from '
 import { QRCodeSVG } from 'qrcode.react';
 import { orderService } from '@/services/orderService';
 import { paymentService } from '@/services/paymentService';
-import type { Order, PaymentStatus, TableQrInit, TableSettlementSummary } from '@/types';
+import type { Order, PaymentStatus, TableQrInit, TableSettlementSummary, PaymentFeatureFlags } from '@/types';
 import { formatCurrency, getApiErrorMessage } from '@/utils/helpers';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_STYLES } from '@/utils/constants';
 import Modal from '@/components/ui/Modal';
@@ -28,8 +28,45 @@ export default function TableSettlementPage() {
   const [detailTable, setDetailTable] = useState<TableSettlementSummary | null>(null);
   const [detailOrders, setDetailOrders] = useState<Order[]>([]);
   const [loadingDetailOrders, setLoadingDetailOrders] = useState(false);
+  const [backendFeatures, setBackendFeatures] = useState<PaymentFeatureFlags | null>(null);
+  const [backendFeatureWarning, setBackendFeatureWarning] = useState<string | null>(null);
   const [cashConfirmContext, setCashConfirmContext] = useState<CashConfirmContext | null>(null);
   const lastRealtimeRefreshRef = useRef(0);
+
+  const getErrorStatusCode = (error: unknown): number | null => {
+    const maybe = error as { response?: { status?: number } };
+    return typeof maybe?.response?.status === 'number' ? maybe.response.status : null;
+  };
+
+  const loadLegacyOrderDetails = useCallback(async (summary: TableSettlementSummary) => {
+    if (summary.completedUnpaidOrderIds.length === 0) {
+      setDetailOrders([]);
+      return;
+    }
+    const responses = await Promise.all(summary.completedUnpaidOrderIds.map((orderId) => orderService.getById(orderId)));
+    const orders = responses
+      .map((res) => res.data.data)
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+    setDetailOrders(orders);
+  }, []);
+
+  const checkBackendFeatures = useCallback(async () => {
+    try {
+      const res = await paymentService.getFeatures();
+      const data = res.data.data;
+      setBackendFeatures(data);
+      if (!data.tableSettlementDetail || !data.groupedTableQrSession) {
+        setBackendFeatureWarning('Backend chưa bật đầy đủ tính năng thanh toán theo bàn. Một số chức năng sẽ chạy chế độ tương thích.');
+      } else {
+        setBackendFeatureWarning(null);
+      }
+    } catch (error) {
+      const status = getErrorStatusCode(error);
+      if (status === 404) {
+        setBackendFeatureWarning('Backend đang chạy phiên bản cũ (thiếu /payments/features). Hệ thống sẽ dùng chế độ tương thích.');
+      }
+    }
+  }, []);
 
   const loadTableSummaries = useCallback(async (silent = false): Promise<TableSettlementSummary[]> => {
     if (silent) {
@@ -85,27 +122,50 @@ export default function TableSettlementPage() {
   };
 
   const loadTableOrderDetails = useCallback(async (summary: TableSettlementSummary) => {
-    if (summary.completedUnpaidOrderIds.length === 0) {
-      setDetailOrders([]);
-      return;
-    }
-
     try {
       setLoadingDetailOrders(true);
-      const responses = await Promise.all(
-        summary.completedUnpaidOrderIds.map((orderId) => orderService.getById(orderId)),
-      );
-      const orders = responses
-        .map((res) => res.data.data)
+      if (!backendFeatures?.tableSettlementDetail) {
+        await loadLegacyOrderDetails(summary);
+        return;
+      }
+
+      const res = await paymentService.getTableSettlementDetail(summary.tableNumber);
+      const detail = res.data.data;
+      const nextSummary: TableSettlementSummary = {
+        tableNumber: detail.tableNumber,
+        pendingCount: detail.pendingCount,
+        preparingCount: detail.preparingCount,
+        completedUnpaidCount: detail.completedUnpaidCount,
+        completedUnpaidTotal: detail.completedUnpaidTotal,
+        completedUnpaidOrderIds: detail.completedUnpaidOrderIds,
+        latestOrderAt: detail.latestOrderAt,
+      };
+      setDetailTable(nextSummary);
+
+      const unpaidOrderIdSet = new Set(detail.completedUnpaidOrderIds || []);
+      const orders = (detail.orders || [])
+        .filter((order) => unpaidOrderIdSet.has(order.id))
         .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
       setDetailOrders(orders);
     } catch (error) {
+      const status = getErrorStatusCode(error);
+      if (status === 404) {
+        setBackendFeatureWarning('Backend chưa hỗ trợ API chi tiết bàn. Đã chuyển sang tải chi tiết theo từng đơn.');
+        try {
+          await loadLegacyOrderDetails(summary);
+          return;
+        } catch (legacyError) {
+          setDetailOrders([]);
+          toast.error(getApiErrorMessage(legacyError, 'Không tải được chi tiết đơn của bàn'));
+          return;
+        }
+      }
       setDetailOrders([]);
       toast.error(getApiErrorMessage(error, 'Không tải được chi tiết đơn của bàn'));
     } finally {
       setLoadingDetailOrders(false);
     }
-  }, []);
+  }, [backendFeatures, loadLegacyOrderDetails]);
 
   const openTableDetail = async (summary: TableSettlementSummary) => {
     setDetailTable(summary);
@@ -115,16 +175,8 @@ export default function TableSettlementPage() {
 
   const refreshDetailView = useCallback(async () => {
     if (!detailTable) return;
-    const latestSummaries = await loadTableSummaries(true);
-    const latest = latestSummaries.find((item) => item.tableNumber === detailTable.tableNumber);
-    if (!latest) {
-      setDetailTable(null);
-      setDetailOrders([]);
-      return;
-    }
-    setDetailTable(latest);
-    await loadTableOrderDetails(latest);
-  }, [detailTable, loadTableOrderDetails, loadTableSummaries]);
+    await loadTableOrderDetails(detailTable);
+  }, [detailTable, loadTableOrderDetails]);
 
   const quickCashFromDetail = () => {
     if (!detailTable) return;
@@ -259,6 +311,9 @@ export default function TableSettlementPage() {
         });
         setQrRepresentativeOrderId(single.orderId);
         setQrPaymentStatus(single.paymentStatus);
+        if (getErrorStatusCode(error) === 404) {
+          setBackendFeatureWarning('Backend chưa hỗ trợ QR gộp theo bàn. Đã chuyển sang QR theo đơn để tiếp tục vận hành.');
+        }
         toast('QR gộp chưa sẵn sàng, đã chuyển sang QR theo đơn đầu tiên', { icon: 'ℹ️' });
       } catch (singleError) {
         setQrPaymentData(null);
@@ -325,8 +380,11 @@ export default function TableSettlementPage() {
 
   useEffect(() => {
     loadTableSummaries(false);
+    checkBackendFeatures().catch(() => {
+      // no-op
+    });
     // Realtime-only mode: no fallback polling.
-  }, [loadTableSummaries]);
+  }, [checkBackendFeatures, loadTableSummaries]);
 
   useEffect(() => {
     if (!qrTable || !qrRepresentativeOrderId) return;
@@ -360,6 +418,12 @@ export default function TableSettlementPage() {
 
       {refreshingTableSummaries && !loadingTableSummaries && (
         <p className="text-xs text-gray-500">Đang đồng bộ danh sách bàn...</p>
+      )}
+
+      {backendFeatureWarning && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {backendFeatureWarning}
+        </div>
       )}
 
       {loadingTableSummaries ? (

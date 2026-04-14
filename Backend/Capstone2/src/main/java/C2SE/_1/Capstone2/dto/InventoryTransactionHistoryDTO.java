@@ -18,6 +18,8 @@ public class InventoryTransactionHistoryDTO {
     private Long id;
     private String type;
     private BigDecimal quantity;
+    private BigDecimal unitPrice;
+    private BigDecimal totalAmount;
     private String reason;
     private LocalDateTime createdAt;
 }
