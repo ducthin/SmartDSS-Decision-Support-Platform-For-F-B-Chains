@@ -2,8 +2,10 @@ package C2SE._1.Capstone2;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 public class Capstone2Application {
 
 	public static void main(String[] args) {
@@ -11,3 +13,4 @@ public class Capstone2Application {
 	}
 
 }
+				

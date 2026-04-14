@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Capstone2Application",
+      "request": "launch",
+      "mainClass": "Capstone2Application",
+      "projectName": "Capstone2"
+    },
+    {
+      "name": "Backend: Spring Boot (Java)",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "C2SE._1.Capstone2.Capstone2Application",
+      "projectName": "Capstone2",
+      "cwd": "${workspaceFolder}\\Backend\\Capstone2"
+    },
+    {
+      "name": "Backend: Spring Boot (mvnw task)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "cd \"${workspaceFolder}\\Backend\\Capstone2\"; .\\mvnw.cmd -DskipTests spring-boot:run"
+      ],
+      "console": "integratedTerminal"
+    }
+  ]
+}

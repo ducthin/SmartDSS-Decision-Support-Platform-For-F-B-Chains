@@ -1,0 +1,554 @@
+{
+  "info": {
+    "_postman_id": "6d80788b-c7e6-4af4-bace-afe5b8a0ecf0",
+    "name": "SmartDSS API",
+    "description": "Full API collection for SmartDSS backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "1" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "menuId", "value": "1" },
+    { "key": "recipeId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "inventoryId", "value": "1" },
+    { "key": "tableId", "value": "1" },
+    { "key": "feedbackId", "value": "1" },
+    { "key": "eventId", "value": "1" },
+    { "key": "holidayId", "value": "1" },
+    { "key": "qrToken", "value": "replace_with_real_qr_token" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Config",
+      "item": [
+        {
+          "name": "Get Tax Policy",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/public/config/tax"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public QR",
+      "item": [
+        {
+          "name": "Get Table Info",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/info"
+          }
+        },
+        {
+          "name": "Get Menu For QR",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/menu"
+          }
+        },
+        {
+          "name": "Place QR Order",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientSessionId\": \"{{qrClientSession}}\",\n  \"note\": \"Ít đá\",\n  \"orderItems\": [\n    { \"menuItemId\": 1, \"quantity\": 1 },\n    { \"menuItemId\": 2, \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/order"
+          }
+        },
+        {
+          "name": "Get Table Orders",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/orders?sessionId={{qrClientSession}}"
+          }
+        },
+        {
+          "name": "Call Staff",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Cho em xin thêm khăn giấy\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/call"
+          }
+        },
+        {
+          "name": "Submit Feedback (multipart)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "customerName", "value": "Nguyen Van A", "type": "text" },
+                { "key": "customerPhone", "value": "0900000000", "type": "text" },
+                { "key": "customerEmail", "value": "a@example.com", "type": "text" },
+                { "key": "rating", "value": "5", "type": "text" },
+                { "key": "content", "value": "Dịch vụ tốt", "type": "text" },
+                { "key": "images", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/public/qr/{{qrToken}}/feedback"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Payment Webhooks",
+      "item": [
+        {
+          "name": "Generic Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Payment-Webhook-Secret", "value": "replace_with_webhook_secret" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": 1,\n  \"status\": \"PAID\",\n  \"amount\": 20000,\n  \"transferContent\": \"BILL-1\",\n  \"providerTransactionId\": \"TX123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/public/payments/webhook"
+          }
+        },
+        {
+          "name": "PayOS Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"00\",\n  \"success\": true,\n  \"data\": {\n    \"orderCode\": 1000001,\n    \"amount\": 20000,\n    \"description\": \"BILL-1\",\n    \"code\": \"00\",\n    \"reference\": \"REF123\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/public/payments/payos/webhook"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "Get Users", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/users?page=0&size=10" } },
+        { "name": "Get User By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/users/{{userId}}" } },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"waiter01\",\n  \"password\": \"123456\",\n  \"fullName\": \"Nguyen Van A\",\n  \"email\": \"waiter01@example.com\",\n  \"phone\": \"0900000001\",\n  \"active\": true,\n  \"roleName\": \"WAITER\"\n}" },
+            "url": "{{baseUrl}}/api/v1/users"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Nguyen Van B\",\n  \"email\": \"waiter01@example.com\",\n  \"phone\": \"0900000002\",\n  \"active\": true,\n  \"roleName\": \"WAITER\"\n}" },
+            "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+          }
+        },
+        { "name": "Delete User", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/users/{{userId}}" } }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        { "name": "Get Categories", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories?page=0&size=10" } },
+        { "name": "Get Categories All", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories/all" } },
+        { "name": "Get Category By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}" } },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Cà phê\",\n  \"description\": \"Đồ uống cà phê\"\n}" },
+            "url": "{{baseUrl}}/api/v1/categories"
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Cà phê đặc biệt\",\n  \"description\": \"Nhóm cà phê\"\n}" },
+            "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+          }
+        },
+        { "name": "Delete Category", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}" } }
+      ]
+    },
+    {
+      "name": "Menu",
+      "item": [
+        { "name": "Get Menu", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/menu?page=0&size=10" } },
+        { "name": "Get Menu All", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/menu/all" } },
+        { "name": "Get Menu By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/menu/{{menuId}}" } },
+        {
+          "name": "Create Menu",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bạc xỉu\",\n  \"description\": \"Ít cà phê, nhiều sữa\",\n  \"price\": 30000,\n  \"imageUrl\": \"\",\n  \"available\": true,\n  \"categoryId\": {{categoryId}}\n}" },
+            "url": "{{baseUrl}}/api/v1/menu"
+          }
+        },
+        {
+          "name": "Update Menu",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bạc xỉu nóng\",\n  \"description\": \"Phiên bản nóng\",\n  \"price\": 32000,\n  \"imageUrl\": \"\",\n  \"available\": true,\n  \"categoryId\": {{categoryId}}\n}" },
+            "url": "{{baseUrl}}/api/v1/menu/{{menuId}}"
+          }
+        },
+        { "name": "Delete Menu", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/menu/{{menuId}}" } }
+      ]
+    },
+    {
+      "name": "Recipes",
+      "item": [
+        { "name": "Get Recipes", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/recipes" } },
+        { "name": "Get Recipes By Menu", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/recipes?menuItemId={{menuId}}" } },
+        {
+          "name": "Create Recipe",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"menuItemId\": {{menuId}},\n  \"ingredientId\": 1,\n  \"quantity\": 20\n}" },
+            "url": "{{baseUrl}}/api/v1/recipes"
+          }
+        },
+        {
+          "name": "Update Recipe",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"menuItemId\": {{menuId}},\n  \"ingredientId\": 1,\n  \"quantity\": 25\n}" },
+            "url": "{{baseUrl}}/api/v1/recipes/{{recipeId}}"
+          }
+        },
+        { "name": "Delete Recipe", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/recipes/{{recipeId}}" } }
+      ]
+    },
+    {
+      "name": "Ingredients",
+      "item": [
+        { "name": "Get Ingredients", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/ingredients" } }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        { "name": "Get Orders", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders?page=0&size=10" } },
+        { "name": "Get Order By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders/{{orderId}}" } },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"note\": \"Ít đá\",\n  \"orderItems\": [\n    { \"menuItemId\": 1, \"quantity\": 2 },\n    { \"menuItemId\": 2, \"quantity\": 1 }\n  ]\n}" },
+            "url": "{{baseUrl}}/api/v1/orders"
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"PREPARING\"\n}" },
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        { "name": "Init QR Payment", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/payments/orders/{{orderId}}/qr" } },
+        { "name": "Mark Cash Paid", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/payments/orders/{{orderId}}/cash" } },
+        { "name": "Get Payment Status", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/payments/orders/{{orderId}}/status" } },
+        { "name": "Get Payment Statuses", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/payments/orders/statuses?orderIds=1&orderIds=2" } }
+      ]
+    },
+    {
+      "name": "Sales",
+      "item": [
+        { "name": "Get Sales", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/sales" } },
+        { "name": "Get Sale By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/sales/1" } },
+        {
+          "name": "Create Sale",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"orderId\": {{orderId}},\n  \"paymentMethod\": \"CASH\"\n}" },
+            "url": "{{baseUrl}}/api/v1/sales"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        { "name": "Get Inventory", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/inventory?page=0&size=10" } },
+        {
+          "name": "Add Stock",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"inventoryId\": {{inventoryId}},\n  \"quantity\": 5,\n  \"reason\": \"Nhập hàng\"\n}" },
+            "url": "{{baseUrl}}/api/v1/inventory/add"
+          }
+        },
+        {
+          "name": "Deduct Stock",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"inventoryId\": {{inventoryId}},\n  \"quantity\": 1,\n  \"reason\": \"Xuất kho\"\n}" },
+            "url": "{{baseUrl}}/api/v1/inventory/deduct"
+          }
+        },
+        {
+          "name": "Create Inventory Item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"ingredientName\": \"Sữa đặc\",\n  \"unit\": \"ml\",\n  \"quantity\": 5000,\n  \"minimumStock\": 1000\n}" },
+            "url": "{{baseUrl}}/api/v1/inventory/items"
+          }
+        },
+        {
+          "name": "Update Inventory Item",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"ingredientName\": \"Sữa đặc\",\n  \"unit\": \"ml\",\n  \"quantity\": 4500,\n  \"minimumStock\": 1000\n}" },
+            "url": "{{baseUrl}}/api/v1/inventory/items/{{inventoryId}}"
+          }
+        },
+        { "name": "Get Inventory Transactions", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/inventory/{{inventoryId}}/transactions?page=0&size=10" } }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        { "name": "Daily Sales", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/daily-sales?date=2026-03-19" } },
+        { "name": "Hourly Sales", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/hourly-sales?date=2026-03-19" } },
+        { "name": "Weekly Sales", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/weekly-sales?date=2026-03-19" } },
+        { "name": "Best Products", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/best-products" } },
+        { "name": "Low Stock", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/low-stock" } },
+        { "name": "Tax Report", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/tax?fromDate=2026-03-01&toDate=2026-03-19" } }
+      ]
+    },
+    {
+      "name": "Weather",
+      "item": [
+        { "name": "Get Today Weather", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/weather/today" } },
+        { "name": "Get Weather By Date", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/weather/date?date=2026-03-19" } },
+        { "name": "Get Weather Range", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/weather/range?from=2026-03-01&to=2026-03-19" } },
+        { "name": "Fetch Weather Now", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/weather/fetch" } }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        { "name": "Get Events", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/events?page=0&size=10" } },
+        { "name": "Get Event By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/events/{{eventId}}" } },
+        { "name": "Get Events Range", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/events/range?from=2026-03-01&to=2026-03-31" } },
+        { "name": "Get Active Events", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/events/active?date=2026-03-19" } },
+        { "name": "Get Upcoming Events", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/events/upcoming" } },
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Khuyến mãi 8/3\",\n  \"description\": \"Giảm 10%\",\n  \"eventType\": \"PROMOTION\",\n  \"startDate\": \"2026-03-08\",\n  \"endDate\": \"2026-03-10\",\n  \"location\": \"Toàn hệ thống\",\n  \"expectedImpact\": \"Tăng đơn\",\n  \"notes\": \"\",\n  \"active\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/events"
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Khuyến mãi 8/3 cập nhật\",\n  \"description\": \"Giảm 15%\",\n  \"eventType\": \"PROMOTION\",\n  \"startDate\": \"2026-03-08\",\n  \"endDate\": \"2026-03-10\",\n  \"location\": \"Toàn hệ thống\",\n  \"expectedImpact\": \"Tăng đơn\",\n  \"notes\": \"\",\n  \"active\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/events/{{eventId}}"
+          }
+        },
+        { "name": "Delete Event", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/events/{{eventId}}" } }
+      ]
+    },
+    {
+      "name": "Holidays",
+      "item": [
+        { "name": "Get Holidays", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/holidays" } },
+        { "name": "Get Holiday By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/holidays/{{holidayId}}" } },
+        { "name": "Get Holidays Range", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/holidays/range?from=2026-01-01&to=2026-12-31" } },
+        { "name": "Get Holidays Month", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/holidays/month?month=3&year=2026" } },
+        { "name": "Get Upcoming Holidays", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/holidays/upcoming" } },
+        {
+          "name": "Create Holiday",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Giỗ tổ Hùng Vương\",\n  \"holidayDate\": \"2026-04-07\",\n  \"holidayType\": \"NATIONAL\",\n  \"recurring\": true,\n  \"description\": \"\"\n}" },
+            "url": "{{baseUrl}}/api/v1/holidays"
+          }
+        },
+        {
+          "name": "Update Holiday",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Giỗ tổ Hùng Vương\",\n  \"holidayDate\": \"2026-04-07\",\n  \"holidayType\": \"NATIONAL\",\n  \"recurring\": true,\n  \"description\": \"Ngày nghỉ lễ\"\n}" },
+            "url": "{{baseUrl}}/api/v1/holidays/{{holidayId}}"
+          }
+        },
+        { "name": "Delete Holiday", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/holidays/{{holidayId}}" } },
+        { "name": "Sync Holiday Calendarific", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/holidays/sync-calendarific?year=2026" } }
+      ]
+    },
+    {
+      "name": "Tables",
+      "item": [
+        { "name": "Get Tables", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/tables?page=0&size=10" } },
+        { "name": "Get Table By Id", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/tables/{{tableId}}" } },
+        {
+          "name": "Create Table",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bàn A1\",\n  \"active\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/tables"
+          }
+        },
+        {
+          "name": "Update Table",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bàn A1\",\n  \"active\": true\n}" },
+            "url": "{{baseUrl}}/api/v1/tables/{{tableId}}"
+          }
+        },
+        { "name": "Delete Table", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/tables/{{tableId}}" } },
+        { "name": "Regenerate Table QR", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/tables/{{tableId}}/regenerate-qr" } }
+      ]
+    },
+    {
+      "name": "Feedbacks",
+      "item": [
+        { "name": "Get Feedback Stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/feedbacks/stats" } },
+        { "name": "Get Feedbacks", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/feedbacks?page=0&size=10" } },
+        {
+          "name": "Update Feedback Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"internalNote\": \"Đã gọi lại khách\"\n}" },
+            "url": "{{baseUrl}}/api/v1/feedbacks/{{feedbackId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get Staff Call Sound",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/settings/staff-call-sound"
+          }
+        },
+        {
+          "name": "Upload Staff Call Sound (multipart)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/settings/staff-call-sound"
+          }
+        },
+        {
+          "name": "Delete Staff Call Sound",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/settings/staff-call-sound"
+          }
+        }
+      ]
+    }
+  ]
+}

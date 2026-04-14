@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backend: Spring Boot (mvnw)",
+      "type": "shell",
+      "command": ".\\mvnw.cmd",
+      "args": ["-DskipTests", "spring-boot:run"],
+      "options": {
+        "cwd": "${workspaceFolder}\\Backend\\Capstone2"
+      },
+      "problemMatcher": "$msCompile",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}
