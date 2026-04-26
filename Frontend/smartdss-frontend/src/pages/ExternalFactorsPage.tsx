@@ -3,6 +3,7 @@ import {
   Cloud, Plus, Edit2, Trash2,
   Calendar, MapPin, RefreshCw,
   ChevronLeft, ChevronRight,
+  Phone, Search, Tag, Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,15 +11,18 @@ import { getRoleKey } from '@/utils/helpers';
 import { weatherService } from '@/services/weatherService';
 import { eventService } from '@/services/eventService';
 import { holidayService } from '@/services/holidayService';
+import { voucherService } from '@/services/voucherService';
+import { loyaltyService } from '@/services/loyaltyService';
 import { areaBusynessService } from '@/services/areaBusynessService';
 import type {
   WeatherData, Event, EventForm, EventType, ImpactLevel,
   HolidayCalendar, HolidayCalendarForm, HolidayType,
-  AreaBusyness,
+  AreaBusyness, Voucher, VoucherForm, VoucherDiscountType, LoyaltyAccount,
 } from '@/types';
 import WeatherTab from '@/components/external/WeatherTab';
 import EventModal from '@/components/external/EventModal';
 import HolidayModal from '@/components/external/HolidayModal';
+import VoucherModal from '@/components/external/VoucherModal';
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
   FESTIVAL: 'Lễ hội', HOLIDAY: 'Ngày nghỉ', CONCERT: 'Hòa nhạc',
@@ -47,16 +51,35 @@ const HOLIDAY_TYPE_COLORS: Record<HolidayType, string> = {
   COMPANY: 'bg-teal-100 text-teal-700', OTHER: 'bg-gray-100 text-gray-700',
 };
 
-const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const VOUCHER_DISCOUNT_TYPE_LABELS: Record<VoucherDiscountType, string> = {
+  PERCENT: 'Phần trăm',
+  FIXED: 'Số tiền',
+};
 
-type Tab = 'weather' | 'calendar';
+const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const CUSTOMER_PHONE_REGEX = /^[+0-9][0-9]{8,19}$/;
+
+type Tab = 'weather' | 'calendar' | 'vouchers' | 'loyalty';
 
 const emptyEventForm: EventForm = {
   name: '', description: '', eventType: 'FESTIVAL', startDate: '', endDate: '',
-  location: '', expectedImpact: 'MEDIUM', notes: '', active: true,
+  location: '', expectedImpact: 'MEDIUM', notes: '', discountPercent: 0, active: true,
 };
 const emptyHolidayForm: HolidayCalendarForm = {
-  name: '', holidayDate: '', holidayType: 'PUBLIC_HOLIDAY', recurring: false, description: '',
+  name: '', holidayDate: '', holidayType: 'PUBLIC_HOLIDAY', recurring: false, description: '', discountPercent: 0,
+};
+const emptyVoucherForm: VoucherForm = {
+  code: '',
+  name: '',
+  description: '',
+  discountType: 'PERCENT',
+  discountValue: 10,
+  minOrderAmount: 0,
+  maxDiscountAmount: undefined,
+  validFrom: undefined,
+  validTo: undefined,
+  active: true,
+  usageLimit: undefined,
 };
 
 export default function ExternalFactorsPage() {
@@ -93,8 +116,34 @@ export default function ExternalFactorsPage() {
   const [holidayForm, setHolidayForm] = useState<HolidayCalendarForm>(emptyHolidayForm);
   const [syncing, setSyncing] = useState(false);
 
+  // Voucher state
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [loadingVouchers, setLoadingVouchers] = useState(false);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+  const [voucherForm, setVoucherForm] = useState<VoucherForm>(emptyVoucherForm);
+
+  // Loyalty state
+  const [loyaltyPhone, setLoyaltyPhone] = useState('');
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [loyaltyAccounts, setLoyaltyAccounts] = useState<LoyaltyAccount[]>([]);
+  const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [loadingLoyaltyAccounts, setLoadingLoyaltyAccounts] = useState(false);
+  const [loyaltyError, setLoyaltyError] = useState('');
+
   const toLocalDateStr = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const toDateTimeLocalValue = (value?: string) => {
+    if (!value) return '';
+    return value.length >= 16 ? value.slice(0, 16) : value;
+  };
+
+  const formatCurrency = (amount?: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
+
+  const formatDateTime = (value?: string) =>
+    value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có';
 
   const todayStr = toLocalDateStr(new Date());
 
@@ -187,9 +236,45 @@ export default function ExternalFactorsPage() {
     });
   }, [calMonth, calYear]);
 
+  const loadVouchers = useCallback(() => {
+    setLoadingVouchers(true);
+    voucherService.getAll(0, 100)
+      .then((res) => {
+        setVouchers(res.data.data.content || []);
+      })
+      .catch(() => {
+        setVouchers([]);
+      })
+      .finally(() => {
+        setLoadingVouchers(false);
+      });
+  }, []);
+
   useEffect(() => {
     loadCalendar();
   }, [loadCalendar, calRefresh]);
+
+  useEffect(() => {
+    loadVouchers();
+  }, [loadVouchers, calRefresh]);
+
+  const loadLoyaltyAccounts = useCallback(() => {
+    setLoadingLoyaltyAccounts(true);
+    loyaltyService.getAll()
+      .then((res) => {
+        setLoyaltyAccounts(res.data.data || []);
+      })
+      .catch(() => {
+        setLoyaltyAccounts([]);
+      })
+      .finally(() => {
+        setLoadingLoyaltyAccounts(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadLoyaltyAccounts();
+  }, [loadLoyaltyAccounts]);
 
   // Event CRUD
   const openEventCreate = () => {
@@ -202,7 +287,7 @@ export default function ExternalFactorsPage() {
     setEventForm({
       name: e.name, description: e.description || '', eventType: e.eventType,
       startDate: e.startDate, endDate: e.endDate, location: e.location || '',
-      expectedImpact: e.expectedImpact, notes: e.notes || '', active: e.active,
+      expectedImpact: e.expectedImpact, notes: e.notes || '', discountPercent: e.discountPercent || 0, active: e.active,
     });
     setShowEventModal(true);
   };
@@ -238,7 +323,7 @@ export default function ExternalFactorsPage() {
     setEditingHoliday(h);
     setHolidayForm({
       name: h.name, holidayDate: h.holidayDate, holidayType: h.holidayType,
-      recurring: h.recurring, description: h.description || '',
+      recurring: h.recurring, description: h.description || '', discountPercent: h.discountPercent || 0,
     });
     setShowHolidayModal(true);
   };
@@ -273,6 +358,92 @@ export default function ExternalFactorsPage() {
       setCalRefresh(n => n + 1);
     } catch { toast.error('Lỗi đồng bộ ngày lễ'); }
     finally { setSyncing(false); }
+  };
+
+  // Voucher CRUD
+  const openVoucherCreate = () => {
+    setEditingVoucher(null);
+    setVoucherForm(emptyVoucherForm);
+    setShowVoucherModal(true);
+  };
+
+  const openVoucherEdit = (voucher: Voucher) => {
+    setEditingVoucher(voucher);
+    setVoucherForm({
+      code: voucher.code,
+      name: voucher.name,
+      description: voucher.description || '',
+      discountType: voucher.discountType,
+      discountValue: voucher.discountValue,
+      minOrderAmount: voucher.minOrderAmount,
+      maxDiscountAmount: voucher.maxDiscountAmount,
+      validFrom: toDateTimeLocalValue(voucher.validFrom),
+      validTo: toDateTimeLocalValue(voucher.validTo),
+      active: voucher.active,
+      usageLimit: voucher.usageLimit,
+    });
+    setShowVoucherModal(true);
+  };
+
+  const saveVoucher = async () => {
+    try {
+      const payload: VoucherForm = {
+        ...voucherForm,
+        code: voucherForm.code.trim().toUpperCase(),
+        name: voucherForm.name.trim(),
+        description: voucherForm.description?.trim() || undefined,
+        validFrom: voucherForm.validFrom || undefined,
+        validTo: voucherForm.validTo || undefined,
+      };
+
+      if (editingVoucher) {
+        await voucherService.update(editingVoucher.id, payload);
+        toast.success('Cập nhật voucher thành công');
+      } else {
+        await voucherService.create(payload);
+        toast.success('Tạo voucher thành công');
+      }
+      setShowVoucherModal(false);
+      setCalRefresh(n => n + 1);
+    } catch {
+      toast.error('Lỗi lưu voucher');
+    }
+  };
+
+  const deleteVoucher = async (id: number) => {
+    if (!confirm('Bạn có chắc muốn xóa voucher này?')) return;
+    try {
+      await voucherService.delete(id);
+      toast.success('Đã xóa voucher');
+      setCalRefresh(n => n + 1);
+    } catch {
+      toast.error('Lỗi xóa voucher');
+    }
+  };
+
+  const lookupLoyaltyAccount = async () => {
+    const normalizedPhone = loyaltyPhone.replace(/\s+/g, '').trim();
+    if (!CUSTOMER_PHONE_REGEX.test(normalizedPhone)) {
+      setLoyaltyAccount(null);
+      setLoyaltyError('Số điện thoại không hợp lệ');
+      toast.error('Số điện thoại không hợp lệ');
+      return;
+    }
+
+    setLoadingLoyalty(true);
+    setLoyaltyError('');
+    try {
+      const res = await loyaltyService.getByPhone(normalizedPhone);
+      setLoyaltyPhone(normalizedPhone);
+      setLoyaltyAccount(res.data.data);
+      loadLoyaltyAccounts();
+    } catch {
+      setLoyaltyAccount(null);
+      setLoyaltyError('Không thể tải thông tin tích điểm');
+      toast.error('Không thể tải thông tin tích điểm');
+    } finally {
+      setLoadingLoyalty(false);
+    }
   };
 
   const fetchWeatherNow = async () => {
@@ -312,10 +483,12 @@ export default function ExternalFactorsPage() {
       <h1 className="text-2xl font-bold">Yếu tố bên ngoài</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
         {([
           { key: 'weather' as Tab, label: 'Thời tiết', icon: Cloud },
           { key: 'calendar' as Tab, label: 'Lịch sự kiện & ngày lễ', icon: Calendar },
+          { key: 'vouchers' as Tab, label: 'Voucher', icon: Tag },
+          { key: 'loyalty' as Tab, label: 'Tích điểm SĐT', icon: Trophy },
         ]).map((t) => (
           <button
             key={t.key}
@@ -375,7 +548,7 @@ export default function ExternalFactorsPage() {
                 <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                   <ChevronLeft size={20} />
                 </button>
-                <h2 className="text-lg font-semibold min-w-[180px] text-center">
+                <h2 className="text-lg font-semibold min-w-45 text-center">
                   Tháng {calMonth + 1}, {calYear}
                 </h2>
                 <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -393,7 +566,7 @@ export default function ExternalFactorsPage() {
             </div>
             <div className="grid grid-cols-7">
               {calendarDays.map((day, i) => {
-                if (day === null) return <div key={i} className="min-h-[90px] bg-gray-50/50 border-b border-r border-gray-100" />;
+                if (day === null) return <div key={i} className="min-h-22.5 bg-gray-50/50 border-b border-r border-gray-100" />;
                 const dateStr = getDateStr(day);
                 const isToday = dateStr === todayStr;
                 const isSelected = dateStr === selectedDate;
@@ -401,7 +574,7 @@ export default function ExternalFactorsPage() {
                 const dayHols = holidaysForDate(dateStr);
                 return (
                   <div key={i} onClick={() => setSelectedDate(dateStr)}
-                    className={`min-h-[90px] p-1.5 border-b border-r border-gray-100 cursor-pointer transition-colors
+                    className={`min-h-22.5 p-1.5 border-b border-r border-gray-100 cursor-pointer transition-colors
                       ${isSelected ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : 'hover:bg-gray-50'}
                       ${isToday && !isSelected ? 'bg-amber-50/50' : ''}`}>
                     <div className="mb-1">
@@ -411,10 +584,14 @@ export default function ExternalFactorsPage() {
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       {dayHols.slice(0, 2).map((h) => (
-                        <div key={`h${h.id}`} className="text-[10px] leading-tight px-1 py-0.5 rounded bg-red-100 text-red-700 truncate">{h.name}</div>
+                        <div key={`h${h.id}`} className="text-[10px] leading-tight px-1 py-0.5 rounded bg-red-100 text-red-700 truncate">
+                          {h.name}{(h.discountPercent || 0) > 0 ? ` (-${h.discountPercent}%)` : ''}
+                        </div>
                       ))}
                       {dayEvts.slice(0, 2).map((e) => (
-                        <div key={`e${e.id}`} className={`text-[10px] leading-tight px-1 py-0.5 rounded truncate ${EVENT_TYPE_COLORS[e.eventType]}`}>{e.name}</div>
+                        <div key={`e${e.id}`} className={`text-[10px] leading-tight px-1 py-0.5 rounded truncate ${EVENT_TYPE_COLORS[e.eventType]}`}>
+                          {e.name}{(e.discountPercent || 0) > 0 ? ` (-${e.discountPercent}%)` : ''}
+                        </div>
                       ))}
                       {(dayHols.length + dayEvts.length) > 4 && (
                         <div className="text-[10px] text-gray-400 pl-1">+{dayHols.length + dayEvts.length - 4} khác</div>
@@ -443,6 +620,7 @@ export default function ExternalFactorsPage() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${HOLIDAY_TYPE_COLORS[h.holidayType]}`}>{HOLIDAY_TYPE_LABELS[h.holidayType]}</span>
+                            {(h.discountPercent || 0) > 0 && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Giảm {h.discountPercent}%</span>}
                             {h.recurring && <span className="text-xs text-blue-500">🔄 Hàng năm</span>}
                           </div>
                           <p className="font-medium">{h.name}</p>
@@ -471,6 +649,7 @@ export default function ExternalFactorsPage() {
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${EVENT_TYPE_COLORS[e.eventType]}`}>{EVENT_TYPE_LABELS[e.eventType]}</span>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${IMPACT_COLORS[e.expectedImpact]}`}>{IMPACT_LABELS[e.expectedImpact]}</span>
+                            {(e.discountPercent || 0) > 0 && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Giảm {e.discountPercent}%</span>}
                             {e.active && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Hoạt động</span>}
                           </div>
                           <p className="font-medium">{e.name}</p>
@@ -499,6 +678,218 @@ export default function ExternalFactorsPage() {
         </div>
       )}
 
+      {tab === 'vouchers' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold">Voucher khuyến mãi</h3>
+              <p className="text-xs text-gray-500">Quản lý mã giảm giá dùng cho POS và QR order</p>
+            </div>
+            {canEdit && (
+              <button onClick={openVoucherCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700">
+                <Plus size={16} /> Thêm voucher
+              </button>
+            )}
+          </div>
+
+          {loadingVouchers ? (
+            <p className="text-sm text-gray-500">Đang tải voucher...</p>
+          ) : vouchers.length === 0 ? (
+            <p className="text-sm text-gray-400">Chưa có voucher nào</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-2 py-2">Mã</th>
+                    <th className="px-2 py-2">Nội dung</th>
+                    <th className="px-2 py-2">Giảm</th>
+                    <th className="px-2 py-2">Điều kiện</th>
+                    <th className="px-2 py-2">Trạng thái</th>
+                    <th className="px-2 py-2">Lượt dùng</th>
+                    {canEdit && <th className="px-2 py-2 text-right">Thao tác</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {vouchers.map((v) => (
+                    <tr key={v.id} className="border-b border-gray-100 align-top">
+                      <td className="px-2 py-2 font-semibold text-indigo-700">{v.code}</td>
+                      <td className="px-2 py-2">
+                        <p className="font-medium text-gray-800">{v.name}</p>
+                        {v.description && <p className="text-xs text-gray-500">{v.description}</p>}
+                      </td>
+                      <td className="px-2 py-2">
+                        {v.discountType === 'PERCENT'
+                          ? `${v.discountValue}%`
+                          : formatCurrency(v.discountValue)}
+                        <p className="text-xs text-gray-500">{VOUCHER_DISCOUNT_TYPE_LABELS[v.discountType]}</p>
+                        {v.maxDiscountAmount ? <p className="text-xs text-gray-500">Tối đa {formatCurrency(v.maxDiscountAmount)}</p> : null}
+                      </td>
+                      <td className="px-2 py-2">
+                        {v.minOrderAmount ? <p>Từ {formatCurrency(v.minOrderAmount)}</p> : <p>Không</p>}
+                        {(v.validFrom || v.validTo) && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {v.validFrom ? new Date(v.validFrom).toLocaleString('vi-VN') : 'Ngay'}
+                            {' - '}
+                            {v.validTo ? new Date(v.validTo).toLocaleString('vi-VN') : 'Không giới hạn'}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-2 py-2">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${v.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {v.active ? 'Hoạt động' : 'Tạm dừng'}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2">
+                        {(v.usedCount || 0).toLocaleString('vi-VN')}
+                        {v.usageLimit ? ` / ${v.usageLimit.toLocaleString('vi-VN')}` : ''}
+                      </td>
+                      {canEdit && (
+                        <td className="px-2 py-2">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => openVoucherEdit(v)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
+                            <button onClick={() => deleteVoucher(v.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'loyalty' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Quản lý tích điểm theo SĐT</h3>
+              <p className="text-xs text-gray-500">Nhập số điện thoại để tra cứu hoặc tạo hồ sơ tích điểm cho khách hàng</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={loyaltyPhone}
+                  onChange={(e) => setLoyaltyPhone(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      lookupLoyaltyAccount();
+                    }
+                  }}
+                  placeholder="Ví dụ: 09xxxxxxxx"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={lookupLoyaltyAccount}
+                disabled={loadingLoyalty}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                <Search size={16} /> {loadingLoyalty ? 'Đang tra...' : 'Tra cứu'}
+              </button>
+            </div>
+            {loyaltyError && <p className="mt-2 text-xs text-red-600">{loyaltyError}</p>}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">SĐT khách đã mua</h3>
+              </div>
+              <button
+                type="button"
+                onClick={loadLoyaltyAccounts}
+                disabled={loadingLoyaltyAccounts}
+                className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+              >
+                <RefreshCw size={16} className={loadingLoyaltyAccounts ? 'animate-spin' : ''} />
+                Làm mới
+              </button>
+            </div>
+
+            {loadingLoyaltyAccounts ? (
+              <p className="text-sm text-gray-500">Đang tải danh sách khách...</p>
+            ) : loyaltyAccounts.length === 0 ? (
+              <p className="text-sm text-gray-400">Chưa có khách nào được tích điểm. Điểm chỉ được cộng khi đơn chuyển sang Hoàn thành.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+                      <th className="px-2 py-2">SĐT</th>
+                      <th className="px-2 py-2">Điểm hiện có</th>
+                      <th className="px-2 py-2">Tổng đơn</th>
+                      <th className="px-2 py-2">Tổng chi tiêu</th>
+                      <th className="px-2 py-2">Lần mua gần nhất</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loyaltyAccounts.map((account) => (
+                      <tr
+                        key={account.id}
+                        onClick={() => {
+                          setLoyaltyPhone(account.phone);
+                          setLoyaltyAccount(account);
+                          setLoyaltyError('');
+                        }}
+                        className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                      >
+                        <td className="px-2 py-2 font-semibold text-blue-700">{account.phone}</td>
+                        <td className="px-2 py-2 font-medium text-amber-700">{account.pointsBalance.toLocaleString('vi-VN')}</td>
+                        <td className="px-2 py-2">{account.totalOrders.toLocaleString('vi-VN')}</td>
+                        <td className="px-2 py-2">{formatCurrency(account.totalSpent)}</td>
+                        <td className="px-2 py-2 text-gray-500">{formatDateTime(account.lastOrderAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {loyaltyAccount ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">SĐT</p>
+                <p className="mt-2 text-lg font-semibold text-gray-900">{loyaltyAccount.phone}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Điểm hiện có</p>
+                <p className="mt-2 text-2xl font-bold text-amber-800">{loyaltyAccount.pointsBalance.toLocaleString('vi-VN')}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng đơn</p>
+                <p className="mt-2 text-2xl font-bold text-gray-900">{loyaltyAccount.totalOrders.toLocaleString('vi-VN')}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng chi tiêu</p>
+                <p className="mt-2 text-lg font-semibold text-gray-900">{formatCurrency(loyaltyAccount.totalSpent)}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng điểm đã tích</p>
+                <p className="mt-2 text-xl font-semibold text-gray-900">{loyaltyAccount.totalPointsEarned.toLocaleString('vi-VN')} điểm</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Lần mua gần nhất</p>
+                <p className="mt-2 text-sm font-medium text-gray-900">{formatDateTime(loyaltyAccount.lastOrderAt)}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+              Chưa chọn khách hàng. Nhập SĐT để xem điểm tích lũy.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* EVENT MODAL */}
       {showEventModal && (
         <EventModal
@@ -518,6 +909,16 @@ export default function ExternalFactorsPage() {
           onChange={setHolidayForm}
           onSave={saveHoliday}
           onClose={() => setShowHolidayModal(false)}
+        />
+      )}
+
+      {showVoucherModal && (
+        <VoucherModal
+          isEditing={!!editingVoucher}
+          form={voucherForm}
+          onChange={setVoucherForm}
+          onSave={saveVoucher}
+          onClose={() => setShowVoucherModal(false)}
         />
       )}
     </div>

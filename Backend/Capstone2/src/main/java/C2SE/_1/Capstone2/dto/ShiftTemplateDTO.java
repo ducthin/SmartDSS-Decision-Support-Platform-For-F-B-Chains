@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import C2SE._1.Capstone2.entity.ShiftType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +35,7 @@ public class ShiftTemplateDTO {
     @Max(value = 240, message = "Thời gian nghỉ tối đa 240 phút")
     private Integer breakMinutes;
 
+    private ShiftType shiftType;
     private Boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -9,6 +9,14 @@
       "projectName": "Capstone2"
     },
     {
+      "type": "java",
+      "name": "Capstone2Application",
+      "request": "launch",
+      "mainClass": "C2SE._1.Capstone2.Capstone2Application",
+      "projectName": "Capstone2",
+      "cwd": "${workspaceFolder}\\Backend\\Capstone2"
+    },
+    {
       "name": "Backend: Spring Boot (Java)",
       "type": "java",
       "request": "launch",

@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import C2SE._1.Capstone2.entity.ShiftType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 public class ShiftWorkSummaryDTO {
     private Long userId;
     private String userFullName;
+    private ShiftType shiftType;
 
     private Long totalAssignments;
     private Long assignedCount;

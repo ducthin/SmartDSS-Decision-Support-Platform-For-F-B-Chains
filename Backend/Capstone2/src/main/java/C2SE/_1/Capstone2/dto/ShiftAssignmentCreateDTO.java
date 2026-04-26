@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import C2SE._1.Capstone2.entity.ShiftType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,8 @@ public class ShiftAssignmentCreateDTO {
 
     @NotNull(message = "Ngày làm không được để trống")
     private LocalDate shiftDate;
+
+    private ShiftType shiftType;
 
     private String note;
 }

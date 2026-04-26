@@ -2,6 +2,8 @@ package C2SE._1.Capstone2.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -40,6 +42,11 @@ public class ShiftTemplate extends BaseEntity {
     @Builder.Default
     @Column(nullable = false)
     private Integer breakMinutes = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(length = 30)
+    private ShiftType shiftType = ShiftType.POS_COUNTER;
 
     @Builder.Default
     @Column(nullable = false)

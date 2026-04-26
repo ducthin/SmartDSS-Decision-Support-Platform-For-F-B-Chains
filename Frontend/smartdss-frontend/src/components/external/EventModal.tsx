@@ -74,6 +74,18 @@ export default function EventModal({ isEditing, form, onChange, onSave, onClose 
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Giảm giá theo sự kiện (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={form.discountPercent ?? 0}
+              onChange={(e) => onChange({ ...form, discountPercent: Number(e.target.value) || 0 })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
             <textarea rows={2} value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />

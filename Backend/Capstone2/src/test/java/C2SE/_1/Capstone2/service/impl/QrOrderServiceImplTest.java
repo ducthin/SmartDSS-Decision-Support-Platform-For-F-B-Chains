@@ -7,6 +7,7 @@ import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.MenuItemMapper;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.service.OrderDiscountService;
 import C2SE._1.Capstone2.util.DrinkOptionsJsonMapper;
 import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,7 @@ class QrOrderServiceImplTest {
     @Mock private MenuItemMapper menuItemMapper;
     @Mock private DrinkOptionsJsonMapper drinkOptionsJsonMapper;
     @Mock private DrinkOrderPricingHelper drinkOrderPricingHelper;
+    @Mock private OrderDiscountService orderDiscountService;
 
     @InjectMocks
     private QrOrderServiceImpl qrOrderService;
@@ -63,6 +65,15 @@ class QrOrderServiceImplTest {
                     BigDecimal p = mi.getPrice() != null ? mi.getPrice() : BigDecimal.ZERO;
                     return new DrinkOrderPricingHelper.ResolvedDrinkLine(p, null, null, null);
                 });
+        lenient().when(orderDiscountService.calculate(any(BigDecimal.class), nullable(String.class), nullable(String.class), any()))
+                .thenReturn(new OrderDiscountService.DiscountResult(
+                        null,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        null
+                ));
     }
 
     @Test

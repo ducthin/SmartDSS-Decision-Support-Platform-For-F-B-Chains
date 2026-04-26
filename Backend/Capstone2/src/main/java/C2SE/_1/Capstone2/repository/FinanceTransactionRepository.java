@@ -26,6 +26,7 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
               AND (:keyword IS NULL OR :keyword = ''
                    OR LOWER(ft.note) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(ft.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY ft.occurredAt DESC, ft.id DESC
             """)
     Page<FinanceTransaction> search(@Param("fromDate") LocalDateTime fromDate,
                                     @Param("toDate") LocalDateTime toDate,
@@ -38,6 +39,7 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
             SELECT ft FROM FinanceTransaction ft
             WHERE (:fromDate IS NULL OR ft.occurredAt >= :fromDate)
               AND (:toDate IS NULL OR ft.occurredAt <= :toDate)
+            ORDER BY ft.occurredAt DESC, ft.id DESC
             """)
     List<FinanceTransaction> findByOccurredAtRange(@Param("fromDate") LocalDateTime fromDate,
                                                    @Param("toDate") LocalDateTime toDate);

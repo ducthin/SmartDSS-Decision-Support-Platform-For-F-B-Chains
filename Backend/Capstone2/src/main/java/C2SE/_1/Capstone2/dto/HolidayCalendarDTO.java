@@ -3,8 +3,11 @@ package C2SE._1.Capstone2.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -30,6 +33,10 @@ public class HolidayCalendarDTO {
 
     @Size(max = 500, message = "Mô tả tối đa 500 ký tự")
     private String description;
+
+    @DecimalMin(value = "0.0", message = "Giảm giá phải >= 0%")
+    @DecimalMax(value = "100.0", message = "Giảm giá tối đa 100%")
+    private BigDecimal discountPercent;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

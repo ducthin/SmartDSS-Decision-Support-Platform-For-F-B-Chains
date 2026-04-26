@@ -7,6 +7,8 @@ import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.service.CustomerLoyaltyAccountService;
+import C2SE._1.Capstone2.service.OrderDiscountService;
 import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +44,8 @@ class OrderServiceImplTest {
     @Mock private OrderMapper orderMapper;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private DrinkOrderPricingHelper drinkOrderPricingHelper;
+    @Mock private OrderDiscountService orderDiscountService;
+    @Mock private CustomerLoyaltyAccountService customerLoyaltyAccountService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -69,6 +73,17 @@ class OrderServiceImplTest {
                     BigDecimal p = mi.getPrice() != null ? mi.getPrice() : BigDecimal.ZERO;
                     return new DrinkOrderPricingHelper.ResolvedDrinkLine(p, null, null, null);
                 });
+        lenient().when(orderDiscountService.calculate(any(BigDecimal.class), nullable(String.class), nullable(String.class), any()))
+                .thenReturn(new OrderDiscountService.DiscountResult(
+                        null,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        null
+                ));
+        lenient().when(customerLoyaltyAccountService.awardPointsForOrder(nullable(String.class), any(BigDecimal.class)))
+                .thenReturn(0);
 
         ReflectionTestUtils.setField(orderService, "vatRatePercent", BigDecimal.valueOf(8));
         ReflectionTestUtils.setField(orderService, "priceIncludesVat", true);

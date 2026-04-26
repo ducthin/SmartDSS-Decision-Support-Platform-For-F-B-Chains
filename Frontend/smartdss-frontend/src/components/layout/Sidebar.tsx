@@ -5,7 +5,7 @@ import { getRoleKey, formatRoleName } from '@/utils/helpers';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
-  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet, CalendarClock
+  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet, CalendarClock, FileText
 } from 'lucide-react';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
 
   // Vận hành hằng ngày
   { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/invoice-requests', label: 'Yêu cầu hóa đơn', icon: FileText, roles: ['ADMIN', 'MANAGER'] },
   { path: '/shifts', label: 'Ca làm', icon: CalendarClock, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/table-settlement', label: 'Quản lý Bàn', icon: Wallet, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/tables', label: 'Quản lý QR bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },

@@ -314,6 +314,15 @@ export default function FinancePage() {
   const grossTotalRevenue = grossProfitDaily.reduce((sum, row) => sum + (row.revenue || 0), 0);
   const grossTotalCogs = grossProfitDaily.reduce((sum, row) => sum + (row.cogs || 0), 0);
   const grossTotalProfit = grossProfitDaily.reduce((sum, row) => sum + (row.grossProfit || 0), 0);
+  const sortedTransactions = useMemo(
+    () =>
+      [...transactions].sort((a, b) => {
+        const timeDiff = new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return (b.id || 0) - (a.id || 0);
+      }),
+    [transactions],
+  );
   const grossProfitDailyDisplay = useMemo(
     () => [...grossProfitDaily].sort((a, b) => b.period.localeCompare(a.period)),
     [grossProfitDaily],
@@ -652,7 +661,7 @@ export default function FinancePage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx) => (
+                {sortedTransactions.map((tx) => (
                   <tr key={tx.id} className="border-t border-gray-100">
                     <td className="py-3 px-3 text-gray-600">{new Date(tx.occurredAt).toLocaleString('vi-VN')}</td>
                     <td className="py-3 px-3">
@@ -682,7 +691,7 @@ export default function FinancePage() {
                     </td>
                   </tr>
                 ))}
-                {transactions.length === 0 && (
+                {sortedTransactions.length === 0 && (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-gray-400">Chưa có giao dịch trong khoảng thời gian đã chọn</td>
                   </tr>

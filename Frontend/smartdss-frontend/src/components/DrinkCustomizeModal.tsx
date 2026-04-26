@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Coffee } from 'lucide-react';
 import type { MenuItem } from '@/types';
 import { formatCurrency, unitPriceWithDrinkOptions } from '@/utils/helpers';
 import Modal from '@/components/ui/Modal';
+import { resolveBackendUrl } from '@/services/settingsService';
 
 type Props = {
   open: boolean;
@@ -45,6 +47,7 @@ export default function DrinkCustomizeModal({
   const sizes = item.drinkSizes || [];
   const toppings = item.drinkToppings || [];
   const unit = unitPriceWithDrinkOptions(item, sizeCode || undefined, [...toppingCodes]);
+  const imageSrc = resolveBackendUrl(item.imageUrl) ?? item.imageUrl;
 
   const toggleTopping = (code: string) => {
     setToppingCodes((prev) => {
@@ -63,19 +66,62 @@ export default function DrinkCustomizeModal({
 
   const isQr = variant === 'qr';
   const activeChip = isQr
-    ? 'border-orange-500 bg-orange-50 text-orange-900 ring-2 ring-orange-200'
+    ? 'border-(--coffee-primary) bg-[rgba(245,230,211,0.7)] text-(--coffee-dark) ring-2 ring-[rgba(228,172,92,0.45)]'
     : 'border-blue-600 bg-blue-50 text-blue-800';
-  const idleChip = isQr ? 'border-orange-100 bg-white hover:border-orange-200 hover:bg-orange-50/50' : 'border-gray-200 hover:bg-gray-50';
-  const priceClass = isQr ? 'text-orange-600' : 'text-blue-600';
+  const idleChip = isQr
+    ? 'border-[rgba(111,78,55,0.18)] bg-white hover:border-[rgba(111,78,55,0.28)] hover:bg-[rgba(245,230,211,0.4)]'
+    : 'border-gray-200 hover:bg-gray-50';
+  const priceClass = isQr ? 'text-(--coffee-primary)' : 'text-blue-600';
   const primaryBtn = isQr
-    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 hover:opacity-95'
+    ? 'coffee-interactive bg-[linear-gradient(120deg,var(--coffee-primary),var(--coffee-dark))] text-(--coffee-secondary) shadow-lg shadow-[rgba(62,42,31,0.22)]'
     : 'bg-blue-600 text-white hover:bg-blue-700';
 
+  const cancelBtn = isQr
+    ? 'coffee-interactive rounded-xl border border-[rgba(111,78,55,0.2)] px-4 py-2.5 text-sm font-semibold text-(--coffee-dark) hover:bg-[rgba(245,230,211,0.45)]'
+    : 'rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-50';
+
   return (
-    <Modal open={open} onClose={onClose} title={title || `Chọn size & topping — ${item.name}`} maxWidth="max-w-md">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title || `Chọn size & topping — ${item.name}`}
+      maxWidth="max-w-md"
+      overlayClassName={isQr ? 'z-[230] bg-[rgba(62,42,31,0.55)] p-3 sm:p-5' : undefined}
+      panelClassName={
+        isQr
+          ? 'coffee-theme my-0 rounded-[22px] border border-[rgba(111,78,55,0.16)] bg-[linear-gradient(180deg,#fffdf9_0%,#fdf6eb_100%)] shadow-[0_26px_55px_-30px_rgba(62,42,31,0.65)]'
+          : undefined
+      }
+      headerClassName={isQr ? 'border-b border-[rgba(111,78,55,0.12)] bg-[rgba(245,230,211,0.5)] px-4 py-3' : undefined}
+      titleClassName={isQr ? 'text-(--coffee-dark) text-[17px] font-semibold' : undefined}
+      closeButtonClassName={
+        isQr ? 'text-[rgba(62,42,31,0.6)] hover:bg-[rgba(245,230,211,0.7)] hover:text-(--coffee-dark)' : undefined
+      }
+      bodyClassName={isQr ? 'px-4 py-4' : undefined}
+    >
       <div className="space-y-5">
+        {isQr && (
+          <div className="rounded-xl border border-[rgba(111,78,55,0.14)] bg-white/85 p-3">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 overflow-hidden rounded-xl bg-[rgba(245,230,211,0.7)]">
+                {imageSrc ? (
+                  <img src={imageSrc} alt={item.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-(--coffee-primary)">
+                    <Coffee className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-(--coffee-dark)">{item.name}</p>
+                <p className="text-xs text-[rgba(62,42,31,0.66)]">Tùy chỉnh size và topping trước khi thêm vào giỏ</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
-          <div className="mb-2 text-sm font-semibold text-gray-800">Kích cỡ *</div>
+          <div className={`mb-2 text-sm font-semibold ${isQr ? 'text-(--coffee-dark)' : 'text-gray-800'}`}>Kích cỡ *</div>
           <div className="flex flex-wrap gap-2">
             {sizes.map((s) => (
               <button
@@ -88,7 +134,9 @@ export default function DrinkCustomizeModal({
               >
                 <span className="block leading-tight">{s.label}</span>
                 {s.priceExtra > 0 && (
-                  <span className="mt-0.5 block text-xs font-normal text-gray-500">+{formatCurrency(s.priceExtra)}</span>
+                  <span className={`mt-0.5 block text-xs font-normal ${isQr ? 'text-[rgba(62,42,31,0.58)]' : 'text-gray-500'}`}>
+                    +{formatCurrency(s.priceExtra)}
+                  </span>
                 )}
               </button>
             ))}
@@ -98,7 +146,7 @@ export default function DrinkCustomizeModal({
 
         {toppings.length > 0 && (
           <div>
-            <div className="mb-2 text-sm font-semibold text-gray-800">Topping thêm (tuỳ chọn)</div>
+            <div className={`mb-2 text-sm font-semibold ${isQr ? 'text-(--coffee-dark)' : 'text-gray-800'}`}>Topping thêm (tuỳ chọn)</div>
             <div className="max-h-[40vh] space-y-2 overflow-y-auto pr-1">
               {toppings.map((t) => (
                 <label
@@ -106,9 +154,11 @@ export default function DrinkCustomizeModal({
                   className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border p-3 transition ${
                     toppingCodes.has(t.code)
                       ? isQr
-                        ? 'border-orange-200 bg-orange-50/80'
+                        ? 'border-[rgba(111,78,55,0.24)] bg-[rgba(245,230,211,0.52)]'
                         : 'border-blue-200 bg-blue-50/80'
-                      : 'border-gray-100 hover:bg-gray-50'
+                      : isQr
+                        ? 'border-[rgba(111,78,55,0.12)] hover:bg-[rgba(245,230,211,0.32)]'
+                        : 'border-gray-100 hover:bg-gray-50'
                   }`}
                 >
                   <span className="flex items-center gap-3">
@@ -116,24 +166,30 @@ export default function DrinkCustomizeModal({
                       type="checkbox"
                       checked={toppingCodes.has(t.code)}
                       onChange={() => toggleTopping(t.code)}
-                      className={`h-4 w-4 rounded border-gray-300 ${isQr ? 'text-orange-600 focus:ring-orange-400' : ''}`}
+                      className={`h-4 w-4 rounded border-gray-300 ${isQr ? 'text-(--coffee-primary) focus:ring-(--coffee-accent)' : ''}`}
                     />
-                    <span className="text-sm font-medium text-gray-800">{t.label}</span>
+                    <span className={`text-sm font-medium ${isQr ? 'text-(--coffee-dark)' : 'text-gray-800'}`}>{t.label}</span>
                   </span>
-                  <span className="shrink-0 text-sm font-semibold text-gray-600">+{formatCurrency(t.price)}</span>
+                  <span className={`shrink-0 text-sm font-semibold ${isQr ? 'text-[rgba(62,42,31,0.75)]' : 'text-gray-600'}`}>
+                    +{formatCurrency(t.price)}
+                  </span>
                 </label>
               ))}
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-stone-50/80 px-3 py-2.5 text-sm">
-          <span className="text-gray-600">Tạm tính</span>
+        <div
+          className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm ${
+            isQr ? 'border border-[rgba(111,78,55,0.14)] bg-[rgba(245,230,211,0.44)]' : 'border border-gray-100 bg-stone-50/80'
+          }`}
+        >
+          <span className={isQr ? 'text-[rgba(62,42,31,0.68)]' : 'text-gray-600'}>Tạm tính</span>
           <span className={`font-bold tabular-nums ${priceClass}`}>{formatCurrency(unit)}</span>
         </div>
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold hover:bg-gray-50">
+          <button type="button" onClick={onClose} className={cancelBtn}>
             Hủy
           </button>
           <button

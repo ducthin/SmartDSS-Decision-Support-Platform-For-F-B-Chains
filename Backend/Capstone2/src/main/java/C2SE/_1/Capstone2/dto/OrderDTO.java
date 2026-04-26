@@ -18,8 +18,14 @@ public class OrderDTO {
     private Long id;
     private String status;
     private BigDecimal totalAmount;
+    private BigDecimal subtotalAmount;
+    private BigDecimal discountAmount;
     private String note;
     private String tableNumber;
+    private String customerPhone;
+    private String voucherCode;
+    private String promotionNote;
+    private Integer loyaltyPointsEarned;
     /**
      * Đơn QR: mã phiên thiết bị. Luôn xuất hiện trong JSON (kể cả null) để client lọc đúng.
      */

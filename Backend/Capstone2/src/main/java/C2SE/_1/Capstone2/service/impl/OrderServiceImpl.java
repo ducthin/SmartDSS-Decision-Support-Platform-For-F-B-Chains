@@ -9,6 +9,8 @@ import C2SE._1.Capstone2.exception.InsufficientStockException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.service.CustomerLoyaltyAccountService;
+import C2SE._1.Capstone2.service.OrderDiscountService;
 import C2SE._1.Capstone2.service.OrderService;
 import C2SE._1.Capstone2.util.DrinkOrderPricingHelper;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +47,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final SimpMessagingTemplate messagingTemplate;
     private final DrinkOrderPricingHelper drinkOrderPricingHelper;
+    private final OrderDiscountService orderDiscountService;
+    private final CustomerLoyaltyAccountService customerLoyaltyAccountService;
     @Value("${app.tax.vat.rate-percent:8}")
     private BigDecimal vatRatePercent;
     @Value("${app.tax.vat.price-includes-vat:true}")
@@ -94,6 +99,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = Order.builder()
                 .status(OrderStatus.PENDING)
                 .note(orderDTO.getNote())
+            .customerPhone(normalizeCustomerPhone(orderDTO.getCustomerPhone()))
                 .createdBy(user)
                 .totalAmount(BigDecimal.ZERO)
                 .build();
@@ -130,8 +136,20 @@ public class OrderServiceImpl implements OrderService {
 
         validateInventoryAvailability(orderItems);
 
+        BigDecimal subtotalAmount = totalAmount;
+        OrderDiscountService.DiscountResult discountResult = orderDiscountService.calculate(
+            subtotalAmount,
+            orderDTO.getVoucherCode(),
+            order.getCustomerPhone(),
+            LocalDate.now());
+        BigDecimal finalTotalAmount = subtotalAmount.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
+
         order.setOrderItems(orderItems);
-        order.setTotalAmount(totalAmount);
+        order.setSubtotalAmount(subtotalAmount);
+        order.setDiscountAmount(discountResult.totalDiscountAmount());
+        order.setVoucherCode(discountResult.normalizedVoucherCode());
+        order.setPromotionNote(discountResult.promotionNote());
+        order.setTotalAmount(finalTotalAmount);
 
         OrderDTO result = orderMapper.toDTO(orderRepository.save(order));
         messagingTemplate.convertAndSend("/topic/orders", result);
@@ -175,6 +193,11 @@ public class OrderServiceImpl implements OrderService {
 
         if (newStatus == OrderStatus.COMPLETED) {
             createSalesTransactionFromOrder(savedOrder);
+            int earnedPoints = customerLoyaltyAccountService.awardPointsForOrder(
+                    savedOrder.getCustomerPhone(),
+                    savedOrder.getTotalAmount());
+            savedOrder.setLoyaltyPointsEarned(earnedPoints);
+            savedOrder = orderRepository.save(savedOrder);
         }
 
         OrderDTO result = orderMapper.toDTO(savedOrder);
@@ -353,5 +376,19 @@ public class OrderServiceImpl implements OrderService {
                                 + ", Required: " + required);
             }
         }
+    }
+
+    private String normalizeCustomerPhone(String customerPhone) {
+        if (customerPhone == null) {
+            return null;
+        }
+        String normalized = customerPhone.replaceAll("\\s+", "").trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (!normalized.matches("^[+0-9][0-9]{8,19}$")) {
+            throw new BadRequestException("Số điện thoại không hợp lệ");
+        }
+        return normalized;
     }
 }

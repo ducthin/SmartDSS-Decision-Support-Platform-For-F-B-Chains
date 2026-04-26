@@ -46,6 +46,11 @@ public class ShiftAssignment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
+    @Column(length = 30)
+    private ShiftType shiftType = ShiftType.POS_COUNTER;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
     @Column(nullable = false, length = 20)
     private ShiftAssignmentStatus status = ShiftAssignmentStatus.ASSIGNED;
 

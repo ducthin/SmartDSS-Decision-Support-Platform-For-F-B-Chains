@@ -3,6 +3,8 @@ package C2SE._1.Capstone2.service;
 import C2SE._1.Capstone2.dto.DiningTableDTO;
 import C2SE._1.Capstone2.dto.MenuItemDTO;
 import C2SE._1.Capstone2.dto.OrderDTO;
+import C2SE._1.Capstone2.dto.QrInvoiceRequestDTO;
+import C2SE._1.Capstone2.dto.QrInvoiceResponseDTO;
 import C2SE._1.Capstone2.dto.QrOrderDTO;
 import C2SE._1.Capstone2.dto.QrStaffCallDTO;
 import C2SE._1.Capstone2.dto.StaffCallDTO;
@@ -18,6 +20,8 @@ public interface QrOrderService {
     OrderDTO placeOrder(String qrToken, QrOrderDTO qrOrderDTO);
 
     List<OrderDTO> getTableOrders(String qrToken, String clientSessionId);
+
+    QrInvoiceResponseDTO requestInvoice(String qrToken, QrInvoiceRequestDTO requestDTO);
 
     StaffCallDTO callStaff(String qrToken, QrStaffCallDTO callDTO);
 }

@@ -1,5 +1,6 @@
 package C2SE._1.Capstone2.dto;
 
+import C2SE._1.Capstone2.entity.ShiftType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,7 @@ public class ShiftAssignmentDTO {
     private String userFullName;
     private Long shiftTemplateId;
     private String shiftTemplateName;
+    private ShiftType shiftType;
     private LocalDate shiftDate;
     private LocalTime startTime;
     private LocalTime endTime;

@@ -1,6 +1,7 @@
 package C2SE._1.Capstone2.controller;
 
 import C2SE._1.Capstone2.dto.ApiResponse;
+import C2SE._1.Capstone2.dto.LoyaltyPolicyDTO;
 import C2SE._1.Capstone2.dto.StaffCallSoundSettingDTO;
 import C2SE._1.Capstone2.dto.StoreLocationDTO;
 import C2SE._1.Capstone2.dto.StoreLocationUpdateDTO;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class SettingsController {
 
     private static final String STAFF_CALL_SOUND_KEY = "staff_call_sound_url";
+    private static final String LOYALTY_POINTS_PER_10000_KEY = "loyalty_points_per_10000_vnd";
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "audio/mpeg",
             "audio/mp3",
@@ -39,6 +41,9 @@ public class SettingsController {
     private final AppSettingService appSettingService;
     private final StoreLocationService storeLocationService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.loyalty.points-per-10000-vnd:1}")
+    private int defaultLoyaltyPointsPerTenThousandVnd;
+
     @GetMapping("/staff-call-sound")
     public ResponseEntity<ApiResponse<StaffCallSoundSettingDTO>> getStaffCallSound() {
         String url = appSettingService.getValue(STAFF_CALL_SOUND_KEY);
@@ -50,10 +55,26 @@ public class SettingsController {
         return ResponseEntity.ok(ApiResponse.success(storeLocationService.getStoreLocation()));
     }
 
+    @GetMapping("/loyalty-policy")
+    public ResponseEntity<ApiResponse<LoyaltyPolicyDTO>> getLoyaltyPolicy() {
+        return ResponseEntity.ok(ApiResponse.success(LoyaltyPolicyDTO.builder()
+                .pointsPerTenThousandVnd(resolveLoyaltyPointsPerTenThousandVnd())
+                .build()));
+    }
+
     @PutMapping("/store-location")
     public ResponseEntity<ApiResponse<StoreLocationDTO>> updateStoreLocation(
             @Valid @RequestBody StoreLocationUpdateDTO dto) {
         return ResponseEntity.ok(ApiResponse.success(storeLocationService.updateStoreLocation(dto)));
+    }
+
+    @PutMapping("/loyalty-policy")
+    public ResponseEntity<ApiResponse<LoyaltyPolicyDTO>> updateLoyaltyPolicy(
+            @Valid @RequestBody LoyaltyPolicyDTO dto) {
+        appSettingService.setValue(LOYALTY_POINTS_PER_10000_KEY, String.valueOf(dto.getPointsPerTenThousandVnd()));
+        return ResponseEntity.ok(ApiResponse.success(LoyaltyPolicyDTO.builder()
+                .pointsPerTenThousandVnd(dto.getPointsPerTenThousandVnd())
+                .build()));
     }
 
     @PostMapping(value = "/staff-call-sound", consumes = "multipart/form-data")
@@ -101,6 +122,18 @@ public class SettingsController {
     public ResponseEntity<ApiResponse<StaffCallSoundSettingDTO>> clearStaffCallSound() {
         appSettingService.setValue(STAFF_CALL_SOUND_KEY, null);
         return ResponseEntity.ok(ApiResponse.success(StaffCallSoundSettingDTO.builder().soundUrl(null).build()));
+    }
+
+    private int resolveLoyaltyPointsPerTenThousandVnd() {
+        String settingValue = appSettingService.getValue(LOYALTY_POINTS_PER_10000_KEY);
+        if (settingValue == null || settingValue.isBlank()) {
+            return Math.max(defaultLoyaltyPointsPerTenThousandVnd, 0);
+        }
+        try {
+            return Math.max(Integer.parseInt(settingValue.trim()), 0);
+        } catch (NumberFormatException ignored) {
+            return Math.max(defaultLoyaltyPointsPerTenThousandVnd, 0);
+        }
     }
 }
 

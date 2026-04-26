@@ -6,8 +6,9 @@ import toast from 'react-hot-toast';
 import { Bell } from 'lucide-react';
 import { useStaffCallSocket } from '@/hooks/useStaffCallSocket';
 import { useFeedbackAlertSocket } from '@/hooks/useFeedbackAlertSocket';
+import { useInvoiceRequestSocket } from '@/hooks/useInvoiceRequestSocket';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
-import type { FeedbackAlert, Order, StaffCall } from '@/types';
+import type { FeedbackAlert, Order, QrInvoiceResponse, StaffCall } from '@/types';
 import { getRoleKey } from '@/utils/helpers';
 import { resolveBackendUrl, settingsService } from '@/services/settingsService';
 
@@ -55,6 +56,7 @@ export default function MainLayout() {
   const userRole = getRoleKey(user?.roleName);
   const canReceiveStaffCalls = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   const canReceiveFeedbackAlerts = ['ADMIN', 'MANAGER'].includes(userRole);
+  const canReceiveInvoiceRequests = ['ADMIN', 'MANAGER'].includes(userRole);
   const canReceiveQrOrderAlerts = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   const lastCallIdRef = useRef<number | null>(null);
   const lastFeedbackAlertIdRef = useRef<number | null>(null);
@@ -204,8 +206,23 @@ export default function MainLayout() {
     }
   }, [canReceiveQrOrderAlerts, notiEnabled, notificationSupported]);
 
+  const handleInvoiceRequest = useCallback((data?: QrInvoiceResponse) => {
+    if (!canReceiveInvoiceRequests || !data?.requestId) return;
+    const methodLabel = data.deliveryMethod === 'EMAIL'
+      ? 'gửi Gmail'
+      : data.deliveryMethod === 'DIRECT'
+        ? 'tải trực tiếp'
+        : 'lấy tại quầy';
+    toast.success(
+      `Yêu cầu xuất hóa đơn #${data.requestId} cho đơn #${data.orderId} (${methodLabel})`,
+      { duration: 7000 },
+    );
+    playAlertBeep();
+  }, [canReceiveInvoiceRequests]);
+
   useStaffCallSocket(handleStaffCall);
   useFeedbackAlertSocket(handleFeedbackAlert);
+  useInvoiceRequestSocket(handleInvoiceRequest);
   useOrderSocket(handleQrOrderAlert);
 
   if (loading) {

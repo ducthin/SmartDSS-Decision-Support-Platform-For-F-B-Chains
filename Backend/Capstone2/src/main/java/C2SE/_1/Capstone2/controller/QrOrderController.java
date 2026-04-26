@@ -44,6 +44,14 @@ public class QrOrderController {
         return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token, sessionId)));
     }
 
+    @PostMapping("/{token}/invoice")
+    public ResponseEntity<ApiResponse<QrInvoiceResponseDTO>> requestInvoice(
+            @PathVariable String token,
+            @Valid @RequestBody QrInvoiceRequestDTO requestDTO) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(qrOrderService.requestInvoice(token, requestDTO)));
+    }
+
     @PostMapping("/{token}/call")
     public ResponseEntity<ApiResponse<StaffCallDTO>> callStaff(
             @PathVariable String token,

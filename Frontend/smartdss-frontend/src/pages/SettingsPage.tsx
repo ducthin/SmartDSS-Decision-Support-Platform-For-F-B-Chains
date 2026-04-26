@@ -16,6 +16,9 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
   const [savingLocation, setSavingLocation] = useState(false);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(true);
+  const [savingLoyalty, setSavingLoyalty] = useState(false);
+  const [loyaltyPointsPerTenThousand, setLoyaltyPointsPerTenThousand] = useState('1');
   const [verifyingLocation, setVerifyingLocation] = useState(false);
   const [lastVerifiedAt, setLastVerifiedAt] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -46,6 +49,13 @@ export default function SettingsPage() {
         setLocationForm({ latitude: '', longitude: '', address: '' });
       })
       .finally(() => setLocationLoading(false));
+
+    settingsService.getLoyaltyPolicy()
+      .then((res) => {
+        setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd ?? 1));
+      })
+      .catch(() => setLoyaltyPointsPerTenThousand('1'))
+      .finally(() => setLoyaltyLoading(false));
   }, []);
 
   const fetchStoreLocation = async (silent = false) => {
@@ -111,6 +121,27 @@ export default function SettingsPage() {
       toast.error(getApiErrorMessage(e, 'Không thể lưu vị trí quán'));
     } finally {
       setSavingLocation(false);
+    }
+  };
+
+  const saveLoyaltyPolicy = async () => {
+    if (!canManage) return toast.error('Không có quyền');
+
+    const points = Number(loyaltyPointsPerTenThousand.trim());
+    if (!Number.isInteger(points) || points < 0 || points > 100) {
+      toast.error('Điểm tích lũy phải là số nguyên từ 0 đến 100');
+      return;
+    }
+
+    setSavingLoyalty(true);
+    try {
+      const res = await settingsService.updateLoyaltyPolicy({ pointsPerTenThousandVnd: points });
+      setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd));
+      toast.success('Đã lưu cấu hình điểm tích lũy');
+    } catch (e) {
+      toast.error(getApiErrorMessage(e, 'Không thể lưu cấu hình điểm tích lũy'));
+    } finally {
+      setSavingLoyalty(false);
     }
   };
 
@@ -213,6 +244,63 @@ export default function SettingsPage() {
             {!canManage && (
               <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 Chỉ ADMIN mới được thay đổi âm thanh.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 className="font-semibold text-gray-800">Điểm tích lũy khách hàng</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Cấu hình số điểm nhận được cho mỗi 10.000đ thanh toán. Đặt 2 là x2 điểm, đặt 3 là x3 điểm.
+          </p>
+        </div>
+
+        {loyaltyLoading ? (
+          <div className="text-sm text-gray-500">Đang tải...</div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-3 items-end">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Điểm / 10.000đ</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={loyaltyPointsPerTenThousand}
+                  onChange={(e) => setLoyaltyPointsPerTenThousand(e.target.value)}
+                  disabled={!canManage || savingLoyalty}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="text-sm text-gray-500">
+                Ví dụ đơn 100.000đ sẽ nhận khoảng{' '}
+                <span className="font-semibold text-gray-800">
+                  {Math.max(0, Number(loyaltyPointsPerTenThousand) || 0) * 10} điểm
+                </span>
+                .
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveLoyaltyPolicy}
+                disabled={!canManage || savingLoyalty}
+                className="text-sm px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {savingLoyalty ? 'Đang lưu...' : 'Lưu cấu hình điểm'}
+              </button>
+              <span className="text-xs text-gray-500">
+                Thay đổi chỉ áp dụng cho các đơn hoàn thành sau thời điểm lưu.
+              </span>
+            </div>
+
+            {!canManage && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Chỉ ADMIN mới được thay đổi cấu hình điểm tích lũy.
               </div>
             )}
           </div>

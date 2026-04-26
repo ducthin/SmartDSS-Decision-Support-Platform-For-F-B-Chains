@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -45,6 +46,10 @@ public class Event extends BaseEntity {
 
     @Column(length = 500)
     private String notes;
+
+    @Builder.Default
+    @Column(name = "discount_percent", precision = 5, scale = 2)
+    private BigDecimal discountPercent = BigDecimal.ZERO;
 
     @Builder.Default
     @Column(nullable = false)

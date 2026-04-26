@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Download, LogIn, LogOut, Pencil, Plus, RefreshCw, UserRoundCheck, XCircle } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { CalendarClock, Download, LogIn, LogOut, Pencil, Plus, ReceiptText, RefreshCw, UserRoundCheck, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import { shiftService } from '@/services/shiftService';
@@ -10,8 +10,10 @@ import type {
   ShiftAssignment,
   ShiftAssignmentUpdatePayload,
   ShiftAttendance,
+  ShiftRevenueDetail,
   ShiftTemplate,
   ShiftTemplateForm,
+  ShiftType,
   ShiftWorkSummary,
   User,
 } from '@/types';
@@ -27,6 +29,16 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: 'T7' },
   { value: 7, label: 'CN' },
 ];
+
+const SHIFT_TYPE_OPTIONS: { value: ShiftType; label: string; description: string }[] = [
+  { value: 'POS_COUNTER', label: 'Quầy POS', description: 'Ca cho nhân viên đứng quầy, thu ngân, xử lý bill' },
+  { value: 'SERVICE_ORDER', label: 'Order & bưng bê', description: 'Ca cho nhân viên nhận order, phục vụ và bưng món' },
+];
+
+const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
+  POS_COUNTER: 'Quầy POS',
+  SERVICE_ORDER: 'Order & bưng bê',
+};
 
 const toDateInput = (date: Date) => date.toISOString().split('T')[0];
 
@@ -51,6 +63,7 @@ export default function ShiftsPage() {
   const role = getRoleKey(user?.roleName);
   const isManager = role === 'ADMIN' || role === 'MANAGER';
   const currentUserId = user?.id;
+  const [activeShiftType, setActiveShiftType] = useState<ShiftType>('POS_COUNTER');
 
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
@@ -86,6 +99,7 @@ export default function ShiftsPage() {
     startTime: '08:00',
     endTime: '16:00',
     breakMinutes: 30,
+    shiftType: 'POS_COUNTER',
     active: true,
   });
 
@@ -110,10 +124,14 @@ export default function ShiftsPage() {
 
   const [editingAssignment, setEditingAssignment] = useState<ShiftAssignment | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<ShiftTemplate | null>(null);
+  const [selectedRevenueSummary, setSelectedRevenueSummary] = useState<ShiftWorkSummary | null>(null);
+  const [revenueDetails, setRevenueDetails] = useState<ShiftRevenueDetail[]>([]);
+  const [loadingRevenueDetails, setLoadingRevenueDetails] = useState(false);
   const [editForm, setEditForm] = useState({
     userId: 0,
     shiftTemplateId: 0,
     shiftDate: '',
+    shiftType: 'POS_COUNTER' as ShiftType,
     status: 'ASSIGNED' as 'ASSIGNED' | 'CANCELLED',
     note: '',
   });
@@ -166,6 +184,7 @@ export default function ShiftsPage() {
         fromDate,
         toDate,
         userId: selectedUserId === '' ? undefined : Number(selectedUserId),
+        shiftType: activeShiftType,
       });
       setAssignments(res.data.data || []);
       return;
@@ -173,7 +192,7 @@ export default function ShiftsPage() {
 
     const res = await shiftService.getMyAssignments({ fromDate, toDate });
     setAssignments(res.data.data || []);
-  }, [fromDate, isManager, selectedUserId, toDate]);
+  }, [activeShiftType, fromDate, isManager, selectedUserId, toDate]);
 
   const loadAttendances = useCallback(async () => {
     if (isManager) {
@@ -181,6 +200,7 @@ export default function ShiftsPage() {
         fromDate,
         toDate,
         userId: selectedUserId === '' ? undefined : Number(selectedUserId),
+        shiftType: activeShiftType,
       });
       setAttendances(res.data.data || []);
       return;
@@ -188,7 +208,7 @@ export default function ShiftsPage() {
 
     const res = await shiftService.getMyAttendances({ fromDate, toDate });
     setAttendances(res.data.data || []);
-  }, [fromDate, isManager, selectedUserId, toDate]);
+  }, [activeShiftType, fromDate, isManager, selectedUserId, toDate]);
 
   const loadWorkSummary = useCallback(async () => {
     if (!isManager) {
@@ -199,9 +219,10 @@ export default function ShiftsPage() {
       fromDate,
       toDate,
       userId: selectedUserId === '' ? undefined : Number(selectedUserId),
+      shiftType: activeShiftType,
     });
     setWorkSummary(res.data.data || []);
-  }, [fromDate, isManager, selectedUserId, toDate]);
+  }, [activeShiftType, fromDate, isManager, selectedUserId, toDate]);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);
@@ -225,9 +246,15 @@ export default function ShiftsPage() {
   }, [refreshAll]);
 
   const filteredAssignments = useMemo(() => {
-    if (statusFilter === 'ALL') return assignments;
-    return assignments.filter((item) => item.status === statusFilter);
-  }, [assignments, statusFilter]);
+    const byShiftType = assignments.filter((item) => (item.shiftType || 'POS_COUNTER') === activeShiftType);
+    if (statusFilter === 'ALL') return byShiftType;
+    return byShiftType.filter((item) => item.status === statusFilter);
+  }, [activeShiftType, assignments, statusFilter]);
+
+  const filteredAttendances = useMemo(
+    () => attendances.filter((item) => (item.shiftType || 'POS_COUNTER') === activeShiftType),
+    [activeShiftType, attendances],
+  );
 
   const activeTemplates = useMemo(() => templates.filter((item) => item.active), [templates]);
   const inactiveTemplates = useMemo(() => templates.filter((item) => !item.active), [templates]);
@@ -368,6 +395,7 @@ export default function ShiftsPage() {
         userId: assignmentForm.userId,
         shiftTemplateId: assignmentForm.shiftTemplateId,
         shiftDate: assignmentForm.shiftDate,
+        shiftType: activeShiftType,
         note: assignmentForm.note || undefined,
       });
       toast.success('Đã phân ca thành công');
@@ -429,6 +457,7 @@ export default function ShiftsPage() {
         shiftTemplateId: bulkTemplateId,
         userIds: bulkUserIds,
         shiftDates,
+        shiftType: activeShiftType,
         note: bulkNote || undefined,
       });
       toast.success('Đã phân ca theo tuần');
@@ -447,6 +476,7 @@ export default function ShiftsPage() {
       userId: assignment.userId,
       shiftTemplateId: assignment.shiftTemplateId,
       shiftDate: assignment.shiftDate,
+      shiftType: assignment.shiftType || activeShiftType,
       status: assignment.status === 'CANCELLED' ? 'CANCELLED' : 'ASSIGNED',
       note: assignment.note || '',
     });
@@ -468,6 +498,9 @@ export default function ShiftsPage() {
     }
     if (editForm.shiftDate !== editingAssignment.shiftDate) {
       payload.shiftDate = editForm.shiftDate;
+    }
+    if (editForm.shiftType !== (editingAssignment.shiftType || 'POS_COUNTER')) {
+      payload.shiftType = editForm.shiftType;
     }
 
     const currentStatus = editingAssignment.status === 'CANCELLED' ? 'CANCELLED' : 'ASSIGNED';
@@ -546,6 +579,7 @@ export default function ShiftsPage() {
         fromDate,
         toDate,
         userId: selectedUserId === '' ? undefined : Number(selectedUserId),
+        shiftType: activeShiftType,
       });
 
       const contentDisposition = (res.headers?.['content-disposition'] ?? '') as string;
@@ -569,6 +603,25 @@ export default function ShiftsPage() {
     }
   };
 
+  const openRevenueDetails = async (row: ShiftWorkSummary) => {
+    setSelectedRevenueSummary(row);
+    setRevenueDetails([]);
+    setLoadingRevenueDetails(true);
+    try {
+      const res = await shiftService.getRevenueDetails({
+        fromDate,
+        toDate,
+        userId: row.userId,
+        shiftType: row.shiftType || activeShiftType,
+      });
+      setRevenueDetails(res.data.data || []);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Không tải được chi tiết doanh thu ca'));
+    } finally {
+      setLoadingRevenueDetails(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -576,7 +629,7 @@ export default function ShiftsPage() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <CalendarClock size={24} /> Quản lý ca làm
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Lập lịch, phân ca, chỉnh ca và báo cáo giờ công.</p>
+          <p className="text-sm text-gray-500 mt-1">Tách lịch ca cho quầy POS và nhân viên order/bưng bê.</p>
         </div>
         <button
           onClick={refreshAll}
@@ -584,6 +637,23 @@ export default function ShiftsPage() {
         >
           <RefreshCw size={16} /> Làm mới
         </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {SHIFT_TYPE_OPTIONS.map((option) => {
+          const active = activeShiftType === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setActiveShiftType(option.value)}
+              className={`rounded-xl border p-4 text-left transition ${active ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-200'}`}
+            >
+              <div className={`text-sm font-semibold ${active ? 'text-blue-700' : 'text-gray-900'}`}>{option.label}</div>
+              <p className="mt-1 text-sm text-gray-500">{option.description}</p>
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -638,7 +708,7 @@ export default function ShiftsPage() {
           <div className="text-sm text-amber-900">
             {myCheckedInAssignment
               ? `Bạn đang trong ca ${myCheckedInAssignment.shiftTemplateName} (${myCheckedInAssignment.shiftDate})`
-              : `Bạn có ca ${myPendingAssignment?.shiftTemplateName} cần check-in`}
+              : `Bạn có ${myPendingAssignment?.shiftTemplateName} cần check-in`}
           </div>
           <div className="flex gap-2">
             {myPendingAssignment && (
@@ -666,7 +736,7 @@ export default function ShiftsPage() {
       {isManager && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Mẫu ca</h2>
+            <h2 className="font-semibold text-gray-900">Mẫu ca dùng chung</h2>
             <div className="grid grid-cols-2 gap-3">
               <input
                 value={templateForm.name}
@@ -728,7 +798,7 @@ export default function ShiftsPage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Phân ca nhanh (1 ca)</h2>
+            <h2 className="font-semibold text-gray-900">Phân ca nhanh - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
             <div className="grid grid-cols-2 gap-3">
               <select value={assignmentForm.userId} onChange={(e) => setAssignmentForm((p) => ({ ...p, userId: Number(e.target.value) }))} className="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm">
                 {staffUsers.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
@@ -746,7 +816,7 @@ export default function ShiftsPage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Phân ca theo tuần (nhiều nhân viên)</h2>
+            <h2 className="font-semibold text-gray-900">Phân ca theo tuần - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Tuần bắt đầu (Thứ 2)</label>
@@ -803,7 +873,7 @@ export default function ShiftsPage() {
       )}
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 font-semibold">Danh sách ca</div>
+        <div className="px-4 py-3 border-b border-gray-100 font-semibold">Danh sách ca - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
         {loading ? (
           <div className="p-8 text-center text-gray-500">Đang tải...</div>
         ) : filteredAssignments.length === 0 ? (
@@ -867,10 +937,10 @@ export default function ShiftsPage() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 font-semibold">Lịch sử chấm công</div>
+        <div className="px-4 py-3 border-b border-gray-100 font-semibold">Lịch sử chấm công - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
         {loading ? (
           <div className="p-8 text-center text-gray-500">Đang tải...</div>
-        ) : attendances.length === 0 ? (
+        ) : filteredAttendances.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Chưa có dữ liệu chấm công.</div>
         ) : (
           <div className="overflow-auto">
@@ -888,7 +958,7 @@ export default function ShiftsPage() {
                 </tr>
               </thead>
               <tbody>
-                {attendances.map((item) => (
+                {filteredAttendances.map((item) => (
                   <tr key={item.id} className="border-t border-gray-100">
                     <td className="px-3 py-2">{item.shiftDate}</td>
                     <td className="px-3 py-2">{item.shiftTemplateName}</td>
@@ -909,7 +979,7 @@ export default function ShiftsPage() {
       {isManager && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
-            <div className="font-semibold">Báo cáo giờ công theo nhân viên</div>
+            <div className="font-semibold">Báo cáo giờ công theo nhân viên - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
             <button
               onClick={handleExportWorkSummary}
               disabled={exportingSummary}
@@ -949,7 +1019,17 @@ export default function ShiftsPage() {
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalWorkedMinutes)}</td>
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalLateMinutes)}</td>
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalEarlyLeaveMinutes)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalRevenueDuringShift ?? 0)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => openRevenueDetails(row)}
+                          className="inline-flex items-center justify-end gap-1 rounded-md px-2 py-1 font-medium text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                          title="Xem chi tiết doanh thu từng ca"
+                        >
+                          <ReceiptText size={14} />
+                          {formatCurrency(row.totalRevenueDuringShift ?? 0)}
+                        </button>
+                      </td>
                       <td className="px-3 py-2 text-right">{formatCurrency(row.averageRevenuePerCompletedShift ?? 0)}</td>
                       <td className="px-3 py-2 text-right">{formatCurrency(row.totalCashierRevenueDuringShift ?? 0)}</td>
                     </tr>
@@ -972,6 +1052,139 @@ export default function ShiftsPage() {
           )}
         </div>
       )}
+
+      <Modal
+        open={Boolean(selectedRevenueSummary)}
+        onClose={() => setSelectedRevenueSummary(null)}
+        title={`Chi tiết doanh thu ca${selectedRevenueSummary ? ` - ${selectedRevenueSummary.userFullName}` : ''}`}
+        maxWidth="max-w-5xl"
+      >
+        <div className="space-y-4">
+          {selectedRevenueSummary && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">Nhóm ca</p>
+                <p className="font-semibold text-gray-900">{SHIFT_TYPE_LABELS[selectedRevenueSummary.shiftType || activeShiftType]}</p>
+              </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <p className="text-xs text-blue-700">Tổng doanh thu trong ca</p>
+                <p className="font-semibold text-blue-800">{formatCurrency(selectedRevenueSummary.totalRevenueDuringShift || 0)}</p>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-xs text-emerald-700">Thu ngân tự xử lý</p>
+                <p className="font-semibold text-emerald-800">{formatCurrency(selectedRevenueSummary.totalCashierRevenueDuringShift || 0)}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">Khoảng ngày</p>
+                <p className="font-semibold text-gray-900">{fromDate} - {toDate}</p>
+              </div>
+            </div>
+          )}
+
+          {loadingRevenueDetails ? (
+            <div className="py-10 text-center text-gray-500">Đang tải chi tiết...</div>
+          ) : revenueDetails.length === 0 ? (
+            <div className="py-10 text-center text-gray-500">Không có ca nào trong bộ lọc này.</div>
+          ) : (
+            <div className="overflow-auto rounded-lg border border-gray-200">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Ngày</th>
+                    <th className="px-3 py-2 text-left">Ca</th>
+                    <th className="px-3 py-2 text-left">Thời gian tính doanh thu</th>
+                    <th className="px-3 py-2 text-right">Số đơn</th>
+                    <th className="px-3 py-2 text-right">Doanh thu ca</th>
+                    <th className="px-3 py-2 text-right">Thu ngân tự xử lý</th>
+                    <th className="px-3 py-2 text-right">Giờ công</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {revenueDetails.map((item) => {
+                    const start = item.checkInAt || item.scheduledStartAt;
+                    const end = item.checkOutAt || item.scheduledEndAt;
+                    return (
+                      <Fragment key={item.assignmentId}>
+                        <tr key={item.assignmentId} className="border-t border-gray-100">
+                          <td className="px-3 py-2">{item.shiftDate}</td>
+                          <td className="px-3 py-2">
+                            <div className="font-medium text-gray-800">{item.shiftTemplateName}</div>
+                            <div className="text-xs text-gray-500">{item.status}</div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div>{formatDateTime(start)}</div>
+                            <div className="text-xs text-gray-500">đến {formatDateTime(end)}</div>
+                          </td>
+                          <td className="px-3 py-2 text-right">{item.transactionCount || 0}</td>
+                          <td className="px-3 py-2 text-right font-semibold text-blue-700">
+                            {formatCurrency(item.totalRevenueDuringShift || 0)}
+                          </td>
+                          <td className="px-3 py-2 text-right text-emerald-700">
+                            {formatCurrency(item.totalCashierRevenueDuringShift || 0)}
+                            <div className="text-xs text-gray-500">{item.cashierTransactionCount || 0} đơn</div>
+                          </td>
+                          <td className="px-3 py-2 text-right">{formatMinutes(item.workedMinutes)}</td>
+                        </tr>
+                        <tr className="border-t border-gray-100 bg-gray-50/60">
+                          <td colSpan={7} className="px-3 py-3">
+                            {(item.transactions || []).length === 0 ? (
+                              <div className="text-xs text-gray-500">Ca này chưa có đơn thanh toán trong khoảng thời gian tính doanh thu.</div>
+                            ) : (
+                              <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-gray-50 text-gray-600">
+                                    <tr>
+                                      <th className="px-3 py-2 text-left">Đơn</th>
+                                      <th className="px-3 py-2 text-left">Thanh toán</th>
+                                      <th className="px-3 py-2 text-left">Thu ngân</th>
+                                      <th className="px-3 py-2 text-left">Bàn/SĐT</th>
+                                      <th className="px-3 py-2 text-left">Voucher</th>
+                                      <th className="px-3 py-2 text-right">Giảm</th>
+                                      <th className="px-3 py-2 text-right">Tổng</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(item.transactions || []).map((tx) => (
+                                      <tr key={tx.salesTransactionId} className="border-t border-gray-100">
+                                        <td className="px-3 py-2 font-medium text-gray-800">#{tx.orderId || tx.salesTransactionId}</td>
+                                        <td className="px-3 py-2">
+                                          <div>{formatDateTime(tx.paidAt)}</div>
+                                          <div className="text-[11px] text-gray-500">{tx.paymentMethod || '—'}</div>
+                                        </td>
+                                        <td className="px-3 py-2">{tx.cashierName || '—'}</td>
+                                        <td className="px-3 py-2">
+                                          <div>{tx.tableNumber ? `Bàn ${tx.tableNumber}` : 'POS'}</div>
+                                          {tx.customerPhone && <div className="text-[11px] text-gray-500">{tx.customerPhone}</div>}
+                                        </td>
+                                        <td className="px-3 py-2">{tx.voucherCode || '—'}</td>
+                                        <td className="px-3 py-2 text-right">{formatCurrency(tx.discountAmount || 0)}</td>
+                                        <td className="px-3 py-2 text-right font-semibold text-blue-700">{formatCurrency(tx.totalAmount || 0)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={() => setSelectedRevenueSummary(null)}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={Boolean(editingAssignment)}
@@ -1000,6 +1213,18 @@ export default function ShiftsPage() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Ngày ca</label>
               <input type="date" value={editForm.shiftDate} onChange={(e) => setEditForm((p) => ({ ...p, shiftDate: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Nhóm ca</label>
+              <select
+                value={editForm.shiftType}
+                onChange={(e) => setEditForm((p) => ({ ...p, shiftType: e.target.value as ShiftType }))}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                {SHIFT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">Trạng thái</label>

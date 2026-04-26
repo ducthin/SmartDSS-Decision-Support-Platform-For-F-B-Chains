@@ -73,7 +73,7 @@ public class FinanceController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        var pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("occurredAt"), Sort.Order.desc("id")));
+        var pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.success(
                 financeService.getTransactions(fromDate, toDate, type, categoryId, keyword, pageable)));
     }

@@ -5,6 +5,45 @@ export interface ApiResponse<T> {
   message: string;
 }
 
+export interface NotificationTestRequest {
+  phone: string;
+  message?: string;
+}
+
+export interface NotificationTestResult {
+  sent: boolean;
+  provider: string;
+  phone: string;
+  detail?: string;
+}
+
+export type QrInvoiceDeliveryMethod = 'EMAIL' | 'DIRECT' | 'COUNTER';
+
+export interface QrInvoiceRequest {
+  orderId: number;
+  clientSessionId: string;
+  deliveryMethod: QrInvoiceDeliveryMethod;
+  taxCode: string;
+  companyName: string;
+  address: string;
+  email: string;
+  phone: string;
+}
+
+export interface QrInvoiceResponse {
+  requestId: number;
+  orderId: number;
+  deliveryMethod: QrInvoiceDeliveryMethod;
+  status: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  message: string;
+  invoiceHtml?: string;
+  invoicePdfBase64?: string;
+  createdAt?: string;
+}
+
 // Paginated response
 export interface PageResponse<T> {
   content: T[];
@@ -52,6 +91,7 @@ export interface UserForm {
 
 // Shift management
 export type ShiftAssignmentStatus = 'ASSIGNED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED';
+export type ShiftType = 'POS_COUNTER' | 'SERVICE_ORDER';
 
 export interface ShiftTemplate {
   id: number;
@@ -59,6 +99,7 @@ export interface ShiftTemplate {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  shiftType?: ShiftType;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +110,7 @@ export interface ShiftTemplateForm {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  shiftType?: ShiftType;
   active?: boolean;
 }
 
@@ -78,6 +120,7 @@ export interface ShiftAssignment {
   userFullName: string;
   shiftTemplateId: number;
   shiftTemplateName: string;
+  shiftType: ShiftType;
   shiftDate: string;
   startTime: string;
   endTime: string;
@@ -99,6 +142,7 @@ export interface ShiftAssignmentCreatePayload {
   userId: number;
   shiftTemplateId: number;
   shiftDate: string;
+  shiftType?: ShiftType;
   note?: string;
 }
 
@@ -106,6 +150,7 @@ export interface ShiftAssignmentUpdatePayload {
   userId?: number;
   shiftTemplateId?: number;
   shiftDate?: string;
+  shiftType?: ShiftType;
   status?: ShiftAssignmentStatus;
   note?: string;
 }
@@ -114,6 +159,7 @@ export interface ShiftBulkAssignPayload {
   shiftTemplateId: number;
   userIds: number[];
   shiftDates: string[];
+  shiftType?: ShiftType;
   note?: string;
 }
 
@@ -123,6 +169,7 @@ export interface ShiftAttendance {
   userId: number;
   userFullName: string;
   shiftTemplateName: string;
+  shiftType: ShiftType;
   shiftDate: string;
   status: ShiftAssignmentStatus;
   scheduledStartAt?: string;
@@ -144,6 +191,7 @@ export interface ShiftCheckPayload {
 export interface ShiftWorkSummary {
   userId: number;
   userFullName: string;
+  shiftType: ShiftType;
   totalAssignments: number;
   assignedCount: number;
   checkedInCount: number;
@@ -156,6 +204,39 @@ export interface ShiftWorkSummary {
   totalRevenueDuringShift: number;
   averageRevenuePerCompletedShift: number;
   totalCashierRevenueDuringShift: number;
+}
+
+export interface ShiftRevenueDetail {
+  assignmentId: number;
+  userId: number;
+  userFullName: string;
+  shiftTemplateName: string;
+  shiftType: ShiftType;
+  shiftDate: string;
+  status: ShiftAssignmentStatus;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
+  checkInAt?: string;
+  checkOutAt?: string;
+  workedMinutes?: number;
+  transactionCount: number;
+  cashierTransactionCount: number;
+  totalRevenueDuringShift: number;
+  totalCashierRevenueDuringShift: number;
+  transactions?: ShiftRevenueTransaction[];
+}
+
+export interface ShiftRevenueTransaction {
+  salesTransactionId: number;
+  orderId?: number;
+  paidAt?: string;
+  paymentMethod?: string;
+  cashierName?: string;
+  tableNumber?: string;
+  customerPhone?: string;
+  voucherCode?: string;
+  discountAmount?: number;
+  totalAmount: number;
 }
 
 // Category
@@ -318,8 +399,14 @@ export interface Order {
   id: number;
   orderItems: OrderItem[];
   totalAmount: number;
+  subtotalAmount?: number;
+  discountAmount?: number;
   status: OrderStatus;
   tableNumber?: string;
+  customerPhone?: string;
+  voucherCode?: string;
+  promotionNote?: string;
+  loyaltyPointsEarned?: number;
   /** Đơn QR: khớp với phiên trình duyệt */
   qrClientSessionId?: string | null;
   createdByName: string;
@@ -336,6 +423,8 @@ export interface OrderLineRequest {
 }
 
 export interface OrderForm {
+  customerPhone?: string;
+  voucherCode?: string;
   orderItems: OrderLineRequest[];
 }
 
@@ -357,6 +446,8 @@ export interface DiningTableForm {
 // QR Order
 export interface QrOrderForm {
   clientSessionId: string;
+  customerPhone: string;
+  voucherCode?: string;
   note?: string;
   orderItems: OrderLineRequest[];
 }
@@ -461,6 +552,10 @@ export interface StoreLocationUpdate {
   latitude: number | null;
   longitude: number | null;
   address: string | null;
+}
+
+export interface LoyaltyPolicy {
+  pointsPerTenThousandVnd: number;
 }
 
 export type PaymentState = 'PENDING' | 'PAID';
@@ -705,6 +800,7 @@ export interface Event {
   location: string;
   expectedImpact: ImpactLevel;
   notes: string;
+  discountPercent?: number;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -719,6 +815,7 @@ export interface EventForm {
   location: string;
   expectedImpact: ImpactLevel;
   notes: string;
+  discountPercent?: number;
   active: boolean;
 }
 
@@ -732,6 +829,7 @@ export interface HolidayCalendar {
   holidayType: HolidayType;
   recurring: boolean;
   description: string;
+  discountPercent?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -742,6 +840,59 @@ export interface HolidayCalendarForm {
   holidayType: HolidayType;
   recurring: boolean;
   description: string;
+  discountPercent?: number;
+}
+
+// Voucher & Loyalty
+export type VoucherDiscountType = 'PERCENT' | 'FIXED';
+
+export interface Voucher {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: VoucherDiscountType;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom?: string;
+  validTo?: string;
+  active: boolean;
+  usageLimit?: number;
+  usedCount: number;
+  customerPhone?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VoucherForm {
+  code: string;
+  name: string;
+  description?: string;
+  discountType: VoucherDiscountType;
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom?: string;
+  validTo?: string;
+  active: boolean;
+  usageLimit?: number;
+  customerPhone?: string;
+}
+
+export interface LoyaltyAccount {
+  id: number;
+  phone: string;
+  pointsBalance: number;
+  totalPointsEarned: number;
+  totalOrders: number;
+  totalSpent: number;
+  tier?: 'DONG' | 'BAC' | 'VANG';
+  monthlyOrderCount?: number;
+  monthlySpent?: number;
+  lastOrderAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type AreaBusynessLevel = 'IT_DONG' | 'TRUNG_BINH' | 'DONG_DUC';

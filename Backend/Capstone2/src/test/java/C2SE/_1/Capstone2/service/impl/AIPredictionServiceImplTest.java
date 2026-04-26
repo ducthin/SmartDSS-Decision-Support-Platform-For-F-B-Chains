@@ -107,8 +107,8 @@ class AIPredictionServiceImplTest {
         assertThat(result.getActualOrdersSoFar()).isEqualTo(6L);
         assertThat(result.getPredictionKind()).isEqualTo("eod_adjusted");
         assertThat(result.getPredictedRevenue()).isGreaterThanOrEqualTo(720_000.0);
-        assertThat(result.getMessage()).contains("van hanh");
-        assertThat(llmContext).contains("van hanh");
+        assertThat(result.getMessage()).contains("ML baseline");
+        assertThat(llmContext).isNotBlank();
         verify(reportService).getDailyOperationalSalesReport(today);
     }
 

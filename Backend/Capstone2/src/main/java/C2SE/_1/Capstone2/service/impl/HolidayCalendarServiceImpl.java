@@ -5,6 +5,7 @@ import C2SE._1.Capstone2.entity.HolidayCalendar;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.HolidayCalendarMapper;
 import C2SE._1.Capstone2.repository.HolidayCalendarRepository;
+import C2SE._1.Capstone2.service.CustomerNotificationService;
 import C2SE._1.Capstone2.service.HolidayCalendarService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,6 +28,7 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
 
     private final HolidayCalendarRepository holidayCalendarRepository;
     private final HolidayCalendarMapper holidayCalendarMapper;
+    private final CustomerNotificationService customerNotificationService;
 
     @Value("${calendarific.api.key}")
     private String calendarificApiKey;
@@ -67,7 +70,10 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
     public HolidayCalendarDTO createHoliday(HolidayCalendarDTO dto) {
         HolidayCalendar holiday = holidayCalendarMapper.toEntity(dto);
         if (holiday.getRecurring() == null) holiday.setRecurring(false);
-        return holidayCalendarMapper.toDTO(holidayCalendarRepository.save(holiday));
+        if (holiday.getDiscountPercent() == null) holiday.setDiscountPercent(BigDecimal.ZERO);
+        HolidayCalendar savedHoliday = holidayCalendarRepository.save(holiday);
+        customerNotificationService.notifyHolidayPromotion(savedHoliday);
+        return holidayCalendarMapper.toDTO(savedHoliday);
     }
 
     @Override
@@ -75,7 +81,9 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
         HolidayCalendar holiday = holidayCalendarRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HolidayCalendar", "id", id));
         holidayCalendarMapper.updateEntityFromDTO(dto, holiday);
-        return holidayCalendarMapper.toDTO(holidayCalendarRepository.save(holiday));
+        HolidayCalendar savedHoliday = holidayCalendarRepository.save(holiday);
+        customerNotificationService.notifyHolidayPromotion(savedHoliday);
+        return holidayCalendarMapper.toDTO(savedHoliday);
     }
 
     @Override
@@ -128,6 +136,7 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
                         .holidayType(holidayType)
                         .recurring(true)
                         .description(description.isBlank() ? "Ngày lễ" : description)
+                    .discountPercent(BigDecimal.ZERO)
                         .build();
                 holidayCalendarRepository.save(holiday);
                 count++;

@@ -12,6 +12,7 @@ const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'));
 const MenuPage = lazy(() => import('@/pages/MenuPage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
+const InvoiceRequestsPage = lazy(() => import('@/pages/InvoiceRequestsPage'));
 const TableSettlementPage = lazy(() => import('@/pages/TableSettlementPage'));
 const InventoryPage = lazy(() => import('@/pages/InventoryPage'));
 const ShiftsPage = lazy(() => import('@/pages/ShiftsPage'));
@@ -25,6 +26,8 @@ const TablesPage = lazy(() => import('@/pages/TablesPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const QrOrderPage = lazy(() => import('@/pages/QrOrderPage'));
 const AIPredictionPage = lazy(() => import('@/pages/AIPredictionPage'));
+const CoffeeShopPage = lazy(() => import('@/pages/CoffeeShopPage'));
+const NotificationTestPage = lazy(() => import('@/pages/NotificationTestPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
 function HomeRoute() {
@@ -44,12 +47,14 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/qr/:token" element={<QrOrderPage />} />
+            <Route path="/coffee-shop" element={<CoffeeShopPage />} />
             <Route element={<MainLayout />}>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/categories" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><CategoriesPage /></ProtectedRoute>} />
               <Route path="/menu" element={<MenuPage />} />
               <Route path="/recipes" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><RecipesPage /></ProtectedRoute>} />
               <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/invoice-requests" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InvoiceRequestsPage /></ProtectedRoute>} />
               <Route path="/table-settlement" element={<ProtectedRoute roles={['ADMIN', 'MANAGER', 'STAFF']}><TableSettlementPage /></ProtectedRoute>} />
               <Route path="/shifts" element={<ProtectedRoute roles={['ADMIN', 'MANAGER', 'STAFF']}><ShiftsPage /></ProtectedRoute>} />
               <Route path="/inventory" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InventoryPage /></ProtectedRoute>} />
@@ -61,6 +66,7 @@ function App() {
               <Route path="/tables" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><TablesPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute roles={['ADMIN']}><SettingsPage /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
+              <Route path="/admin/notification-test" element={<ProtectedRoute roles={['ADMIN']}><NotificationTestPage /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

@@ -13,4 +13,3 @@ public class Capstone2Application {
 	}
 
 }
-				

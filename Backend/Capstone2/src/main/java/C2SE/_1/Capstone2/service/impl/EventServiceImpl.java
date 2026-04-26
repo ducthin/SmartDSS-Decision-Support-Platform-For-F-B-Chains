@@ -6,6 +6,7 @@ import C2SE._1.Capstone2.entity.Event;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.EventMapper;
 import C2SE._1.Capstone2.repository.EventRepository;
+import C2SE._1.Capstone2.service.CustomerNotificationService;
 import C2SE._1.Capstone2.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,6 +25,7 @@ public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
+    private final CustomerNotificationService customerNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,7 +83,11 @@ public class EventServiceImpl implements EventService {
             event.setActive(true);
         if (event.getExpectedImpact() == null)
             event.setExpectedImpact(Event.ImpactLevel.MEDIUM);
-        return eventMapper.toDTO(eventRepository.save(event));
+        if (event.getDiscountPercent() == null)
+            event.setDiscountPercent(BigDecimal.ZERO);
+        Event savedEvent = eventRepository.save(event);
+        customerNotificationService.notifyEventPromotion(savedEvent);
+        return eventMapper.toDTO(savedEvent);
     }
 
     @Override
@@ -88,7 +95,9 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
         eventMapper.updateEntityFromDTO(dto, event);
-        return eventMapper.toDTO(eventRepository.save(event));
+        Event savedEvent = eventRepository.save(event);
+        customerNotificationService.notifyEventPromotion(savedEvent);
+        return eventMapper.toDTO(savedEvent);
     }
 
     @Override

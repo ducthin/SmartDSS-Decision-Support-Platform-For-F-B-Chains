@@ -28,11 +28,31 @@ public class Order extends BaseEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(precision = 12, scale = 2)
+    private BigDecimal subtotalAmount;
+
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(length = 500)
     private String note;
 
     @Column(length = 50)
     private String tableNumber;
+
+    @Column(name = "customer_phone", length = 20)
+    private String customerPhone;
+
+    @Column(name = "voucher_code", length = 64)
+    private String voucherCode;
+
+    @Column(name = "promotion_note", length = 255)
+    private String promotionNote;
+
+    @Builder.Default
+    @Column(name = "loyalty_points_earned")
+    private Integer loyaltyPointsEarned = 0;
 
     /**
      * Phiên khách quét QR (UUID từ trình duyệt). Đơn POS thường để null.

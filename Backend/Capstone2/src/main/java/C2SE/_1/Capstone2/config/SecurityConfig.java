@@ -159,6 +159,9 @@ public class SecurityConfig {
                         // Finance - ADMIN, MANAGER
                         .requestMatchers("/api/v1/finance/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
+                        // Invoice requests - ADMIN, MANAGER
+                        .requestMatchers("/api/v1/invoice-requests/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
                         // Customer feedbacks - ADMIN, MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
@@ -178,6 +181,25 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.PUT, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/holidays/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
+                        // Vouchers - GET: authenticated, CUD: ADMIN/MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/vouchers/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/vouchers/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/vouchers/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/vouchers/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
+                        // Notifications - ADMIN, MANAGER
+                        .requestMatchers(HttpMethod.POST, "/api/v1/notifications/test").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name()
+                        )
+
+                        // Loyalty - staff and above
+                        .requestMatchers(HttpMethod.GET, "/api/v1/loyalty/**").hasAnyRole(
+                                RoleName.ADMIN.name(),
+                                RoleName.MANAGER.name(),
+                                RoleName.STAFF.name()
+                        )
 
                         // Shift management
                         .requestMatchers(HttpMethod.GET, "/api/v1/shifts/my-assignments").hasAnyRole(
@@ -202,6 +224,7 @@ public class SecurityConfig {
                         )
                         .requestMatchers(HttpMethod.GET, "/api/v1/shifts/attendance").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/shifts/work-summary").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shifts/revenue-details").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/shifts/work-summary.csv").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers("/api/v1/shifts/templates/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
                         .requestMatchers("/api/v1/shifts/assignments/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())

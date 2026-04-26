@@ -3,8 +3,11 @@ package C2SE._1.Capstone2.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -39,6 +42,10 @@ public class EventDTO {
 
     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String notes;
+
+    @DecimalMin(value = "0.0", message = "Giảm giá phải >= 0%")
+    @DecimalMax(value = "100.0", message = "Giảm giá tối đa 100%")
+    private BigDecimal discountPercent;
 
     private Boolean active;
 

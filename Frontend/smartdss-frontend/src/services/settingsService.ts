@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse, StoreLocation, StoreLocationUpdate } from '@/types';
+import type { ApiResponse, LoyaltyPolicy, StoreLocation, StoreLocationUpdate } from '@/types';
 
 export interface StaffCallSoundSetting {
   soundUrl: string | null;
@@ -32,5 +32,9 @@ export const settingsService = {
     api.get<ApiResponse<StoreLocation>>('/settings/store-location'),
   updateStoreLocation: (payload: StoreLocationUpdate) =>
     api.put<ApiResponse<StoreLocation>>('/settings/store-location', payload),
+  getLoyaltyPolicy: () =>
+    api.get<ApiResponse<LoyaltyPolicy>>('/settings/loyalty-policy'),
+  updateLoyaltyPolicy: (payload: LoyaltyPolicy) =>
+    api.put<ApiResponse<LoyaltyPolicy>>('/settings/loyalty-policy', payload),
 };
 

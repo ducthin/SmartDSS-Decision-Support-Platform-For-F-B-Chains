@@ -7,6 +7,8 @@ import C2SE._1.Capstone2.dto.ShiftAttendanceDTO;
 import C2SE._1.Capstone2.dto.ShiftBulkAssignDTO;
 import C2SE._1.Capstone2.dto.ShiftCheckInDTO;
 import C2SE._1.Capstone2.dto.ShiftCheckOutDTO;
+import C2SE._1.Capstone2.dto.ShiftRevenueDetailDTO;
+import C2SE._1.Capstone2.dto.ShiftRevenueTransactionDTO;
 import C2SE._1.Capstone2.dto.ShiftTemplateDTO;
 import C2SE._1.Capstone2.dto.ShiftWorkSummaryDTO;
 import C2SE._1.Capstone2.entity.SalesTransaction;
@@ -14,6 +16,7 @@ import C2SE._1.Capstone2.entity.ShiftAssignment;
 import C2SE._1.Capstone2.entity.ShiftAssignmentStatus;
 import C2SE._1.Capstone2.entity.ShiftAttendance;
 import C2SE._1.Capstone2.entity.ShiftTemplate;
+import C2SE._1.Capstone2.entity.ShiftType;
 import C2SE._1.Capstone2.entity.User;
 import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.DuplicateResourceException;
@@ -70,7 +73,7 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftTemplateDTO> getShiftTemplates(boolean activeOnly) {
+    public List<ShiftTemplateDTO> getShiftTemplates(boolean activeOnly, ShiftType shiftType) {
         List<ShiftTemplate> templates = activeOnly
                 ? shiftTemplateRepository.findByActiveTrueOrderByStartTimeAsc()
                 : shiftTemplateRepository.findAllByOrderByStartTimeAsc();
@@ -90,6 +93,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .startTime(dto.getStartTime())
                 .endTime(dto.getEndTime())
                 .breakMinutes(dto.getBreakMinutes() == null ? 0 : dto.getBreakMinutes())
+                .shiftType(resolveShiftType(dto.getShiftType()))
                 .active(dto.getActive() == null ? true : dto.getActive())
                 .build();
 
@@ -111,6 +115,7 @@ public class ShiftServiceImpl implements ShiftService {
         template.setStartTime(dto.getStartTime());
         template.setEndTime(dto.getEndTime());
         template.setBreakMinutes(dto.getBreakMinutes() == null ? 0 : dto.getBreakMinutes());
+        template.setShiftType(resolveShiftType(dto.getShiftType()));
         if (dto.getActive() != null) {
             template.setActive(dto.getActive());
         }
@@ -128,11 +133,16 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignmentDTO> getAssignments(LocalDate fromDate, LocalDate toDate, Long userId) {
+    public List<ShiftAssignmentDTO> getAssignments(LocalDate fromDate, LocalDate toDate, Long userId, ShiftType shiftType) {
         DateRange range = normalizeRange(fromDate, toDate);
         List<ShiftAssignment> assignments = userId == null
                 ? shiftAssignmentRepository.findByShiftDateBetweenOrderByShiftDateAsc(range.fromDate(), range.toDate())
                 : shiftAssignmentRepository.findByUserIdAndShiftDateBetweenOrderByShiftDateAsc(userId, range.fromDate(), range.toDate());
+        if (shiftType != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> resolveAssignmentShiftType(assignment) == shiftType)
+                    .toList();
+        }
 
         return mapAssignments(assignments);
     }
@@ -161,6 +171,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .user(user)
                 .shiftTemplate(template)
                 .shiftDate(dto.getShiftDate())
+                .shiftType(resolveShiftType(dto.getShiftType()))
                 .status(ShiftAssignmentStatus.ASSIGNED)
                 .note(normalizeNote(dto.getNote()))
                 .build();
@@ -175,6 +186,7 @@ public class ShiftServiceImpl implements ShiftService {
 
         Set<Long> userIds = new LinkedHashSet<>(dto.getUserIds());
         Set<LocalDate> shiftDates = new LinkedHashSet<>(dto.getShiftDates());
+        ShiftType assignmentShiftType = resolveShiftType(dto.getShiftType());
         List<ShiftAssignment> toSave = new ArrayList<>();
 
         for (Long userId : userIds) {
@@ -185,6 +197,7 @@ public class ShiftServiceImpl implements ShiftService {
                         .user(user)
                         .shiftTemplate(template)
                         .shiftDate(shiftDate)
+                        .shiftType(assignmentShiftType)
                         .status(ShiftAssignmentStatus.ASSIGNED)
                         .note(normalizeNote(dto.getNote()))
                         .build());
@@ -210,6 +223,9 @@ public class ShiftServiceImpl implements ShiftService {
         }
         if (dto.getShiftDate() != null) {
             assignment.setShiftDate(dto.getShiftDate());
+        }
+        if (dto.getShiftType() != null) {
+            assignment.setShiftType(resolveShiftType(dto.getShiftType()));
         }
         if (dto.getNote() != null) {
             assignment.setNote(normalizeNote(dto.getNote()));
@@ -336,11 +352,16 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAttendanceDTO> getAttendances(LocalDate fromDate, LocalDate toDate, Long userId) {
+    public List<ShiftAttendanceDTO> getAttendances(LocalDate fromDate, LocalDate toDate, Long userId, ShiftType shiftType) {
         DateRange range = normalizeRange(fromDate, toDate);
         List<ShiftAttendance> attendances = userId == null
                 ? shiftAttendanceRepository.findByShiftDateRange(range.fromDate(), range.toDate())
                 : shiftAttendanceRepository.findByUserAndShiftDateRange(userId, range.fromDate(), range.toDate());
+        if (shiftType != null) {
+            attendances = attendances.stream()
+                    .filter(attendance -> resolveAssignmentShiftType(attendance.getAssignment()) == shiftType)
+                    .toList();
+        }
         return attendances.stream().map(this::toAttendanceDTO).toList();
     }
 
@@ -359,7 +380,7 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftWorkSummaryDTO> getWorkSummary(LocalDate fromDate, LocalDate toDate, Long userId) {
+    public List<ShiftWorkSummaryDTO> getWorkSummary(LocalDate fromDate, LocalDate toDate, Long userId, ShiftType shiftType) {
         DateRange range = normalizeRange(fromDate, toDate);
         LocalDate today = LocalDate.now(resolveZoneId());
         LocalDateTime nowSnapshot = now();
@@ -367,6 +388,11 @@ public class ShiftServiceImpl implements ShiftService {
         List<ShiftAssignment> assignments = userId == null
                 ? shiftAssignmentRepository.findByShiftDateBetweenOrderByShiftDateAsc(range.fromDate(), range.toDate())
                 : shiftAssignmentRepository.findByUserIdAndShiftDateBetweenOrderByShiftDateAsc(userId, range.fromDate(), range.toDate());
+        if (shiftType != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> resolveAssignmentShiftType(assignment) == shiftType)
+                    .toList();
+        }
 
         if (assignments.isEmpty()) {
             return List.of();
@@ -377,16 +403,18 @@ public class ShiftServiceImpl implements ShiftService {
                 .stream()
                 .collect(Collectors.toMap(att -> att.getAssignment().getId(), att -> att, (left, right) -> left));
 
-        Map<Long, ShiftWorkSummaryAccumulator> byUser = new java.util.LinkedHashMap<>();
+        Map<String, ShiftWorkSummaryAccumulator> byUser = new java.util.LinkedHashMap<>();
         List<RevenueWindow> revenueWindows = new ArrayList<>();
         LocalDateTime minRevenueStart = null;
         LocalDateTime maxRevenueEnd = null;
 
         for (ShiftAssignment assignment : assignments) {
             Long assigneeId = assignment.getUser().getId();
+            ShiftType assignmentShiftType = resolveAssignmentShiftType(assignment);
+            String accumulatorKey = assigneeId + ":" + assignmentShiftType.name();
             ShiftWorkSummaryAccumulator accumulator = byUser.computeIfAbsent(
-                    assigneeId,
-                    key -> new ShiftWorkSummaryAccumulator(assignment.getUser().getId(), assignment.getUser().getFullName())
+                    accumulatorKey,
+                    key -> new ShiftWorkSummaryAccumulator(assignment.getUser().getId(), assignment.getUser().getFullName(), assignmentShiftType)
             );
             accumulator.totalAssignments++;
 
@@ -453,7 +481,7 @@ public class ShiftServiceImpl implements ShiftService {
 
                 for (RevenueWindow window : revenueWindows) {
                     if (isWithinWindow(transactionTime, window.startAt(), window.endAt())) {
-                        ShiftWorkSummaryAccumulator accumulator = byUser.get(window.userId());
+                        ShiftWorkSummaryAccumulator accumulator = byUser.get(window.accumulatorKey());
                         if (accumulator != null) {
                             accumulator.totalRevenueDuringShift = accumulator.totalRevenueDuringShift.add(amount);
                             if (cashierId != null && cashierId.equals(window.userId())) {
@@ -471,6 +499,93 @@ public class ShiftServiceImpl implements ShiftService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShiftRevenueDetailDTO> getRevenueDetails(LocalDate fromDate, LocalDate toDate, Long userId, ShiftType shiftType) {
+        DateRange range = normalizeRange(fromDate, toDate);
+        LocalDateTime nowSnapshot = now();
+
+        List<ShiftAssignment> assignments = userId == null
+                ? shiftAssignmentRepository.findByShiftDateBetweenOrderByShiftDateAsc(range.fromDate(), range.toDate())
+                : shiftAssignmentRepository.findByUserIdAndShiftDateBetweenOrderByShiftDateAsc(userId, range.fromDate(), range.toDate());
+        if (shiftType != null) {
+            assignments = assignments.stream()
+                    .filter(assignment -> resolveAssignmentShiftType(assignment) == shiftType)
+                    .toList();
+        }
+
+        if (assignments.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> assignmentIds = assignments.stream().map(ShiftAssignment::getId).toList();
+        Map<Long, ShiftAttendance> attendanceByAssignment = shiftAttendanceRepository.findByAssignmentIdIn(assignmentIds)
+                .stream()
+                .collect(Collectors.toMap(att -> att.getAssignment().getId(), att -> att, (left, right) -> left));
+
+        Map<Long, ShiftRevenueDetailAccumulator> detailByAssignment = new java.util.LinkedHashMap<>();
+        List<RevenueWindow> revenueWindows = new ArrayList<>();
+        LocalDateTime minRevenueStart = null;
+        LocalDateTime maxRevenueEnd = null;
+
+        for (ShiftAssignment assignment : assignments) {
+            ShiftAttendance attendance = attendanceByAssignment.get(assignment.getId());
+            ShiftRange scheduledRange = resolveShiftRange(assignment.getShiftDate(), assignment.getShiftTemplate());
+            ShiftRevenueDetailAccumulator detail = new ShiftRevenueDetailAccumulator(assignment, attendance, scheduledRange);
+            detailByAssignment.put(assignment.getId(), detail);
+
+            RevenueWindow revenueWindow = resolveRevenueWindow(assignment, attendance, nowSnapshot);
+            if (revenueWindow != null) {
+                revenueWindows.add(revenueWindow);
+                minRevenueStart = minRevenueStart == null || revenueWindow.startAt().isBefore(minRevenueStart)
+                        ? revenueWindow.startAt()
+                        : minRevenueStart;
+                maxRevenueEnd = maxRevenueEnd == null || revenueWindow.endAt().isAfter(maxRevenueEnd)
+                        ? revenueWindow.endAt()
+                        : maxRevenueEnd;
+            }
+        }
+
+        if (!revenueWindows.isEmpty() && minRevenueStart != null && maxRevenueEnd != null) {
+            List<SalesTransaction> paidTransactions = salesTransactionRepository.findPaidTransactionsInRange(minRevenueStart, maxRevenueEnd);
+            for (SalesTransaction transaction : paidTransactions) {
+                LocalDateTime transactionTime = resolvePaidTransactionTime(transaction);
+                if (transactionTime == null) {
+                    continue;
+                }
+                BigDecimal amount = transaction.getTotalAmount() == null ? BigDecimal.ZERO : transaction.getTotalAmount();
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                Long cashierId = transaction.getCashier() == null ? null : transaction.getCashier().getId();
+
+                for (RevenueWindow window : revenueWindows) {
+                    if (isWithinWindow(transactionTime, window.startAt(), window.endAt())) {
+                        ShiftRevenueDetailAccumulator detail = detailByAssignment.get(window.assignmentId());
+                        if (detail != null) {
+                            detail.transactionCount++;
+                            detail.totalRevenueDuringShift = detail.totalRevenueDuringShift.add(amount);
+                            detail.transactions.add(toRevenueTransactionDTO(transaction, transactionTime));
+                            if (cashierId != null && cashierId.equals(window.userId())) {
+                                detail.cashierTransactionCount++;
+                                detail.totalCashierRevenueDuringShift = detail.totalCashierRevenueDuringShift.add(amount);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return detailByAssignment.values().stream()
+                .map(this::toRevenueDetailDTO)
+                .sorted((left, right) -> {
+                    int dateCompare = left.getShiftDate().compareTo(right.getShiftDate());
+                    if (dateCompare != 0) return dateCompare;
+                    return left.getScheduledStartAt().compareTo(right.getScheduledStartAt());
+                })
+                .toList();
+    }
+
     private ShiftWorkSummaryDTO toWorkSummaryDTO(ShiftWorkSummaryAccumulator item) {
         BigDecimal totalRevenue = item.totalRevenueDuringShift == null ? BigDecimal.ZERO : item.totalRevenueDuringShift;
         BigDecimal avgRevenue = item.completedCount > 0
@@ -480,6 +595,7 @@ public class ShiftServiceImpl implements ShiftService {
         return ShiftWorkSummaryDTO.builder()
                 .userId(item.userId)
                 .userFullName(item.userFullName)
+                .shiftType(item.shiftType)
                 .totalAssignments(item.totalAssignments)
                 .assignedCount(item.assignedCount)
                 .checkedInCount(item.checkedInCount)
@@ -522,7 +638,49 @@ public class ShiftServiceImpl implements ShiftService {
             endAt = startAt;
         }
 
-        return new RevenueWindow(assignment.getUser().getId(), startAt, endAt);
+        String accumulatorKey = assignment.getUser().getId() + ":" + resolveAssignmentShiftType(assignment).name();
+        return new RevenueWindow(assignment.getId(), accumulatorKey, assignment.getUser().getId(), startAt, endAt);
+    }
+
+    private ShiftRevenueDetailDTO toRevenueDetailDTO(ShiftRevenueDetailAccumulator item) {
+        ShiftAssignment assignment = item.assignment;
+        ShiftAttendance attendance = item.attendance;
+        return ShiftRevenueDetailDTO.builder()
+                .assignmentId(assignment.getId())
+                .userId(assignment.getUser().getId())
+                .userFullName(assignment.getUser().getFullName())
+                .shiftTemplateName(assignment.getShiftTemplate().getName())
+                .shiftType(resolveAssignmentShiftType(assignment))
+                .shiftDate(assignment.getShiftDate())
+                .status(assignment.getStatus().name())
+                .scheduledStartAt(item.scheduledRange.startAt())
+                .scheduledEndAt(item.scheduledRange.endAt())
+                .checkInAt(attendance == null ? null : attendance.getCheckInAt())
+                .checkOutAt(attendance == null ? null : attendance.getCheckOutAt())
+                .workedMinutes(calculateWorkedMinutes(attendance, assignment.getShiftTemplate().getBreakMinutes()))
+                .transactionCount(item.transactionCount)
+                .cashierTransactionCount(item.cashierTransactionCount)
+                .totalRevenueDuringShift(item.totalRevenueDuringShift)
+                .totalCashierRevenueDuringShift(item.totalCashierRevenueDuringShift)
+                .transactions(item.transactions)
+                .build();
+    }
+
+    private ShiftRevenueTransactionDTO toRevenueTransactionDTO(SalesTransaction transaction, LocalDateTime paidAt) {
+        C2SE._1.Capstone2.entity.Order order = transaction.getOrder();
+        User cashier = transaction.getCashier();
+        return ShiftRevenueTransactionDTO.builder()
+                .salesTransactionId(transaction.getId())
+                .orderId(order == null ? null : order.getId())
+                .paidAt(paidAt)
+                .paymentMethod(transaction.getPaymentMethod())
+                .cashierName(cashier == null ? null : cashier.getFullName())
+                .tableNumber(order == null ? null : order.getTableNumber())
+                .customerPhone(order == null ? null : order.getCustomerPhone())
+                .voucherCode(order == null ? null : order.getVoucherCode())
+                .discountAmount(order == null ? BigDecimal.ZERO : order.getDiscountAmount())
+                .totalAmount(transaction.getTotalAmount())
+                .build();
     }
 
     private LocalDateTime resolvePaidTransactionTime(SalesTransaction transaction) {
@@ -622,6 +780,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .startTime(template.getStartTime())
                 .endTime(template.getEndTime())
                 .breakMinutes(template.getBreakMinutes())
+                .shiftType(resolveShiftType(template.getShiftType()))
                 .active(template.getActive())
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())
@@ -636,6 +795,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .userFullName(assignment.getUser().getFullName())
                 .shiftTemplateId(assignment.getShiftTemplate().getId())
                 .shiftTemplateName(assignment.getShiftTemplate().getName())
+                .shiftType(resolveAssignmentShiftType(assignment))
                 .shiftDate(assignment.getShiftDate())
                 .startTime(assignment.getShiftTemplate().getStartTime())
                 .endTime(assignment.getShiftTemplate().getEndTime())
@@ -663,6 +823,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .userId(assignment.getUser().getId())
                 .userFullName(assignment.getUser().getFullName())
                 .shiftTemplateName(assignment.getShiftTemplate().getName())
+                .shiftType(resolveAssignmentShiftType(assignment))
                 .shiftDate(assignment.getShiftDate())
                 .status(assignment.getStatus().name())
                 .scheduledStartAt(range.startAt())
@@ -779,6 +940,21 @@ public class ShiftServiceImpl implements ShiftService {
         return value.trim();
     }
 
+    private ShiftType resolveShiftType(ShiftType shiftType) {
+        return shiftType == null ? ShiftType.POS_COUNTER : shiftType;
+    }
+
+    private ShiftType resolveAssignmentShiftType(ShiftAssignment assignment) {
+        if (assignment == null) {
+            return ShiftType.POS_COUNTER;
+        }
+        if (assignment.getShiftType() != null) {
+            return assignment.getShiftType();
+        }
+        ShiftTemplate template = assignment.getShiftTemplate();
+        return template == null ? ShiftType.POS_COUNTER : resolveShiftType(template.getShiftType());
+    }
+
     private String normalizeNote(String value) {
         if (value == null) {
             return null;
@@ -802,11 +978,29 @@ public class ShiftServiceImpl implements ShiftService {
 
     private record DateRange(LocalDate fromDate, LocalDate toDate) {}
 
-    private record RevenueWindow(Long userId, LocalDateTime startAt, LocalDateTime endAt) {}
+    private record RevenueWindow(Long assignmentId, String accumulatorKey, Long userId, LocalDateTime startAt, LocalDateTime endAt) {}
+
+    private static class ShiftRevenueDetailAccumulator {
+        private final ShiftAssignment assignment;
+        private final ShiftAttendance attendance;
+        private final ShiftRange scheduledRange;
+        private long transactionCount;
+        private long cashierTransactionCount;
+        private BigDecimal totalRevenueDuringShift = BigDecimal.ZERO;
+        private BigDecimal totalCashierRevenueDuringShift = BigDecimal.ZERO;
+        private List<ShiftRevenueTransactionDTO> transactions = new ArrayList<>();
+
+        private ShiftRevenueDetailAccumulator(ShiftAssignment assignment, ShiftAttendance attendance, ShiftRange scheduledRange) {
+            this.assignment = assignment;
+            this.attendance = attendance;
+            this.scheduledRange = scheduledRange;
+        }
+    }
 
     private static class ShiftWorkSummaryAccumulator {
         private final Long userId;
         private final String userFullName;
+        private final ShiftType shiftType;
 
         private long totalAssignments;
         private long assignedCount;
@@ -820,9 +1014,10 @@ public class ShiftServiceImpl implements ShiftService {
         private BigDecimal totalRevenueDuringShift = BigDecimal.ZERO;
         private BigDecimal totalCashierRevenueDuringShift = BigDecimal.ZERO;
 
-        private ShiftWorkSummaryAccumulator(Long userId, String userFullName) {
+        private ShiftWorkSummaryAccumulator(Long userId, String userFullName, ShiftType shiftType) {
             this.userId = userId;
             this.userFullName = userFullName;
+            this.shiftType = shiftType;
         }
     }
 }

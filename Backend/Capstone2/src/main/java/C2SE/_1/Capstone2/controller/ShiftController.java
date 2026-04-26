@@ -8,8 +8,10 @@ import C2SE._1.Capstone2.dto.ShiftAttendanceDTO;
 import C2SE._1.Capstone2.dto.ShiftBulkAssignDTO;
 import C2SE._1.Capstone2.dto.ShiftCheckInDTO;
 import C2SE._1.Capstone2.dto.ShiftCheckOutDTO;
+import C2SE._1.Capstone2.dto.ShiftRevenueDetailDTO;
 import C2SE._1.Capstone2.dto.ShiftTemplateDTO;
 import C2SE._1.Capstone2.dto.ShiftWorkSummaryDTO;
+import C2SE._1.Capstone2.entity.ShiftType;
 import C2SE._1.Capstone2.service.ShiftService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +44,9 @@ public class ShiftController {
 
     @GetMapping("/templates")
     public ResponseEntity<ApiResponse<List<ShiftTemplateDTO>>> getShiftTemplates(
-            @RequestParam(defaultValue = "true") boolean activeOnly) {
-        return ResponseEntity.ok(ApiResponse.success(shiftService.getShiftTemplates(activeOnly)));
+            @RequestParam(defaultValue = "true") boolean activeOnly,
+            @RequestParam(required = false) ShiftType shiftType) {
+        return ResponseEntity.ok(ApiResponse.success(shiftService.getShiftTemplates(activeOnly, shiftType)));
     }
 
     @PostMapping("/templates")
@@ -69,8 +72,9 @@ public class ShiftController {
     public ResponseEntity<ApiResponse<List<ShiftAssignmentDTO>>> getAssignments(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(shiftService.getAssignments(fromDate, toDate, userId)));
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ShiftType shiftType) {
+        return ResponseEntity.ok(ApiResponse.success(shiftService.getAssignments(fromDate, toDate, userId, shiftType)));
     }
 
     @GetMapping("/my-assignments")
@@ -118,8 +122,9 @@ public class ShiftController {
     public ResponseEntity<ApiResponse<List<ShiftAttendanceDTO>>> getAttendances(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(shiftService.getAttendances(fromDate, toDate, userId)));
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ShiftType shiftType) {
+        return ResponseEntity.ok(ApiResponse.success(shiftService.getAttendances(fromDate, toDate, userId, shiftType)));
     }
 
     @GetMapping("/my-attendance")
@@ -133,16 +138,27 @@ public class ShiftController {
     public ResponseEntity<ApiResponse<List<ShiftWorkSummaryDTO>>> getWorkSummary(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(shiftService.getWorkSummary(fromDate, toDate, userId)));
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ShiftType shiftType) {
+        return ResponseEntity.ok(ApiResponse.success(shiftService.getWorkSummary(fromDate, toDate, userId, shiftType)));
+    }
+
+    @GetMapping("/revenue-details")
+    public ResponseEntity<ApiResponse<List<ShiftRevenueDetailDTO>>> getRevenueDetails(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ShiftType shiftType) {
+        return ResponseEntity.ok(ApiResponse.success(shiftService.getRevenueDetails(fromDate, toDate, userId, shiftType)));
     }
 
     @GetMapping(value = "/work-summary.csv", produces = "text/csv")
     public ResponseEntity<byte[]> exportWorkSummaryCsv(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) Long userId) {
-        List<ShiftWorkSummaryDTO> rows = shiftService.getWorkSummary(fromDate, toDate, userId);
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ShiftType shiftType) {
+        List<ShiftWorkSummaryDTO> rows = shiftService.getWorkSummary(fromDate, toDate, userId, shiftType);
         String csv = buildWorkSummaryCsv(rows);
         String fileName = "shift_work_summary_" + LocalDate.now() + ".csv";
 
@@ -154,11 +170,12 @@ public class ShiftController {
 
     private String buildWorkSummaryCsv(List<ShiftWorkSummaryDTO> rows) {
         StringBuilder sb = new StringBuilder();
-        sb.append("user_id,user_full_name,total_assignments,assigned_count,checked_in_count,completed_count,cancelled_count,absent_count,total_worked_minutes,total_late_minutes,total_early_leave_minutes,total_revenue_during_shift,average_revenue_per_completed_shift,cashier_revenue_during_shift\n");
+        sb.append("user_id,user_full_name,shift_type,total_assignments,assigned_count,checked_in_count,completed_count,cancelled_count,absent_count,total_worked_minutes,total_late_minutes,total_early_leave_minutes,total_revenue_during_shift,average_revenue_per_completed_shift,cashier_revenue_during_shift\n");
 
         for (ShiftWorkSummaryDTO row : rows) {
             sb.append(row.getUserId() == null ? "" : row.getUserId()).append(',')
                     .append(csvEscape(row.getUserFullName())).append(',')
+                    .append(row.getShiftType() == null ? "" : row.getShiftType().name()).append(',')
                     .append(safeLong(row.getTotalAssignments())).append(',')
                     .append(safeLong(row.getAssignedCount())).append(',')
                     .append(safeLong(row.getCheckedInCount())).append(',')

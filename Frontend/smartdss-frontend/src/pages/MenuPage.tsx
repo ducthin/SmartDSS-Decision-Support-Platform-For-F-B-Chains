@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { menuService, categoryService, recipeService } from '@/services/menuService';
+import { resolveBackendUrl } from '@/services/settingsService';
 import type { MenuItem, MenuItemForm, Category, PageResponse, Recipe, DrinkSizeOption, DrinkToppingOption } from '@/types';
 import { Plus, Pencil, Trash2, Search, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -162,7 +163,7 @@ export default function MenuPage() {
 
       {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-50">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
             placeholder="Tìm kiếm theo tên..."
@@ -195,7 +196,17 @@ export default function MenuPage() {
               className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Bấm để xem công thức pha chế"
             >
-              <div className="h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+              <div className="h-40 bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center relative overflow-hidden">
+                {item.imageUrl && (
+                  <img
+                    src={resolveBackendUrl(item.imageUrl) ?? item.imageUrl}
+                    alt={item.name}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
                 <span className="text-4xl">☕</span>
               </div>
               <div className="p-4">

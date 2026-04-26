@@ -26,6 +26,14 @@ public class QrOrderDTO {
     @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
     private String note;
 
+    @NotBlank(message = "Vui lòng nhập số điện thoại")
+    @Size(max = 20, message = "Số điện thoại không hợp lệ")
+    @Pattern(regexp = "^[+0-9][0-9]{8,19}$", message = "Số điện thoại không hợp lệ")
+    private String customerPhone;
+
+    @Size(max = 64, message = "Mã voucher tối đa 64 ký tự")
+    private String voucherCode;
+
     @NotEmpty(message = "Đơn hàng phải có ít nhất 1 món")
     @Size(max = 20, message = "Đơn hàng không được vượt quá 20 món")
     @Valid

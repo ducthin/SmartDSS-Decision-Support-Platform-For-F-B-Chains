@@ -3,8 +3,11 @@ import { menuService, categoryService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
 import { publicConfigService } from '@/services/publicConfigService';
 import { paymentService } from '@/services/paymentService';
-import type { MenuItem, OrderForm, PageResponse, Category, TaxPolicy, PaymentStatus } from '@/types';
-import { ShoppingCart, Plus, Minus, Trash2, Send, Search, Printer, Download, QrCode, Wallet, CheckCircle2 } from 'lucide-react';
+import { loyaltyService } from '@/services/loyaltyService';
+import { voucherService } from '@/services/voucherService';
+import { useDebounce } from '@/hooks/useDebounce';
+import type { MenuItem, OrderForm, PageResponse, Category, TaxPolicy, PaymentStatus, LoyaltyAccount, Voucher } from '@/types';
+import { ShoppingCart, Plus, Minus, Trash2, Send, Search, Printer, Download, QrCode, Wallet, CheckCircle2, ReceiptText, Clock3, Banknote, Filter } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { StatusBadge } from './DashboardPage';
@@ -21,6 +24,8 @@ import Modal from '@/components/ui/Modal';
 const CATEGORY_ICONS: Record<string, string> = {
   'Cà phê': '☕', 'Trà': '🍵', 'Sinh tố': '🥤', 'Nước ép': '🧃', 'Bánh ngọt': '🍰',
 };
+
+const CUSTOMER_PHONE_REGEX = /^[+0-9][0-9]{8,19}$/;
 
 interface CartItem {
   key: string;
@@ -74,6 +79,12 @@ function POSView() {
   const [drinkModalItem, setDrinkModalItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
+  const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [loyaltyError, setLoyaltyError] = useState('');
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>('CASH');
@@ -138,6 +149,54 @@ function POSView() {
     0,
   );
   const vat = calculateVatBreakdown(subtotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+  const debouncedPhone = useDebounce(customerPhone.trim(), 450);
+
+  useEffect(() => {
+    if (!debouncedPhone) {
+      setLoyaltyAccount(null);
+      setAvailableVouchers([]);
+      setLoyaltyError('');
+      return;
+    }
+
+    if (!CUSTOMER_PHONE_REGEX.test(debouncedPhone)) {
+      setLoyaltyAccount(null);
+      setAvailableVouchers([]);
+      setLoyaltyError('SĐT chưa đúng định dạng để tra điểm');
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingLoyalty(true);
+    setLoyaltyError('');
+
+    Promise.all([
+      loyaltyService.getByPhone(debouncedPhone),
+      voucherService.getAvailableForPhone(debouncedPhone).catch(() => ({ data: { data: [] as Voucher[] } })),
+    ])
+      .then(([res, voucherRes]) => {
+        if (!cancelled) {
+          setLoyaltyAccount(res.data.data);
+          setAvailableVouchers(voucherRes.data.data || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoyaltyAccount(null);
+          setAvailableVouchers([]);
+          setLoyaltyError('Không thể lấy thông tin điểm');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingLoyalty(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedPhone]);
 
   const openPaymentModal = (order: Order) => {
     setPaymentOrder(order);
@@ -251,7 +310,11 @@ function POSView() {
   const placeOrder = async () => {
     if (cart.length === 0) return toast.error('Giỏ hàng trống');
     setSubmitting(true);
+    const normalizedPhone = customerPhone.trim();
+    const normalizedVoucherCode = voucherCode.trim().toUpperCase();
     const orderForm: OrderForm = {
+      customerPhone: normalizedPhone || undefined,
+      voucherCode: normalizedVoucherCode || undefined,
       orderItems: cart.map((c) => ({
         menuItemId: c.menuItem.id,
         quantity: c.quantity,
@@ -268,6 +331,8 @@ function POSView() {
 
       toast.success('Đặt hàng thành công, mời thanh toán');
       setCart([]);
+      setCustomerPhone('');
+      setVoucherCode('');
       openPaymentModal(completedOrder);
     } catch (error) {
       if (createdOrder) {
@@ -327,6 +392,61 @@ function POSView() {
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart size={20} className="text-blue-600" />
           <h2 className="font-semibold">Giỏ hàng ({cart.length})</h2>
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="pos-customer-phone" className="mb-1 block text-xs font-medium text-gray-600">SĐT khách hàng (tùy chọn)</label>
+          <input
+            id="pos-customer-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="Ví dụ: 09xxxxxxxx"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            {loadingLoyalty
+              ? 'Đang kiểm tra điểm tích lũy...'
+              : loyaltyAccount
+                ? `Hạng ${loyaltyAccount.tier === 'VANG' ? 'Vàng' : loyaltyAccount.tier === 'BAC' ? 'Bạc' : 'Đồng'} • ${loyaltyAccount.pointsBalance.toLocaleString('vi-VN')} điểm • ${loyaltyAccount.monthlyOrderCount || 0} đơn/30 ngày`
+                : loyaltyError || 'Nhập SĐT để tra điểm khách hàng'}
+          </p>
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="pos-voucher-code" className="mb-1 block text-xs font-medium text-gray-600">Mã voucher (tùy chọn)</label>
+          <input
+            id="pos-voucher-code"
+            type="text"
+            value={voucherCode}
+            onChange={(e) => setVoucherCode(e.target.value)}
+            placeholder="Ví dụ: KHAITRUONG10"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          {availableVouchers.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-xs font-medium text-emerald-700">Voucher riêng cho khách</p>
+              <div className="flex flex-wrap gap-2">
+                {availableVouchers.map((voucher) => (
+                  <button
+                    key={voucher.id}
+                    type="button"
+                    onClick={() => setVoucherCode(voucher.code)}
+                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-left text-xs text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <span className="font-semibold">{voucher.code}</span>
+                    <span className="ml-1">
+                      {voucher.discountType === 'PERCENT'
+                        ? `-${voucher.discountValue}%`
+                        : `-${formatCurrency(voucher.discountValue)}`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {cart.length === 0 ? (
@@ -437,7 +557,7 @@ function POSView() {
 
             {paymentMethod === 'QR' && (
               <div className="py-1">
-                <div className="mx-auto w-full max-w-[380px]">
+                <div className="mx-auto w-full max-w-95">
                   {paymentData?.qrCode ? (
                     <div className="flex justify-center">
                       <QRCodeSVG
@@ -819,148 +939,248 @@ function OrderListView() {
     URL.revokeObjectURL(url);
   };
 
+  const paidOrderCount = orders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
+  const completedOrderCount = orders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
+  const pendingOrderCount = orders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
+
+  const renderOrderActions = (order: Order) => (
+    <div className="flex flex-wrap gap-2">
+      {order.status === ORDER_STATUS.PENDING && (
+        <>
+          {canPrepareOrComplete && (
+            <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">Pha chế</button>
+          )}
+          {canCancel && (
+            <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">Hủy</button>
+          )}
+        </>
+      )}
+      {order.status === ORDER_STATUS.PREPARING && (
+        canPrepareOrComplete ? (
+          <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Hoàn thành</button>
+        ) : null
+      )}
+      {order.status === ORDER_STATUS.COMPLETED && (
+        <>
+          {paymentStatusByOrder[order.id]?.status !== 'PAID' ? (
+            <button
+              onClick={() => openPaymentModal(order)}
+              className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
+            >
+              <QrCode size={13} /> Thanh toán
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => openBill(order.id)}
+                disabled={loadingBillId === order.id}
+                className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200 disabled:opacity-60"
+              >
+                {loadingBillId === order.id ? 'Đang tải...' : 'Xem bill'}
+              </button>
+              <button
+                onClick={() => printBill(order)}
+                className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+              >
+                <Printer size={13} /> In bill
+              </button>
+              <button
+                onClick={() => exportBill(order)}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              >
+                <Download size={13} /> Xuất bill
+              </button>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+
 
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
 
   return (
     <div className="space-y-4">
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <Search size={18} className="text-gray-400" />
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-          <option value="">Tất cả trạng thái</option>
-          <option value="PENDING">Chờ xử lý</option>
-          <option value="PREPARING">Đang pha chế</option>
-          <option value="COMPLETED">Hoàn thành</option>
-          <option value="CANCELLED">Đã hủy</option>
-        </select>
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              <ReceiptText size={14} /> Danh sách đơn
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Theo dõi trạng thái món, thanh toán và thao tác bill trong cùng một thẻ.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:min-w-[420px]">
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+              <p className="text-xs text-gray-500">Đang xử lý</p>
+              <p className="text-lg font-bold text-gray-900">{pendingOrderCount}</p>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+              <p className="text-xs text-gray-500">Hoàn thành</p>
+              <p className="text-lg font-bold text-gray-900">{completedOrderCount}</p>
+            </div>
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+              <p className="text-xs text-emerald-700">Đã thu tiền</p>
+              <p className="text-lg font-bold text-emerald-700">{paidOrderCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Filter size={16} />
+            <span>{pageData ? `${pageData.totalElements} đơn hàng` : `${orders.length} đơn hàng`}</span>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+              className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="PENDING">Chờ xử lý</option>
+              <option value="PREPARING">Đang pha chế</option>
+              <option value="COMPLETED">Hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">#</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Món</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Thanh toán</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Thời gian</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id} className="border-t border-gray-100">
-                <td className="py-3 px-4">{order.id}</td>
-                <td className="py-3 px-4 text-gray-600">
-                  <div>
-                    {order.orderItems
-                      ?.map((i) => `${i.menuItemName}${formatOrderItemExtras(i)} x${i.quantity}`)
-                      .join(', ')}
+      <div className="space-y-3">
+        {orders.map((order) => {
+          const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+          const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
+          const originalTax = calculateVatBreakdown(originalAmount, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+          const discountAmount = order.discountAmount ?? 0;
+          const payment = paymentStatusByOrder[order.id];
+          return (
+            <article key={order.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md">
+              <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/80 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-gray-900 shadow-sm">#{order.id}</span>
+                  {order.tableNumber ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                      {order.tableNumber}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-600">
+                      POS
+                    </span>
+                  )}
+                  <StatusBadge status={order.status} />
+                  {order.status === ORDER_STATUS.COMPLETED && payment?.status === 'PAID' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      <CheckCircle2 size={12} /> Đã thanh toán
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Clock3 size={14} />
+                  <span>{new Date(order.createdAt).toLocaleString('vi-VN')}</span>
+                </div>
+              </div>
+
+              <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="min-w-0">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Món đã gọi</p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {order.orderItems?.map((item, idx) => (
+                      <div
+                        key={`${order.id}-${item.menuItemId}-${idx}-${formatOrderItemExtras(item)}`}
+                        className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium leading-5 text-gray-900 wrap-break-word">
+                              {item.menuItemName}{formatOrderItemExtras(item)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-bold text-gray-700">
+                            x{item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   {order.note && (
-                    <div className="text-sm text-orange-600 mt-1 italic">
+                    <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm italic leading-5 text-orange-700 wrap-break-word">
                       Ghi chú: {order.note}
                     </div>
                   )}
-                  <div className="mt-1">
-                    {order.tableNumber ? (
-                      <div className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
-                        <span className="font-medium">{order.tableNumber}</span>
-                      </div>
-                    ) : (
-                      <div className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200">
-                        <span className="font-medium">POS</span>
-                      </div>
-                    )}
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-white p-3">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <Banknote size={14} /> Thanh toán
                   </div>
-                </td>
-                <td className="py-3 px-4 font-medium">
-                  {(() => {
-                    const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
-                    if (!canSeeTaxBreakdown) {
-                      return <div>{formatCurrency(tax.grossAmount)}</div>;
-                    }
-                    return (
-                      <div className="leading-5 text-sm">
-                        <div className="text-gray-600">
-                          Tạm tính: <span className="font-medium text-gray-800">{formatCurrency(tax.netAmount)}</span>
-                        </div>
-                        <div className="text-gray-600">
-                          Thuế GTGT ({taxPolicy.vatRatePercent}%): <span className="font-medium text-gray-800">{formatCurrency(tax.vatAmount)}</span>
-                        </div>
-                        <div className="font-semibold text-gray-900">
-                          Tổng: {formatCurrency(tax.grossAmount)}
-                        </div>
+                  {canSeeTaxBreakdown ? (
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between gap-3 text-gray-600">
+                        <span>Tạm tính</span>
+                        <span className="font-medium text-gray-800">{formatCurrency(originalTax.netAmount)}</span>
                       </div>
-                    );
-                  })()}
-                </td>
-                <td className="py-3 px-4"><StatusBadge status={order.status} /></td>
-                <td className="py-3 px-4 text-gray-500">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
-                <td className="py-3 px-4 text-right space-x-1">
-                  {order.status === ORDER_STATUS.PENDING && (
-                    <>
-                      {canPrepareOrComplete && (
-                        <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Pha chế</button>
+                      <div className="flex justify-between gap-3 text-gray-600">
+                        <span>Thuế GTGT ({taxPolicy.vatRatePercent}%)</span>
+                        <span className="font-medium text-gray-800">{formatCurrency(originalTax.vatAmount)}</span>
+                      </div>
+                      {discountAmount > 0 && (
+                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5 text-emerald-700">
+                          <div className="flex justify-between gap-3">
+                            <span>{order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi'}</span>
+                            <span className="font-semibold">-{formatCurrency(discountAmount)}</span>
+                          </div>
+                          {order.promotionNote && (
+                            <p className="mt-0.5 text-xs text-emerald-600">{order.promotionNote}</p>
+                          )}
+                        </div>
                       )}
-                      {canCancel && (
-                        <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">Hủy</button>
+                      <div className="flex justify-between gap-3 border-t border-gray-100 pt-2 font-bold text-gray-900">
+                        <span>Tổng</span>
+                        <span>{formatCurrency(tax.grossAmount)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {discountAmount > 0 && (
+                        <div className="rounded-lg bg-emerald-50 px-2 py-1.5 text-sm text-emerald-700">
+                          <div className="flex justify-between gap-3">
+                            <span>{order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi'}</span>
+                            <span className="font-semibold">-{formatCurrency(discountAmount)}</span>
+                          </div>
+                          {order.promotionNote && (
+                            <p className="mt-0.5 text-xs text-emerald-600">{order.promotionNote}</p>
+                          )}
+                        </div>
                       )}
-                    </>
+                      <p className="text-lg font-bold text-gray-900">{formatCurrency(tax.grossAmount)}</p>
+                    </div>
                   )}
-                  {order.status === ORDER_STATUS.PREPARING && (
-                    canPrepareOrComplete ? (
-                      <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Hoàn thành</button>
-                    ) : null
-                  )}
-                  {order.status === ORDER_STATUS.COMPLETED && (
-                    <>
-                      {paymentStatusByOrder[order.id]?.status !== 'PAID' ? (
-                        <button
-                          onClick={() => openPaymentModal(order)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs hover:bg-violet-200"
-                        >
-                          <QrCode size={12} /> Thanh toán
-                        </button>
-                      ) : (
-                        <>
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs">
-                            <CheckCircle2 size={12} /> Đã thanh toán
-                          </span>
-                          <button
-                            onClick={() => openBill(order.id)}
-                            disabled={loadingBillId === order.id}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 disabled:opacity-60"
-                          >
-                            {loadingBillId === order.id ? 'Đang tải...' : 'Xem bill'}
-                          </button>
-                          <button
-                            onClick={() => printBill(order)}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                          >
-                            <Printer size={12} /> In bill
-                          </button>
-                          <button
-                            onClick={() => exportBill(order)}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs hover:bg-emerald-200"
-                          >
-                            <Download size={12} /> Xuất bill
-                          </button>
-                        </>
-                      )}
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {orders.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có đơn hàng</td></tr>}
-          </tbody>
-        </table>
+                </div>
+
+              </div>
+              <div className="flex flex-col gap-2 border-t border-gray-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Thao tác</p>
+                {renderOrderActions(order)}
+              </div>
+            </article>
+          );
+        })}
+
+        {orders.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center">
+            <ReceiptText className="mx-auto mb-3 text-gray-300" size={34} />
+            <p className="font-medium text-gray-700">Chưa có đơn hàng</p>
+            <p className="mt-1 text-sm text-gray-400">Các đơn mới sẽ hiển thị tại đây.</p>
+          </div>
+        )}
+
         {pageData && (
-          <div className="px-4 pb-4">
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
             <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
           </div>
         )}
@@ -1008,7 +1228,7 @@ function OrderListView() {
 
             {paymentMethod === 'QR' && (
               <div className="py-1">
-                <div className="mx-auto w-full max-w-[380px]">
+                <div className="mx-auto w-full max-w-95">
                   {paymentData?.qrCode ? (
                     <div className="flex justify-center">
                       <QRCodeSVG
@@ -1171,16 +1391,20 @@ function OrderListView() {
             </div>
             {(() => {
               const tax = calculateVatBreakdown(billOrder.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+              const originalAmount = billOrder.subtotalAmount ?? ((billOrder.totalAmount ?? 0) + (billOrder.discountAmount ?? 0));
+              const discountAmount = billOrder.discountAmount ?? 0;
               return (
                 <div className="space-y-1 border-t pt-3">
                   <div className="flex justify-between text-gray-600">
-                    <span>Tạm tính</span>
-                    <span>{formatCurrency(tax.netAmount)}</span>
+                    <span>Tạm tính (đã bao gồm thuế)</span>
+                    <span>{formatCurrency(originalAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Thuế GTGT ({taxPolicy.vatRatePercent}%)</span>
-                    <span>{formatCurrency(tax.vatAmount)}</span>
-                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>{billOrder.voucherCode ? `Voucher ${billOrder.voucherCode}` : 'Khuyến mãi'}</span>
+                      <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-base">
                     <span>Tổng thanh toán</span>
                     <span>{formatCurrency(tax.grossAmount)}</span>
@@ -1211,6 +1435,11 @@ function OrderListView() {
 
 function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus): string {
   const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+  const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
+  const discountAmount = order.discountAmount ?? 0;
+  const discountRow = discountAmount > 0
+    ? `<div><span>${escapeHtml(order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi')}</span><span>-${formatCurrency(discountAmount)}</span></div>`
+    : '';
   const rows = order.orderItems.map((item) => {
     const itemName = (item.menuItemName || `Món #${item.menuItemId}`) + formatOrderItemExtras(item);
     const qty = item.quantity ?? 0;
@@ -1250,22 +1479,22 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
 <body>
   <div class="center">
     <h1 style="font-size:18px">SMARTDSS COFFEE</h1>
-    <p class="muted">PHIEU THANH TOAN</p>
+    <p class="muted">PHIẾU THANH TOÁN</p>
   </div>
   <div class="meta">
-    <div>Ma don: #${order.id}</div>
-    <div>Ban: ${escapeHtml(order.tableNumber || 'POS')}</div>
-    <div>Thu ngan: ${escapeHtml(order.createdByName || 'N/A')}</div>
-    <div>Gio: ${new Date(order.createdAt).toLocaleString('vi-VN')}</div>
-    <div>Thanh toan: ${paid.paymentMethod === 'QR' ? 'QR chuyen khoan' : 'Tien mat'}</div>
+    <div>Mã đơn: #${order.id}</div>
+    <div>Bàn: ${escapeHtml(order.tableNumber || 'POS')}</div>
+    <div>Thu ngân: ${escapeHtml(order.createdByName || 'N/A')}</div>
+    <div>Giờ: ${new Date(order.createdAt).toLocaleString('vi-VN')}</div>
+    <div>Thanh toán: ${paid.paymentMethod === 'QR' ? 'QR chuyển khoản' : 'Tiền mặt'}</div>
   </div>
   <table>
     <thead>
       <tr>
-        <th style="text-align:left">Mon</th>
+        <th style="text-align:left">Món</th>
         <th style="text-align:right">SL</th>
-        <th style="text-align:right">Don gia</th>
-        <th style="text-align:right">Thanh tien</th>
+        <th style="text-align:right">Đơn giá</th>
+        <th style="text-align:right">Thành tiền</th>
       </tr>
     </thead>
     <tbody>
@@ -1273,11 +1502,11 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
     </tbody>
   </table>
   <div class="sum">
-    <div><span>Tam tinh</span><span>${formatCurrency(tax.netAmount)}</span></div>
-    <div><span>Thue GTGT (${taxPolicy.vatRatePercent}%)</span><span>${formatCurrency(tax.vatAmount)}</span></div>
-    <div class="total"><span>Tong thanh toan</span><span>${formatCurrency(tax.grossAmount)}</span></div>
+    <div><span>Tạm tính (đã bao gồm thuế)</span><span>${formatCurrency(originalAmount)}</span></div>
+    ${discountRow}
+    <div class="total"><span>Tổng thanh toán</span><span>${formatCurrency(tax.grossAmount)}</span></div>
   </div>
-  <p class="center muted" style="margin-top:14px">Cam on quy khach!</p>
+  <p class="center muted" style="margin-top:14px">Cảm ơn quý khách!</p>
 </body>
 </html>
   `.trim();

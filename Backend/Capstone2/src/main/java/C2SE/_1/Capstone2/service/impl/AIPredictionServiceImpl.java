@@ -47,6 +47,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -466,9 +467,7 @@ public class AIPredictionServiceImpl implements AIPredictionService {
                 .map(Inventory::getIngredient)
                 .filter(ingredient -> ingredient != null && ingredient.getId() != null)
                 .collect(Collectors.toMap(Ingredient::getId, ingredient -> ingredient, (left, right) -> left));
-        Map<String, Long> inventoryIngredientIdsByName = inventoryIngredients.values().stream()
-                .filter(ingredient -> ingredient.getName() != null)
-                .collect(Collectors.toMap(Ingredient::getName, Ingredient::getId, (left, right) -> left));
+        Map<String, Long> inventoryIngredientIdsByName = buildIngredientNameIndex(inventoryIngredients.values());
 
         Map<Long, BigDecimal> avgUsagePerOrder = estimateAverageIngredientUsagePerOrder(
                 inventoryIngredients.keySet(),
@@ -740,7 +739,7 @@ public class AIPredictionServiceImpl implements AIPredictionService {
             if (ingredient == null || ingredient.getName() == null || recipe.getQuantity() == null) {
                 continue;
             }
-            Long ingredientId = inventoryIngredientIdsByName.get(ingredient.getName());
+            Long ingredientId = findIngredientIdByName(inventoryIngredientIdsByName, ingredient.getName());
             if (ingredientId == null) {
                 continue;
             }
@@ -759,12 +758,46 @@ public class AIPredictionServiceImpl implements AIPredictionService {
         }
         Map<Long, BigDecimal> usage = new HashMap<>();
         for (Map.Entry<String, BigDecimal> entry : fallback.entrySet()) {
-            Long ingredientId = inventoryIngredientIdsByName.get(entry.getKey());
+            Long ingredientId = findIngredientIdByName(inventoryIngredientIdsByName, entry.getKey());
             if (ingredientId != null) {
                 usage.put(ingredientId, entry.getValue());
             }
         }
         return usage;
+    }
+
+    private Map<String, Long> buildIngredientNameIndex(Iterable<Ingredient> ingredients) {
+        Map<String, Long> index = new HashMap<>();
+        if (ingredients == null) {
+            return index;
+        }
+        for (Ingredient ingredient : ingredients) {
+            if (ingredient == null || ingredient.getId() == null || ingredient.getName() == null) {
+                continue;
+            }
+            index.putIfAbsent(ingredient.getName(), ingredient.getId());
+            index.putIfAbsent(normalizeIngredientKey(ingredient.getName()), ingredient.getId());
+        }
+        return index;
+    }
+
+    private Long findIngredientIdByName(Map<String, Long> ingredientIdsByName, String ingredientName) {
+        if (ingredientIdsByName == null || ingredientName == null) {
+            return null;
+        }
+        Long direct = ingredientIdsByName.get(ingredientName);
+        return direct != null ? direct : ingredientIdsByName.get(normalizeIngredientKey(ingredientName));
+    }
+
+    private static String normalizeIngredientKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('Đ', 'D')
+                .replace('đ', 'd');
+        return normalized.toLowerCase(java.util.Locale.ROOT).replaceAll("\\s+", " ").trim();
     }
 
     private Map<Long, BigDecimal> divideUsageByUnits(Map<Long, BigDecimal> totalUsage, BigDecimal units) {
