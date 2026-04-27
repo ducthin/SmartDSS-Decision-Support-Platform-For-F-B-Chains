@@ -1,6 +1,6 @@
 import { Minus, Plus, Send, X } from 'lucide-react';
 import { formatOrderItemExtras, unitPriceWithDrinkOptions } from '@/utils/helpers';
-import type { TaxPolicy } from '@/types';
+import type { QrDiscountPreview } from '@/types';
 import type { CartItem } from '@/components/qr-order/types';
 
 interface QrCartSheetProps {
@@ -15,7 +15,7 @@ interface QrCartSheetProps {
   note: string;
   onNoteChange: (value: string) => void;
   vat: { netAmount: number; vatAmount: number; grossAmount: number };
-  taxPolicy: TaxPolicy;
+  discountPreview: QrDiscountPreview | null;
   onClose: () => void;
   onRemoveFromCart: (lineKey: string) => void;
   onUpdateQty: (lineKey: string, delta: number) => void;
@@ -36,7 +36,7 @@ export default function QrCartSheet({
   note,
   onNoteChange,
   vat,
-  taxPolicy,
+  discountPreview,
   onClose,
   onRemoveFromCart,
   onUpdateQty,
@@ -45,6 +45,11 @@ export default function QrCartSheet({
   formatPrice,
 }: QrCartSheetProps) {
   if (!open) return null;
+  const discountAmount = discountPreview?.totalDiscountAmount || 0;
+  const calendarDiscountPercent = discountPreview?.calendarDiscountPercent || 0;
+  const calendarDiscountAmount = discountPreview?.calendarDiscountAmount || 0;
+  const voucherDiscountAmount = discountPreview?.voucherDiscountAmount || 0;
+  const finalAmount = discountAmount > 0 ? discountPreview?.finalAmount ?? vat.grossAmount : vat.grossAmount;
 
   return (
     <div className="fixed inset-0 z-210 flex flex-col">
@@ -140,6 +145,17 @@ export default function QrCartSheet({
               placeholder="Mã voucher (nếu có)"
               className="mb-2 w-full rounded-xl border border-[rgba(111,78,55,0.2)] px-3 py-2.5 text-sm uppercase outline-none focus:border-(--coffee-accent) focus:ring-4 focus:ring-[rgba(228,172,92,0.2)]"
             />
+            {voucherCode.trim() && discountPreview?.voucherCode && voucherDiscountAmount > 0 && (
+              <div className="mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                <span className="font-semibold">Đã áp dụng voucher {discountPreview.voucherCode}</span>
+                <span className="ml-1">- giảm {formatPrice(voucherDiscountAmount)}</span>
+              </div>
+            )}
+            {voucherCode.trim() && discountPreview?.voucherError && (
+              <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                {discountPreview.voucherError}
+              </div>
+            )}
             <textarea
               value={note}
               onChange={(e) => onNoteChange(e.target.value)}
@@ -153,17 +169,31 @@ export default function QrCartSheet({
         <div className="border-t border-[rgba(111,78,55,0.1)] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between text-[rgba(62,42,31,0.72)]">
-              <span>Tạm tính</span>
-              <span className="font-medium text-(--coffee-dark)">{formatPrice(vat.netAmount)}</span>
+              <span>Tạm tính (đã bao gồm thuế)</span>
+              <span className="font-medium text-(--coffee-dark)">{formatPrice(vat.grossAmount)}</span>
             </div>
-            <div className="flex justify-between text-[rgba(62,42,31,0.72)]">
-              <span>VAT ({taxPolicy.vatRatePercent}%)</span>
-              <span className="font-medium text-(--coffee-dark)">{formatPrice(vat.vatAmount)}</span>
-            </div>
+            {discountAmount > 0 && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+                <div className="flex justify-between gap-3">
+                  <span>Ưu đãi đang áp dụng</span>
+                  <span className="shrink-0 font-bold">-{formatPrice(discountAmount)}</span>
+                </div>
+                {calendarDiscountPercent > 0 && (
+                  <p className="mt-0.5 text-xs text-emerald-700">
+                    {discountPreview?.calendarDiscountLabel || 'Sự kiện/ngày lễ'} giảm {calendarDiscountPercent}%: -{formatPrice(calendarDiscountAmount)}
+                  </p>
+                )}
+                {voucherDiscountAmount > 0 && (
+                  <p className="mt-0.5 text-xs text-emerald-700">
+                    Voucher{discountPreview?.voucherCode ? ` ${discountPreview.voucherCode}` : ''}: -{formatPrice(voucherDiscountAmount)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div className="mt-3 flex justify-between text-lg font-bold">
             <span className="text-(--coffee-dark)">Tổng thanh toán</span>
-            <span className="text-(--coffee-primary)">{formatPrice(vat.grossAmount)}</span>
+            <span className="text-(--coffee-primary)">{formatPrice(finalAmount)}</span>
           </div>
           <button
             type="button"

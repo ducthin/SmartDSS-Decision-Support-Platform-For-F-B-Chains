@@ -90,4 +90,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     List<Order> findByTableNumberAndQrClientSessionIdOrderByCreatedAtDesc(String tableNumber, String qrClientSessionId);
+
+    @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+    List<Order> findByTableNumberAndCustomerPhoneOrderByCreatedAtDesc(String tableNumber, String customerPhone);
+
+    @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+    List<Order> findByTableNumberAndCustomerPhoneInOrderByCreatedAtDesc(String tableNumber, List<String> customerPhones);
 }

@@ -614,6 +614,10 @@ public class ShiftServiceImpl implements ShiftService {
     private RevenueWindow resolveRevenueWindow(ShiftAssignment assignment,
                                                ShiftAttendance attendance,
                                                LocalDateTime nowSnapshot) {
+        if (resolveAssignmentShiftType(assignment) != ShiftType.POS_COUNTER) {
+            return null;
+        }
+
         ShiftAssignmentStatus status = assignment.getStatus();
         if (status == ShiftAssignmentStatus.CANCELLED) {
             return null;

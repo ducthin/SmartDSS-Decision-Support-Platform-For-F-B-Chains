@@ -1,10 +1,11 @@
-import { Bell, ClipboardList, Coffee, FileText, MapPin, MessageSquareText } from 'lucide-react';
+import { Bell, ClipboardList, Coffee, FileText, Gift, MapPin, MessageSquareText } from 'lucide-react';
 import type { QrTab } from '@/components/qr-order/types';
 
 const PAGE_TABS = [
   { id: 'menu' as const, label: 'Thực đơn', Icon: Coffee },
   { id: 'orders' as const, label: 'Đơn của tôi', Icon: ClipboardList },
   { id: 'invoice' as const, label: 'Xuất hóa đơn', Icon: FileText },
+  { id: 'telegram' as const, label: 'Nhận ưu đãi', Icon: Gift },
   { id: 'feedback' as const, label: 'Góp ý', Icon: MessageSquareText },
 ];
 

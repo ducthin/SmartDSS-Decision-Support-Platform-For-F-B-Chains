@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,6 +29,7 @@ import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -43,6 +45,7 @@ public class QrOrderServiceImpl implements QrOrderService {
     private final DiningTableRepository diningTableRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final StaffCallRepository staffCallRepository;
     private final RecipeRepository recipeRepository;
     private final InventoryRepository inventoryRepository;
@@ -86,13 +89,61 @@ public class QrOrderServiceImpl implements QrOrderService {
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getMenuForTable(String qrToken) {
         validateAndGetTable(qrToken);
+        LocalDate today = LocalDate.now();
+        List<Long> bestSellingIds = orderItemRepository.findBestSellingMenuItemIdsByOrderQuantity(
+                OrderStatus.COMPLETED,
+                today.minusDays(30).atStartOfDay(),
+                today.atTime(LocalTime.MAX),
+                PageRequest.of(0, 5)
+        );
         return menuItemRepository.findByAvailableTrue().stream()
                 .map(item -> {
                     MenuItemDTO dto = menuItemMapper.toDTO(item);
                     drinkOptionsJsonMapper.attachDrinkLists(dto, item);
+                    dto.setBadgeBestSeller(Boolean.TRUE.equals(dto.getBadgeBestSeller()) || bestSellingIds.contains(dto.getId()));
                     return dto;
                 })
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QrDiscountPreviewDTO previewDiscount(String qrToken, BigDecimal subtotal, String voucherCode, String customerPhone) {
+        validateAndGetTable(qrToken);
+        BigDecimal safeSubtotal = subtotal == null ? BigDecimal.ZERO : subtotal.max(BigDecimal.ZERO);
+        OrderDiscountService.DiscountResult calendarOnlyResult = orderDiscountService.preview(
+                safeSubtotal,
+                null,
+                null,
+                LocalDate.now());
+        OrderDiscountService.DiscountResult discountResult = calendarOnlyResult;
+        String voucherError = null;
+
+        if (StringUtils.hasText(voucherCode)) {
+            try {
+                discountResult = orderDiscountService.preview(
+                        safeSubtotal,
+                        voucherCode,
+                        normalizeCustomerPhoneForPreview(customerPhone),
+                        LocalDate.now());
+            } catch (BadRequestException ex) {
+                discountResult = calendarOnlyResult;
+                voucherError = ex.getMessage();
+            }
+        }
+        BigDecimal finalAmount = safeSubtotal.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
+        return QrDiscountPreviewDTO.builder()
+                .subtotalAmount(safeSubtotal)
+                .calendarDiscountPercent(discountResult.calendarDiscountPercent())
+                .calendarDiscountLabel(discountResult.calendarDiscountLabel())
+                .calendarDiscountAmount(discountResult.calendarDiscountAmount())
+                .voucherDiscountAmount(discountResult.voucherDiscountAmount())
+                .totalDiscountAmount(discountResult.totalDiscountAmount())
+                .finalAmount(finalAmount)
+                .voucherCode(discountResult.normalizedVoucherCode())
+                .voucherError(voucherError)
+                .promotionNote(discountResult.promotionNote())
+                .build();
     }
 
     @Override
@@ -171,22 +222,33 @@ public class QrOrderServiceImpl implements QrOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrderDTO> getTableOrders(String qrToken, String clientSessionId) {
+    public List<OrderDTO> getTableOrders(String qrToken, String customerPhone, String clientSessionId) {
         DiningTable table = diningTableRepository.findByQrToken(qrToken)
                 .orElseThrow(() -> new ResourceNotFoundException("DiningTable", "qrToken", qrToken));
-        if (clientSessionId == null || clientSessionId.isBlank()) {
-            return List.of();
+        String phoneValue;
+        try {
+            phoneValue = normalizeCustomerPhone(customerPhone);
+        } catch (BadRequestException ex) {
+            phoneValue = null;
         }
-        String sid = clientSessionId.trim();
-        if (sid.length() < 8 || sid.length() > 64 || !sid.matches("[a-zA-Z0-9\\-]+")) {
-            return List.of();
+        final String normalizedPhone = phoneValue;
+        final List<String> phoneCandidates = phoneLookupCandidates(normalizedPhone);
+        List<Order> orders = phoneCandidates.isEmpty()
+                ? List.of()
+                : orderRepository.findByTableNumberAndCustomerPhoneInOrderByCreatedAtDesc(table.getName(), phoneCandidates);
+        boolean loadedByPhone = !orders.isEmpty();
+        if (orders.isEmpty()) {
+            String sid = normalizeOptionalSessionId(clientSessionId);
+            if (sid != null) {
+                orders = orderRepository.findByTableNumberAndQrClientSessionIdOrderByCreatedAtDesc(table.getName(), sid);
+            }
         }
-        List<Order> orders = orderRepository.findByTableNumberAndQrClientSessionIdOrderByCreatedAtDesc(table.getName(), sid);
         List<OrderDTO> dtos = orderMapper.toDTOList(orders);
-        // Lọc lần 2 phòng query/Spring Data lệch — không bao giờ trả nhầm đơn bàn khác session
-        return dtos.stream()
-                .filter(d -> d.getQrClientSessionId() != null && sid.equals(d.getQrClientSessionId()))
-                .toList();
+        return !loadedByPhone
+                ? dtos
+                : dtos.stream()
+                        .filter(d -> phoneCandidates.contains(d.getCustomerPhone()))
+                        .toList();
     }
 
     @Override
@@ -197,8 +259,11 @@ public class QrOrderServiceImpl implements QrOrderService {
 
         Order order = orderRepository.findById(requestDTO.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", requestDTO.getOrderId()));
-        if (!table.getName().equals(order.getTableNumber()) || !sid.equals(order.getQrClientSessionId())) {
-            throw new BadRequestException("Không thể xuất hóa đơn cho đơn không thuộc phiên QR này");
+        String requestPhone = normalizeCustomerPhone(requestDTO.getPhone());
+        boolean sameSession = sid.equals(order.getQrClientSessionId());
+        boolean sameCustomerPhone = requestPhone != null && requestPhone.equals(order.getCustomerPhone());
+        if (!table.getName().equals(order.getTableNumber()) || (!sameSession && !sameCustomerPhone)) {
+            throw new BadRequestException("Không thể xuất hóa đơn cho đơn không thuộc SĐT/phiên QR này");
         }
         if (order.getStatus() != OrderStatus.COMPLETED) {
             throw new BadRequestException("Chỉ xuất hóa đơn cho đơn đã hoàn thành/thanh toán");
@@ -350,6 +415,13 @@ public class QrOrderServiceImpl implements QrOrderService {
         return normalized;
     }
 
+    private String normalizeCustomerPhoneForPreview(String customerPhone) {
+        if (customerPhone == null || customerPhone.isBlank()) {
+            return null;
+        }
+        return normalizeCustomerPhone(customerPhone);
+    }
+
     private String normalizeSessionId(String clientSessionId) {
         if (clientSessionId == null || clientSessionId.isBlank()) {
             throw new BadRequestException("Phiên QR không hợp lệ");
@@ -359,6 +431,36 @@ public class QrOrderServiceImpl implements QrOrderService {
             throw new BadRequestException("Phiên QR không hợp lệ");
         }
         return sid;
+    }
+
+    private String normalizeOptionalSessionId(String clientSessionId) {
+        if (clientSessionId == null || clientSessionId.isBlank()) {
+            return null;
+        }
+        String sid = clientSessionId.trim();
+        if (sid.length() < 8 || sid.length() > 64 || !sid.matches("[a-zA-Z0-9\\-]+")) {
+            return null;
+        }
+        return sid;
+    }
+
+    private List<String> phoneLookupCandidates(String normalizedPhone) {
+        List<String> candidates = new ArrayList<>();
+        if (normalizedPhone == null || normalizedPhone.isBlank()) {
+            return candidates;
+        }
+        candidates.add(normalizedPhone);
+        if (normalizedPhone.startsWith("+84") && normalizedPhone.length() > 3) {
+            candidates.add("0" + normalizedPhone.substring(3));
+            candidates.add(normalizedPhone.substring(1));
+        } else if (normalizedPhone.startsWith("84") && normalizedPhone.length() > 2) {
+            candidates.add("0" + normalizedPhone.substring(2));
+            candidates.add("+" + normalizedPhone);
+        } else if (normalizedPhone.startsWith("0") && normalizedPhone.length() > 1) {
+            candidates.add("84" + normalizedPhone.substring(1));
+            candidates.add("+84" + normalizedPhone.substring(1));
+        }
+        return candidates.stream().distinct().toList();
     }
 
     private InvoiceRequest.DeliveryMethod parseInvoiceDeliveryMethod(String raw) {
@@ -398,7 +500,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                       <td class="right">%s</td>
                     </tr>
                     """.formatted(
-                    escapeHtml(item.getMenuItem().getName()),
+                    escapeHtml(invoiceItemName(item)),
                     item.getQuantity(),
                     money(item.getUnitPrice()),
                     money(item.getSubtotal())
@@ -406,6 +508,15 @@ public class QrOrderServiceImpl implements QrOrderService {
         }
         BigDecimal subtotal = order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount();
         BigDecimal discount = order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount();
+        String discountLabel = order.getVoucherCode() == null || order.getVoucherCode().isBlank()
+                ? "Giảm giá/ưu đãi"
+                : "Voucher " + order.getVoucherCode();
+        String discountDisplay = discount.compareTo(BigDecimal.ZERO) > 0 ? "-" + money(discount) : money(discount);
+        String promotionNote = order.getPromotionNote() == null || order.getPromotionNote().isBlank()
+                ? ""
+                : """
+                      <tr><td colspan="2" class="note">%s</td></tr>
+                  """.formatted(escapeHtml(order.getPromotionNote()));
         String createdAt = order.getCreatedAt() == null
                 ? ""
                 : order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
@@ -416,20 +527,28 @@ public class QrOrderServiceImpl implements QrOrderService {
                   <meta charset="UTF-8" />
                 <title>Hoa don - Don #%s</title>
                   <style>
+                    @page{size:A4;margin:16mm}
+                    *{box-sizing:border-box}
                     body{font-family:Arial,sans-serif;margin:0;background:#ffffff;color:#111827}
-                    .invoice{width:720px;margin:0 auto;padding:28px}
+                    .invoice{width:100%%;margin:0 auto;padding:0}
                     .store{text-align:center;font-size:26px;font-weight:800;letter-spacing:.4px;color:#7c2d12}
                     .title{text-align:center;font-size:20px;font-weight:700;margin-top:6px}
                     .muted{color:#6b7280;font-size:12px}.center{text-align:center}.right{text-align:right}
                     .line{border-top:2px solid #7c2d12;margin:18px 0}
-                    table{width:100%%;border-collapse:collapse}
+                    table{width:100%%;border-collapse:collapse;table-layout:fixed}
                     .info td{padding:4px 0;font-size:13px;vertical-align:top}
-                    .info .label{width:130px;color:#6b7280}
+                    .info .label{width:120px;color:#6b7280}
+                    .info td:not(.label){word-break:break-word}
                     .items{margin-top:16px}
                     .items th{background:#fff7ed;color:#7c2d12;border-bottom:1px solid #fed7aa;padding:9px 8px;font-size:13px;text-align:left}
-                    .items td{border-bottom:1px solid #e5e7eb;padding:9px 8px;font-size:13px}
-                    .totals{width:330px;margin-left:auto;margin-top:16px}
+                    .items td{border-bottom:1px solid #e5e7eb;padding:9px 8px;font-size:13px;word-break:break-word}
+                    .items th:nth-child(1),.items td:nth-child(1){width:45%%}
+                    .items th:nth-child(2),.items td:nth-child(2){width:10%%}
+                    .items th:nth-child(3),.items td:nth-child(3){width:20%%}
+                    .items th:nth-child(4),.items td:nth-child(4){width:25%%}
+                    .totals{width:300px;max-width:100%%;margin-left:auto;margin-top:16px;table-layout:auto}
                     .totals td{padding:6px 0;font-size:14px}
+                    .note{font-size:12px;color:#047857;background:#ecfdf5;border-radius:8px;padding:7px 9px!important}
                     .grand td{border-top:1px solid #111827;padding-top:10px;font-size:18px;font-weight:800}
                     .footer{text-align:center;margin-top:26px;font-size:12px;color:#6b7280}
                   </style>
@@ -455,7 +574,8 @@ public class QrOrderServiceImpl implements QrOrderService {
                     </table>
                     <table class="totals">
                       <tr><td>Tạm tính (đã bao gồm thuế)</td><td class="right">%s</td></tr>
-                      <tr><td>Giảm giá</td><td class="right">%s</td></tr>
+                      <tr><td>%s</td><td class="right">-%s</td></tr>
+                      %s
                       <tr class="grand"><td>Tổng thanh toán</td><td class="right">%s</td></tr>
                     </table>
                     <div class="footer">Cảm ơn quý khách. Vui lòng lưu file PDF này để đối chiếu khi cần.</div>
@@ -475,9 +595,28 @@ public class QrOrderServiceImpl implements QrOrderService {
                 escapeHtml(dto.getPhone()),
                 itemRows,
                 money(subtotal),
-                money(discount),
+                escapeHtml(discountLabel),
+                discountDisplay,
+                promotionNote,
                 money(order.getTotalAmount())
         );
+    }
+
+    private String invoiceItemName(OrderItem item) {
+        StringBuilder name = new StringBuilder(item.getMenuItem().getName());
+        List<String> details = new ArrayList<>();
+        if (item.getSelectedSizeLabel() != null && !item.getSelectedSizeLabel().isBlank()) {
+            details.add(item.getSelectedSizeLabel());
+        }
+        List<String> toppings = drinkOptionsJsonMapper.toppingSnapshotJsonToList(item.getSelectedToppingsJson()).stream()
+                .map(OrderToppingLineDTO::getLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .toList();
+        details.addAll(toppings);
+        if (!details.isEmpty()) {
+            name.append(" (").append(String.join(" · ", details)).append(")");
+        }
+        return name.toString();
     }
 
     private String money(BigDecimal value) {

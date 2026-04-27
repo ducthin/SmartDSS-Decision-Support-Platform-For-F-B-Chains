@@ -69,6 +69,7 @@ class QrOrderServiceImplTest {
                 .thenReturn(new OrderDiscountService.DiscountResult(
                         null,
                         BigDecimal.ZERO,
+                        null,
                         BigDecimal.ZERO,
                         BigDecimal.ZERO,
                         BigDecimal.ZERO,

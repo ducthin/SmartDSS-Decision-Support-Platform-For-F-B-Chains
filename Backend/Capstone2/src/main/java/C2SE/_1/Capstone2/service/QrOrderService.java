@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.service;
 import C2SE._1.Capstone2.dto.DiningTableDTO;
 import C2SE._1.Capstone2.dto.MenuItemDTO;
 import C2SE._1.Capstone2.dto.OrderDTO;
+import C2SE._1.Capstone2.dto.QrDiscountPreviewDTO;
 import C2SE._1.Capstone2.dto.QrInvoiceRequestDTO;
 import C2SE._1.Capstone2.dto.QrInvoiceResponseDTO;
 import C2SE._1.Capstone2.dto.QrOrderDTO;
@@ -17,9 +18,11 @@ public interface QrOrderService {
 
     List<MenuItemDTO> getMenuForTable(String qrToken);
 
+    QrDiscountPreviewDTO previewDiscount(String qrToken, java.math.BigDecimal subtotal, String voucherCode, String customerPhone);
+
     OrderDTO placeOrder(String qrToken, QrOrderDTO qrOrderDTO);
 
-    List<OrderDTO> getTableOrders(String qrToken, String clientSessionId);
+    List<OrderDTO> getTableOrders(String qrToken, String customerPhone, String clientSessionId);
 
     QrInvoiceResponseDTO requestInvoice(String qrToken, QrInvoiceRequestDTO requestDTO);
 

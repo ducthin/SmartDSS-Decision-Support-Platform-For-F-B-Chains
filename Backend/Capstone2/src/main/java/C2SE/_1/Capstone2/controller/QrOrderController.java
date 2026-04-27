@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -29,6 +30,15 @@ public class QrOrderController {
         return ResponseEntity.ok(ApiResponse.success(qrOrderService.getMenuForTable(token)));
     }
 
+    @GetMapping("/{token}/discount-preview")
+    public ResponseEntity<ApiResponse<QrDiscountPreviewDTO>> previewDiscount(
+            @PathVariable String token,
+            @RequestParam BigDecimal subtotal,
+            @RequestParam(required = false) String voucherCode,
+            @RequestParam(required = false) String customerPhone) {
+        return ResponseEntity.ok(ApiResponse.success(qrOrderService.previewDiscount(token, subtotal, voucherCode, customerPhone)));
+    }
+
     @PostMapping("/{token}/order")
     public ResponseEntity<ApiResponse<OrderDTO>> placeQrOrder(
             @PathVariable String token,
@@ -40,8 +50,9 @@ public class QrOrderController {
     @GetMapping("/{token}/orders")
     public ResponseEntity<ApiResponse<List<OrderDTO>>> getTableOrders(
             @PathVariable String token,
+            @RequestParam(name = "customerPhone", required = false) String customerPhone,
             @RequestParam(name = "sessionId", required = false) String sessionId) {
-        return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token, sessionId)));
+        return ResponseEntity.ok(ApiResponse.success(qrOrderService.getTableOrders(token, customerPhone, sessionId)));
     }
 
     @PostMapping("/{token}/invoice")

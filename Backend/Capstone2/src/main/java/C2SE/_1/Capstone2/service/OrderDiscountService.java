@@ -31,6 +31,7 @@ public class OrderDiscountService {
     public record DiscountResult(
             String normalizedVoucherCode,
             BigDecimal calendarDiscountPercent,
+            String calendarDiscountLabel,
             BigDecimal calendarDiscountAmount,
             BigDecimal voucherDiscountAmount,
             BigDecimal totalDiscountAmount,
@@ -38,13 +39,21 @@ public class OrderDiscountService {
     ) {}
 
     public DiscountResult calculate(BigDecimal subtotal, String rawVoucherCode, String customerPhone, LocalDate orderDate) {
+        return calculateInternal(subtotal, rawVoucherCode, customerPhone, orderDate, true);
+    }
+
+    public DiscountResult preview(BigDecimal subtotal, String rawVoucherCode, String customerPhone, LocalDate orderDate) {
+        return calculateInternal(subtotal, rawVoucherCode, customerPhone, orderDate, false);
+    }
+
+    private DiscountResult calculateInternal(BigDecimal subtotal, String rawVoucherCode, String customerPhone, LocalDate orderDate, boolean consumeVoucher) {
         BigDecimal safeSubtotal = money(subtotal == null ? BigDecimal.ZERO : subtotal.max(BigDecimal.ZERO));
 
         CalendarDiscount calendarDiscount = resolveCalendarDiscount(orderDate == null ? LocalDate.now() : orderDate);
         BigDecimal calendarDiscountAmount = percentAmount(safeSubtotal, calendarDiscount.discountPercent());
         BigDecimal baseAfterCalendar = safeSubtotal.subtract(calendarDiscountAmount).max(BigDecimal.ZERO);
 
-        VoucherDiscount voucherDiscount = resolveVoucherDiscount(rawVoucherCode, customerPhone, safeSubtotal, baseAfterCalendar);
+        VoucherDiscount voucherDiscount = resolveVoucherDiscount(rawVoucherCode, customerPhone, safeSubtotal, baseAfterCalendar, consumeVoucher);
 
         BigDecimal totalDiscount = money(calendarDiscountAmount.add(voucherDiscount.discountAmount()));
         if (totalDiscount.compareTo(safeSubtotal) > 0) {
@@ -56,6 +65,7 @@ public class OrderDiscountService {
         return new DiscountResult(
                 voucherDiscount.normalizedVoucherCode(),
                 calendarDiscount.discountPercent(),
+                calendarDiscount.sourceLabel(),
                 calendarDiscountAmount,
                 voucherDiscount.discountAmount(),
                 totalDiscount,
@@ -92,13 +102,15 @@ public class OrderDiscountService {
 
     private record VoucherDiscount(String normalizedVoucherCode, BigDecimal discountAmount) {}
 
-    private VoucherDiscount resolveVoucherDiscount(String rawVoucherCode, String customerPhone, BigDecimal subtotal, BigDecimal baseAfterCalendar) {
+    private VoucherDiscount resolveVoucherDiscount(String rawVoucherCode, String customerPhone, BigDecimal subtotal, BigDecimal baseAfterCalendar, boolean consumeVoucher) {
         if (rawVoucherCode == null || rawVoucherCode.isBlank()) {
             return new VoucherDiscount(null, BigDecimal.ZERO);
         }
 
         String normalizedCode = rawVoucherCode.trim().toUpperCase();
-        Voucher voucher = voucherRepository.findByCodeForUpdate(normalizedCode)
+        Voucher voucher = (consumeVoucher
+                ? voucherRepository.findByCodeForUpdate(normalizedCode)
+                : voucherRepository.findByCodeIgnoreCase(normalizedCode))
                 .orElseThrow(() -> new BadRequestException("Mã voucher không tồn tại"));
         String voucherPhone = normalizePhone(voucher.getCustomerPhone());
         String normalizedCustomerPhone = normalizePhone(customerPhone);
@@ -146,8 +158,10 @@ public class OrderDiscountService {
             throw new BadRequestException("Voucher không thể áp dụng cho đơn này");
         }
 
-        voucher.setUsedCount(usedCount + 1);
-        voucherRepository.save(voucher);
+        if (consumeVoucher) {
+            voucher.setUsedCount(usedCount + 1);
+            voucherRepository.save(voucher);
+        }
 
         return new VoucherDiscount(normalizedCode, money(discountAmount));
     }

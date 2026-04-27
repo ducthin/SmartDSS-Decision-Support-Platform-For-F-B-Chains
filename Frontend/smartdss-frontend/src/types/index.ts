@@ -44,6 +44,26 @@ export interface QrInvoiceResponse {
   createdAt?: string;
 }
 
+export interface QrDiscountPreview {
+  subtotalAmount: number;
+  calendarDiscountPercent: number;
+  calendarDiscountLabel?: string;
+  calendarDiscountAmount: number;
+  voucherDiscountAmount: number;
+  totalDiscountAmount: number;
+  finalAmount: number;
+  voucherCode?: string;
+  voucherError?: string;
+  promotionNote?: string;
+}
+
+export interface TelegramLinkStatus {
+  linked: boolean;
+  phone?: string;
+  telegramUsername?: string;
+  telegramFullName?: string;
+}
+
 // Paginated response
 export interface PageResponse<T> {
   content: T[];

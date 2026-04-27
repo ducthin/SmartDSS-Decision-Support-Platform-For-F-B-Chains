@@ -19,14 +19,15 @@ import C2SE._1.Capstone2.repository.EventRepository;
 import C2SE._1.Capstone2.repository.HolidayCalendarRepository;
 import C2SE._1.Capstone2.mapper.InventoryMapper;
 import C2SE._1.Capstone2.repository.InventoryRepository;
+import C2SE._1.Capstone2.repository.OrderItemRepository;
 import C2SE._1.Capstone2.repository.OrderRepository;
-import C2SE._1.Capstone2.repository.SalesItemRepository;
 import C2SE._1.Capstone2.repository.SalesTransactionRepository;
 import C2SE._1.Capstone2.repository.WeatherDataRepository;
 import C2SE._1.Capstone2.service.ReportService;
 import C2SE._1.Capstone2.util.AreaDensityScoreEstimator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,9 +52,10 @@ public class ReportServiceImpl implements ReportService {
     private static final double[] AVG_TEMP = {22.5, 23.2, 25.5, 28.0, 30.5, 31.8, 31.5, 31.0, 28.5, 26.0, 24.0, 22.8};
     private static final double[] AVG_RAIN = {10, 5, 3, 5, 10, 10, 8, 12, 50, 80, 50, 25};
     private static final int DEFAULT_AREA_DENSITY_SCORE = 60;
+    private static final int DEFAULT_BEST_PRODUCT_LIMIT = 10;
 
     private final SalesTransactionRepository salesTransactionRepository;
-    private final SalesItemRepository salesItemRepository;
+    private final OrderItemRepository orderItemRepository;
     private final InventoryRepository inventoryRepository;
     private final OrderRepository orderRepository;
     private final WeatherDataRepository weatherDataRepository;
@@ -206,7 +208,12 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime start = today.minusDays(30).atStartOfDay();
         LocalDateTime end = today.atTime(LocalTime.MAX);
 
-        List<Object[]> results = salesItemRepository.findBestSellingProducts(start, end);
+        List<Object[]> results = orderItemRepository.findBestSellingProductsByOrderQuantity(
+                OrderStatus.COMPLETED,
+                start,
+                end,
+                PageRequest.of(0, DEFAULT_BEST_PRODUCT_LIMIT)
+        );
 
         return results.stream()
                 .map(row -> BestProductDTO.builder()

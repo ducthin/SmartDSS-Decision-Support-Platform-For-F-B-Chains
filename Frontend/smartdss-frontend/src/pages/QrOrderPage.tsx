@@ -5,15 +5,16 @@ import toast, { Toaster } from 'react-hot-toast';
 import '@/styles/coffee-theme.css';
 import { qrService } from '@/services/qrService';
 import { publicConfigService } from '@/services/publicConfigService';
-import type { MenuItem, Order, DiningTable, QrFeedbackForm, TaxPolicy } from '@/types';
+import type { MenuItem, Order, DiningTable, QrDiscountPreview, QrFeedbackForm, TaxPolicy } from '@/types';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { calculateVatBreakdown, drinkCartLineKey, unitPriceWithDrinkOptions } from '@/utils/helpers';
 import DrinkCustomizeModal from '@/components/DrinkCustomizeModal';
-import { getOrCreateQrClientSessionId, getOrderQrSessionId } from '@/utils/qrClientSession';
+import { getOrCreateQrClientSessionId } from '@/utils/qrClientSession';
 import QrPageHeader from '@/components/qr-order/QrPageHeader';
 import QrMenuPanel from '@/components/qr-order/QrMenuPanel';
 import QrOrdersPanel from '@/components/qr-order/QrOrdersPanel';
 import QrInvoicePanel from '@/components/qr-order/QrInvoicePanel';
+import QrTelegramPanel from '@/components/qr-order/QrTelegramPanel';
 import QrFeedbackPanel from '@/components/qr-order/QrFeedbackPanel';
 import QrFloatingCartButton from '@/components/qr-order/QrFloatingCartButton';
 import QrCartSheet from '@/components/qr-order/QrCartSheet';
@@ -73,6 +74,7 @@ export default function QrOrderPage() {
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackPreviewUrls, setFeedbackPreviewUrls] = useState<string[]>([]);
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
+  const [discountPreview, setDiscountPreview] = useState<QrDiscountPreview | null>(null);
   const [feedback, setFeedback] = useState<QrFeedbackForm>({
     customerName: '',
     customerPhone: '',
@@ -127,16 +129,23 @@ export default function QrOrderPage() {
   }, [token]);
 
   const loadOrders = useCallback(async () => {
-    if (!token || !clientSessionId) return;
+    const normalizedPhone = normalizeCustomerPhone(customerPhone);
+    const hasValidPhone = CUSTOMER_PHONE_REGEX.test(normalizedPhone);
+    if (!token || (!hasValidPhone && !clientSessionId)) {
+      setOrders([]);
+      return;
+    }
     try {
-      const res = await qrService.getOrders(token, clientSessionId);
+      const res = await qrService.getOrders(token, {
+        customerPhone: hasValidPhone ? normalizedPhone : undefined,
+        sessionId: clientSessionId || undefined,
+      });
       const raw = res.data.data ?? [];
-      // Luôn lọc theo phiên — phòng server cũ / proxy trả nhầm toàn bộ đơn bàn
-      setOrders(raw.filter((o) => getOrderQrSessionId(o) === clientSessionId));
+      setOrders(raw);
     } catch {
       /* ignore */
     }
-  }, [token, clientSessionId]);
+  }, [token, customerPhone, clientSessionId]);
 
   useEffect(() => {
     loadData();
@@ -156,6 +165,9 @@ export default function QrOrderPage() {
     const savedPhone = localStorage.getItem(QR_CUSTOMER_PHONE_KEY);
     if (savedPhone) {
       setCustomerPhone(savedPhone);
+      if (CUSTOMER_PHONE_REGEX.test(normalizeCustomerPhone(savedPhone))) {
+        setShowPhonePrompt(false);
+      }
     }
   }, []);
 
@@ -179,8 +191,8 @@ export default function QrOrderPage() {
   const handleSocketUpdate = useCallback(
     (data?: Order) => {
       if (data && data.id && table && data.tableNumber === table.name) {
-        const sid = getOrderQrSessionId(data);
-        if (!sid || sid !== clientSessionId) {
+        const normalizedPhone = normalizeCustomerPhone(customerPhone);
+        if (!CUSTOMER_PHONE_REGEX.test(normalizedPhone) || data.customerPhone !== normalizedPhone) {
           return;
         }
         setOrders((prev) => {
@@ -210,7 +222,7 @@ export default function QrOrderPage() {
         loadOrders();
       }
     },
-    [loadOrders, table, tab, clientSessionId],
+    [loadOrders, table, tab, customerPhone],
   );
 
   useEffect(() => {
@@ -315,6 +327,58 @@ export default function QrOrderPage() {
   );
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
   const vat = calculateVatBreakdown(cartTotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
+
+  useEffect(() => {
+    if (!token || cartTotal <= 0) {
+      setDiscountPreview(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      const trimmedVoucherCode = voucherCode.trim();
+      const trimmedCustomerPhone = customerPhone.trim();
+      try {
+        const res = await qrService.previewDiscount(token, {
+          subtotal: cartTotal,
+          voucherCode: trimmedVoucherCode || undefined,
+          customerPhone: trimmedCustomerPhone || undefined,
+        });
+        if (!controller.signal.aborted) {
+          setDiscountPreview(res.data.data);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          if (!trimmedVoucherCode) {
+            setDiscountPreview(null);
+            return;
+          }
+
+          try {
+            const calendarRes = await qrService.previewDiscount(token, {
+              subtotal: cartTotal,
+              customerPhone: trimmedCustomerPhone || undefined,
+            });
+            if (!controller.signal.aborted) {
+              setDiscountPreview({
+                ...calendarRes.data.data,
+                voucherCode: undefined,
+                voucherDiscountAmount: 0,
+                voucherError: 'Mã voucher không hợp lệ hoặc không thể áp dụng',
+              });
+            }
+          } catch {
+            if (!controller.signal.aborted) {
+              setDiscountPreview(null);
+            }
+          }
+        }
+      }
+    }, 250);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [token, cartTotal, voucherCode, customerPhone]);
 
   const confirmCustomerPhone = () => {
     const normalizedPhone = normalizeCustomerPhone(customerPhone);
@@ -549,6 +613,10 @@ export default function QrOrderPage() {
           />
         )}
 
+        {tab === 'telegram' && (
+          <QrTelegramPanel customerPhone={customerPhone} />
+        )}
+
         {tab === 'feedback' && (
           <QrFeedbackPanel
             feedback={feedback}
@@ -583,7 +651,7 @@ export default function QrOrderPage() {
         note={note}
         onNoteChange={setNote}
         vat={vat}
-        taxPolicy={taxPolicy}
+        discountPreview={discountPreview}
         onClose={() => setShowCart(false)}
         onRemoveFromCart={removeFromCart}
         onUpdateQty={updateQty}

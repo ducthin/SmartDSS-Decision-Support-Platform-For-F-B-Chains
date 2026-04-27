@@ -64,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/config/tax").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/qr/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/public/qr/**").permitAll()
+                        .requestMatchers("/api/v1/public/telegram/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/public/payments/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/public/payments/payos/webhook").permitAll()
                         .requestMatchers("/uploads/**").permitAll()

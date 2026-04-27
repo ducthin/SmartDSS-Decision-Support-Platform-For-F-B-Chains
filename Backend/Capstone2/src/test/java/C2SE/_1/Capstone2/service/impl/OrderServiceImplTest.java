@@ -77,6 +77,7 @@ class OrderServiceImplTest {
                 .thenReturn(new OrderDiscountService.DiscountResult(
                         null,
                         BigDecimal.ZERO,
+                        null,
                         BigDecimal.ZERO,
                         BigDecimal.ZERO,
                         BigDecimal.ZERO,

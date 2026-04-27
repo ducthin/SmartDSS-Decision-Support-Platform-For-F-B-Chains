@@ -7,7 +7,7 @@ import type { NotificationTestResult } from '@/types';
 
 export default function NotificationTestPage() {
   const [phone, setPhone] = useState('0793637555');
-  const [message, setMessage] = useState('SmartDSS test SMS: he thong gui voucher/khuyen mai tu dong da san sang.');
+  const [message, setMessage] = useState('SmartDSS Coffee test: he thong gui voucher khuyen mai tu dong da san sang.');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<NotificationTestResult | null>(null);
 
@@ -48,9 +48,9 @@ export default function NotificationTestPage() {
           <ShieldCheck size={14} />
           Trang ẩn dành cho ADMIN
         </div>
-        <h1 className="mt-3 text-2xl font-bold text-gray-900">Test gửi SMS</h1>
+        <h1 className="mt-3 text-2xl font-bold text-gray-900">Test gửi thông báo</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Dùng để kiểm tra provider trong `.env` như SpeedSMS/eSMS. Trang này không nằm trong menu.
+          Dùng để kiểm tra provider trong `.env` như Infobip, eSMS hoặc SpeedSMS. Trang này không nằm trong menu.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export default function NotificationTestPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Send size={16} />
-          {sending ? 'Đang gửi...' : 'Gửi SMS test'}
+          {sending ? 'Đang gửi...' : 'Gửi test'}
         </button>
       </div>
 

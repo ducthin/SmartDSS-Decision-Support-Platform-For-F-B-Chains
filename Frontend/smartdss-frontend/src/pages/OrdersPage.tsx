@@ -1089,23 +1089,34 @@ function OrderListView() {
                 <div className="min-w-0">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Món đã gọi</p>
                   <div className="grid gap-2 md:grid-cols-2">
-                    {order.orderItems?.map((item, idx) => (
-                      <div
-                        key={`${order.id}-${item.menuItemId}-${idx}-${formatOrderItemExtras(item)}`}
-                        className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium leading-5 text-gray-900 wrap-break-word">
-                              {item.menuItemName}{formatOrderItemExtras(item)}
-                            </p>
+                    {order.orderItems?.map((item, idx) => {
+                      const quantity = item.quantity ?? 0;
+                      const unitPrice = item.unitPrice ?? (quantity > 0 ? (item.subtotal ?? 0) / quantity : 0);
+                      const lineSubtotal = item.subtotal ?? unitPrice * quantity;
+                      return (
+                        <div
+                          key={`${order.id}-${item.menuItemId}-${idx}-${formatOrderItemExtras(item)}`}
+                          className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium leading-5 text-gray-900 wrap-break-word">
+                                {item.menuItemName}{formatOrderItemExtras(item)}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {formatCurrency(unitPrice)} × {quantity}
+                              </p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span className="inline-flex rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-bold text-gray-700">
+                                x{quantity}
+                              </span>
+                              <p className="mt-1 text-sm font-bold text-gray-900">{formatCurrency(lineSubtotal)}</p>
+                            </div>
                           </div>
-                          <span className="shrink-0 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-bold text-gray-700">
-                            x{item.quantity}
-                          </span>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {order.note && (
                     <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm italic leading-5 text-orange-700 wrap-break-word">
@@ -1375,17 +1386,22 @@ function OrderListView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {billOrder.orderItems.map((item, idx) => (
-                    <tr key={`${item.menuItemId}-${idx}`} className="border-t">
-                      <td className="px-3 py-2">
-                        {item.menuItemName || `Món #${item.menuItemId}`}
-                        {formatOrderItemExtras(item)}
-                      </td>
-                      <td className="px-3 py-2 text-right">{item.quantity}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(item.unitPrice ?? 0)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(item.subtotal ?? (item.unitPrice ?? 0) * item.quantity)}</td>
-                    </tr>
-                  ))}
+                  {billOrder.orderItems.map((item, idx) => {
+                    const quantity = item.quantity ?? 0;
+                    const unitPrice = item.unitPrice ?? (quantity > 0 ? (item.subtotal ?? 0) / quantity : 0);
+                    const lineSubtotal = item.subtotal ?? unitPrice * quantity;
+                    return (
+                      <tr key={`${item.menuItemId}-${idx}`} className="border-t">
+                        <td className="px-3 py-2">
+                          {item.menuItemName || `Món #${item.menuItemId}`}
+                          {formatOrderItemExtras(item)}
+                        </td>
+                        <td className="px-3 py-2 text-right">{quantity}</td>
+                        <td className="px-3 py-2 text-right">{formatCurrency(unitPrice)}</td>
+                        <td className="px-3 py-2 text-right">{formatCurrency(lineSubtotal)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1400,9 +1416,14 @@ function OrderListView() {
                     <span>{formatCurrency(originalAmount)}</span>
                   </div>
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <span>{billOrder.voucherCode ? `Voucher ${billOrder.voucherCode}` : 'Khuyến mãi'}</span>
-                      <span>-{formatCurrency(discountAmount)}</span>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
+                      <div className="flex justify-between">
+                        <span>{billOrder.voucherCode ? `Voucher ${billOrder.voucherCode}` : 'Khuyến mãi'}</span>
+                        <span>-{formatCurrency(discountAmount)}</span>
+                      </div>
+                      {billOrder.promotionNote && (
+                        <p className="mt-1 text-xs">{billOrder.promotionNote}</p>
+                      )}
                     </div>
                   )}
                   <div className="flex justify-between font-semibold text-base">
@@ -1438,12 +1459,12 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
   const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
   const discountAmount = order.discountAmount ?? 0;
   const discountRow = discountAmount > 0
-    ? `<div><span>${escapeHtml(order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi')}</span><span>-${formatCurrency(discountAmount)}</span></div>`
+    ? `<div class="discount"><div><span>${escapeHtml(order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi')}</span><span>-${formatCurrency(discountAmount)}</span></div>${order.promotionNote ? `<p>${escapeHtml(order.promotionNote)}</p>` : ''}</div>`
     : '';
   const rows = order.orderItems.map((item) => {
     const itemName = (item.menuItemName || `Món #${item.menuItemId}`) + formatOrderItemExtras(item);
     const qty = item.quantity ?? 0;
-    const unitPrice = item.unitPrice ?? 0;
+    const unitPrice = item.unitPrice ?? (qty > 0 ? (item.subtotal ?? 0) / qty : 0);
     const subtotal = item.subtotal ?? unitPrice * qty;
     return `
       <tr>
@@ -1472,6 +1493,9 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
     tfoot td { font-weight: bold; }
     .sum { margin-top: 10px; font-size: 13px; }
     .sum div { display: flex; justify-content: space-between; margin: 4px 0; }
+    .sum .discount { display: block; background: #ecfdf5; color: #047857; border-radius: 8px; padding: 6px 8px; }
+    .discount div { display: flex; justify-content: space-between; margin: 0; }
+    .discount p { margin: 3px 0 0; font-size: 11px; color: #047857; }
     .total { font-weight: bold; font-size: 15px; }
     @media print { body { width: 80mm; max-width: none; } }
   </style>

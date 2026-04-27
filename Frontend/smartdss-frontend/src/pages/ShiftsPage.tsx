@@ -58,6 +58,50 @@ function formatMinutes(value?: number) {
   return `${h}h ${m}p`;
 }
 
+function resolveShiftDateTime(item: ShiftAssignment, point: 'start' | 'end') {
+  const scheduled = point === 'start' ? item.scheduledStartAt : item.scheduledEndAt;
+  if (scheduled) {
+    const d = new Date(scheduled);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  const time = point === 'start' ? item.startTime : item.endTime;
+  const d = new Date(`${item.shiftDate}T${time || '00:00'}:00`);
+  if (point === 'end') {
+    const start = new Date(`${item.shiftDate}T${item.startTime || '00:00'}:00`);
+    if (!Number.isNaN(start.getTime()) && d <= start) {
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  return d;
+}
+
+function getShiftDisplayState(item: ShiftAssignment) {
+  if (item.status === 'CANCELLED') {
+    return { label: 'Đã hủy', className: 'bg-gray-100 text-gray-600', canCheckIn: false };
+  }
+  if (item.status === 'COMPLETED') {
+    return { label: 'Đã kết ca', className: 'bg-emerald-100 text-emerald-700', canCheckIn: false };
+  }
+  if (item.status === 'CHECKED_IN') {
+    return { label: 'Đang làm', className: 'bg-blue-100 text-blue-700', canCheckIn: false };
+  }
+
+  const now = new Date();
+  const startAt = resolveShiftDateTime(item, 'start');
+  const endAt = resolveShiftDateTime(item, 'end');
+  const earliestCheckIn = new Date(startAt);
+  earliestCheckIn.setHours(earliestCheckIn.getHours() - 3);
+
+  if (now > endAt) {
+    return { label: 'Đã quá ca - chưa vào ca', className: 'bg-rose-100 text-rose-700', canCheckIn: false };
+  }
+  if (now < earliestCheckIn) {
+    return { label: 'Chưa tới giờ vào ca', className: 'bg-slate-100 text-slate-600', canCheckIn: false };
+  }
+  return { label: 'Có thể vào ca', className: 'bg-amber-100 text-amber-700', canCheckIn: true };
+}
+
 export default function ShiftsPage() {
   const { user } = useAuth();
   const role = getRoleKey(user?.roleName);
@@ -604,6 +648,9 @@ export default function ShiftsPage() {
   };
 
   const openRevenueDetails = async (row: ShiftWorkSummary) => {
+    if ((row.shiftType || activeShiftType) !== 'POS_COUNTER') {
+      return;
+    }
     setSelectedRevenueSummary(row);
     setRevenueDetails([]);
     setLoadingRevenueDetails(true);
@@ -621,6 +668,8 @@ export default function ShiftsPage() {
       setLoadingRevenueDetails(false);
     }
   };
+
+  const showRevenueColumns = activeShiftType === 'POS_COUNTER';
 
   return (
     <div className="space-y-6">
@@ -895,20 +944,30 @@ export default function ShiftsPage() {
               <tbody>
                 {filteredAssignments.map((item) => {
                   const isMine = item.userId === currentUserId;
+                  const shiftState = getShiftDisplayState(item);
                   return (
                     <tr key={item.id} className="border-t border-gray-100">
                       <td className="px-3 py-2">{item.shiftDate}</td>
                       <td className="px-3 py-2">{item.shiftTemplateName} ({item.startTime} - {item.endTime})</td>
                       {isManager && <td className="px-3 py-2">{item.userFullName}</td>}
-                      <td className="px-3 py-2">{item.status}</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${shiftState.className}`}>
+                          {shiftState.label}
+                        </span>
+                      </td>
                       <td className="px-3 py-2">{formatDateTime(item.checkInAt)}</td>
                       <td className="px-3 py-2">{formatDateTime(item.checkOutAt)}</td>
                       <td className="px-3 py-2 text-right">
                         <div className="inline-flex gap-2">
-                          {isMine && item.status === 'ASSIGNED' && (
+                          {isMine && item.status === 'ASSIGNED' && shiftState.canCheckIn && (
                             <button onClick={() => handleCheckIn(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-md bg-green-600 text-white px-2.5 py-1.5 text-xs hover:bg-green-700 disabled:opacity-60">
                               <LogIn size={14} /> Vào ca
                             </button>
+                          )}
+                          {isMine && item.status === 'ASSIGNED' && !shiftState.canCheckIn && (
+                            <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1.5 text-xs text-gray-500">
+                              {shiftState.label}
+                            </span>
                           )}
                           {isMine && item.status === 'CHECKED_IN' && (
                             <button onClick={() => handleCheckOut(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-md bg-orange-600 text-white px-2.5 py-1.5 text-xs hover:bg-orange-700 disabled:opacity-60">
@@ -1004,9 +1063,13 @@ export default function ShiftsPage() {
                     <th className="px-3 py-2 text-right">Giờ công</th>
                     <th className="px-3 py-2 text-right">Đi trễ</th>
                     <th className="px-3 py-2 text-right">Về sớm</th>
-                    <th className="px-3 py-2 text-right">Doanh thu trong ca</th>
-                    <th className="px-3 py-2 text-right">TB/ca hoàn thành</th>
-                    <th className="px-3 py-2 text-right">Doanh thu thu ngân tự xử lý</th>
+                    {showRevenueColumns && (
+                      <>
+                        <th className="px-3 py-2 text-right">Doanh thu trong ca</th>
+                        <th className="px-3 py-2 text-right">TB/ca hoàn thành</th>
+                        <th className="px-3 py-2 text-right">Doanh thu thu ngân tự xử lý</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1019,19 +1082,23 @@ export default function ShiftsPage() {
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalWorkedMinutes)}</td>
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalLateMinutes)}</td>
                       <td className="px-3 py-2 text-right">{formatMinutes(row.totalEarlyLeaveMinutes)}</td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => openRevenueDetails(row)}
-                          className="inline-flex items-center justify-end gap-1 rounded-md px-2 py-1 font-medium text-blue-700 hover:bg-blue-50 hover:text-blue-800"
-                          title="Xem chi tiết doanh thu từng ca"
-                        >
-                          <ReceiptText size={14} />
-                          {formatCurrency(row.totalRevenueDuringShift ?? 0)}
-                        </button>
-                      </td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.averageRevenuePerCompletedShift ?? 0)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalCashierRevenueDuringShift ?? 0)}</td>
+                      {showRevenueColumns && (
+                        <>
+                          <td className="px-3 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openRevenueDetails(row)}
+                              className="inline-flex items-center justify-end gap-1 rounded-md px-2 py-1 font-medium text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                              title="Xem chi tiết doanh thu từng ca"
+                            >
+                              <ReceiptText size={14} />
+                              {formatCurrency(row.totalRevenueDuringShift ?? 0)}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-right">{formatCurrency(row.averageRevenuePerCompletedShift ?? 0)}</td>
+                          <td className="px-3 py-2 text-right">{formatCurrency(row.totalCashierRevenueDuringShift ?? 0)}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                   <tr className="border-t border-gray-200 bg-gray-50 font-medium">
@@ -1042,9 +1109,13 @@ export default function ShiftsPage() {
                     <td className="px-3 py-2 text-right">{formatMinutes(summaryTotals.totalWorkedMinutes)}</td>
                     <td className="px-3 py-2 text-right">{formatMinutes(summaryTotals.totalLateMinutes)}</td>
                     <td className="px-3 py-2 text-right">{formatMinutes(summaryTotals.totalEarlyLeaveMinutes)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.totalRevenueDuringShift)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.averageRevenuePerCompletedShift)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.totalCashierRevenueDuringShift)}</td>
+                    {showRevenueColumns && (
+                      <>
+                        <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.totalRevenueDuringShift)}</td>
+                        <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.averageRevenuePerCompletedShift)}</td>
+                        <td className="px-3 py-2 text-right">{formatCurrency(summaryTotals.totalCashierRevenueDuringShift)}</td>
+                      </>
+                    )}
                   </tr>
                 </tbody>
               </table>
@@ -1153,7 +1224,7 @@ export default function ShiftsPage() {
                                         </td>
                                         <td className="px-3 py-2">{tx.cashierName || '—'}</td>
                                         <td className="px-3 py-2">
-                                          <div>{tx.tableNumber ? `Bàn ${tx.tableNumber}` : 'POS'}</div>
+                                          <div>{tx.tableNumber ? `${tx.tableNumber}` : 'POS'}</div>
                                           {tx.customerPhone && <div className="text-[11px] text-gray-500">{tx.customerPhone}</div>}
                                         </td>
                                         <td className="px-3 py-2">{tx.voucherCode || '—'}</td>
