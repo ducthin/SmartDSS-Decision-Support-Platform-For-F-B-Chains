@@ -1,11 +1,14 @@
 import { CheckCircle } from 'lucide-react';
 import { aboutHighlights, aboutImage, brandName } from '@/assets/coffee/content';
+import { useStoreLocation } from '@/hooks/useHomepageData';
 import Badge from '@/components/coffee/Badge';
 import Container from '@/components/coffee/Container';
 import ImageWrapper from '@/components/coffee/ImageWrapper';
 import SectionTitle from '@/components/coffee/SectionTitle';
 
 export default function AboutSection() {
+  const { location } = useStoreLocation();
+  const storeAddress = location?.address?.trim() || 'TP.HCM';
   return (
     <section
       id="about"
@@ -61,7 +64,7 @@ export default function AboutSection() {
             className="coffee-soft-shadow-lg relative z-10 rounded-[var(--coffee-radius-lg)]"
           />
           <Badge variant="dark" className="-mt-5 ml-5 relative z-20 shadow-lg">
-            Mở cửa phục vụ tại TP.HCM từ 2013
+            Mở cửa phục vụ tại {storeAddress} từ 2013
           </Badge>
 
           {/* Floating card */}

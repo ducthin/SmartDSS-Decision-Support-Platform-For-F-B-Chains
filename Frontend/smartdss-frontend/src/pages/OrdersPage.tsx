@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { menuService, categoryService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
 import { publicConfigService } from '@/services/publicConfigService';
@@ -6,7 +6,7 @@ import { paymentService } from '@/services/paymentService';
 import { loyaltyService } from '@/services/loyaltyService';
 import { voucherService } from '@/services/voucherService';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { MenuItem, OrderForm, PageResponse, Category, TaxPolicy, PaymentStatus, LoyaltyAccount, Voucher } from '@/types';
+import type { MenuItem, OrderForm, PageResponse, Category, TaxPolicy, PaymentStatus, LoyaltyAccount, Voucher, QrDiscountPreview } from '@/types';
 import { ShoppingCart, Plus, Minus, Trash2, Send, Search, Printer, Download, QrCode, Wallet, CheckCircle2, ReceiptText, Clock3, Banknote, Filter } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
@@ -33,6 +33,22 @@ interface CartItem {
   quantity: number;
   selectedSizeCode?: string;
   selectedToppingCodes?: string[];
+}
+
+interface PosDraftCartLine {
+  menuItemId: number;
+  quantity: number;
+  selectedSizeCode?: string;
+  selectedToppingCodes?: string[];
+}
+
+interface PosDraftState {
+  selectedCat: number | null;
+  customerPhone: string;
+  voucherCode: string;
+  selectedManualVoucherCodes: string[];
+  selectedPersonalVoucherCodes: string[];
+  cartLines: PosDraftCartLine[];
 }
 
 type PosPaymentMethod = 'CASH' | 'QR';
@@ -71,6 +87,8 @@ export default function OrdersPage() {
   );
 }
 
+const POS_DRAFT_STORAGE_KEY = 'smartdss_pos_draft_v1';
+
 function POSView() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -81,17 +99,23 @@ function POSView() {
   const [submitting, setSubmitting] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
+  const [selectedManualVoucherCodes, setSelectedManualVoucherCodes] = useState<string[]>([]);
+  const [selectedPersonalVoucherCodes, setSelectedPersonalVoucherCodes] = useState<string[]>([]);
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
   const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
   const [loyaltyError, setLoyaltyError] = useState('');
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
+  const [discountPreview, setDiscountPreview] = useState<QrDiscountPreview | null>(null);
+  const [loadingDiscountPreview, setLoadingDiscountPreview] = useState(false);
   const [paymentOrder, setPaymentOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>('CASH');
   const [paymentData, setPaymentData] = useState<CurrentPaymentData | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
   const [refreshingPayment, setRefreshingPayment] = useState(false);
   const [showCashConfirm, setShowCashConfirm] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [pendingDraftCartLines, setPendingDraftCartLines] = useState<PosDraftCartLine[] | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -106,6 +130,69 @@ function POSView() {
       }
     }).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(POS_DRAFT_STORAGE_KEY);
+      if (!raw) {
+        setDraftHydrated(true);
+        return;
+      }
+      const draft = JSON.parse(raw) as PosDraftState;
+      setSelectedCat(typeof draft.selectedCat === 'number' ? draft.selectedCat : null);
+      setCustomerPhone(draft.customerPhone || '');
+      setVoucherCode(draft.voucherCode || '');
+      setSelectedManualVoucherCodes(Array.isArray(draft.selectedManualVoucherCodes) ? draft.selectedManualVoucherCodes : []);
+      setSelectedPersonalVoucherCodes(Array.isArray(draft.selectedPersonalVoucherCodes) ? draft.selectedPersonalVoucherCodes : []);
+      setPendingDraftCartLines(Array.isArray(draft.cartLines) ? draft.cartLines : []);
+    } catch {
+      localStorage.removeItem(POS_DRAFT_STORAGE_KEY);
+    } finally {
+      setDraftHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingDraftCartLines || pendingDraftCartLines.length === 0 || menuItems.length === 0) return;
+    const restored: CartItem[] = [];
+    for (const line of pendingDraftCartLines) {
+      const item = menuItems.find((m) => m.id === line.menuItemId);
+      if (!item) continue;
+      const qty = Number.isFinite(line.quantity) ? Math.max(1, Math.floor(line.quantity)) : 1;
+      const selectedSizeCode = line.selectedSizeCode || undefined;
+      const selectedToppingCodes = Array.isArray(line.selectedToppingCodes) ? line.selectedToppingCodes : [];
+      restored.push({
+        key: drinkCartLineKey(item.id, selectedSizeCode, selectedToppingCodes),
+        menuItem: item,
+        quantity: qty,
+        selectedSizeCode,
+        selectedToppingCodes,
+      });
+    }
+    if (restored.length > 0) {
+      setCart(restored);
+    }
+    setPendingDraftCartLines(null);
+  }, [pendingDraftCartLines, menuItems]);
+
+  useEffect(() => {
+    if (!draftHydrated) return;
+    const cartLines: PosDraftCartLine[] = cart.map((c) => ({
+      menuItemId: c.menuItem.id,
+      quantity: c.quantity,
+      selectedSizeCode: c.selectedSizeCode,
+      selectedToppingCodes: c.selectedToppingCodes || [],
+    }));
+    const draft: PosDraftState = {
+      selectedCat,
+      customerPhone,
+      voucherCode,
+      selectedManualVoucherCodes,
+      selectedPersonalVoucherCodes,
+      cartLines,
+    };
+    localStorage.setItem(POS_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  }, [draftHydrated, selectedCat, customerPhone, voucherCode, selectedManualVoucherCodes, selectedPersonalVoucherCodes, cart]);
 
   const filteredItems = selectedCat ? menuItems.filter((m) => m.categoryId === selectedCat) : menuItems;
 
@@ -150,6 +237,9 @@ function POSView() {
   );
   const vat = calculateVatBreakdown(subtotal, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
   const debouncedPhone = useDebounce(customerPhone.trim(), 450);
+  const debouncedVoucherCode = useDebounce(voucherCode.trim().toUpperCase(), 300);
+  const debouncedSelectedManualVouchers = useDebounce(selectedManualVoucherCodes.join(','), 250);
+  const debouncedSelectedPersonalVouchers = useDebounce(selectedPersonalVoucherCodes.join(','), 250);
 
   useEffect(() => {
     if (!debouncedPhone) {
@@ -197,6 +287,93 @@ function POSView() {
       cancelled = true;
     };
   }, [debouncedPhone]);
+
+  useEffect(() => {
+    const availableCodeSet = new Set((availableVouchers || []).map((v) => v.code.toUpperCase()));
+    setSelectedPersonalVoucherCodes((prev) => prev.filter((code) => availableCodeSet.has(code)));
+  }, [availableVouchers]);
+
+  const parseVoucherCodes = (value: string): string[] =>
+    value
+      .split(/[,\s;]+/)
+      .map((s) =>
+        s
+          .trim()
+          .toUpperCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/Đ/g, 'D'),
+      )
+      .filter(Boolean);
+
+  const manualVoucherCodes = useMemo(() => parseVoucherCodes(voucherCode), [voucherCode]);
+
+  useEffect(() => {
+    setSelectedManualVoucherCodes((prev) => {
+      const available = new Set(manualVoucherCodes);
+      const kept = prev.filter((code) => available.has(code));
+      const next = [...kept];
+      manualVoucherCodes.forEach((code) => {
+        if (!next.includes(code)) next.push(code);
+      });
+      return next;
+    });
+  }, [manualVoucherCodes]);
+
+  const buildAppliedVoucherCodes = (): string[] => {
+    return [...new Set([...selectedManualVoucherCodes, ...selectedPersonalVoucherCodes])];
+  };
+
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setDiscountPreview(null);
+      setLoadingDiscountPreview(false);
+      return;
+    }
+
+    let cancelled = false;
+    const normalizedPhone = debouncedPhone;
+    const hasValidPhone = CUSTOMER_PHONE_REGEX.test(normalizedPhone);
+    const safePhone = hasValidPhone ? normalizedPhone : undefined;
+    const appliedVoucherCodes = [
+      ...new Set([
+        ...debouncedSelectedManualVouchers.split(',').filter(Boolean),
+        ...debouncedSelectedPersonalVouchers.split(',').filter(Boolean),
+      ]),
+    ];
+
+    setLoadingDiscountPreview(true);
+    orderService
+      .previewDiscount({
+        subtotal,
+        voucherCode: appliedVoucherCodes.length > 0 ? appliedVoucherCodes.join(',') : undefined,
+        customerPhone: safePhone,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setDiscountPreview(res.data.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDiscountPreview(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingDiscountPreview(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subtotal, debouncedVoucherCode, debouncedPhone, debouncedSelectedManualVouchers, debouncedSelectedPersonalVouchers]);
+
+  const totalDiscountAmount = discountPreview?.totalDiscountAmount || 0;
+  const calendarDiscountAmount = discountPreview?.calendarDiscountAmount || 0;
+  const voucherDiscountAmount = discountPreview?.voucherDiscountAmount || 0;
+  const finalAmount = totalDiscountAmount > 0 ? (discountPreview?.finalAmount ?? vat.grossAmount) : vat.grossAmount;
 
   const openPaymentModal = (order: Order) => {
     setPaymentOrder(order);
@@ -311,7 +488,7 @@ function POSView() {
     if (cart.length === 0) return toast.error('Giỏ hàng trống');
     setSubmitting(true);
     const normalizedPhone = customerPhone.trim();
-    const normalizedVoucherCode = voucherCode.trim().toUpperCase();
+    const normalizedVoucherCode = buildAppliedVoucherCodes().join(',');
     const orderForm: OrderForm = {
       customerPhone: normalizedPhone || undefined,
       voucherCode: normalizedVoucherCode || undefined,
@@ -333,6 +510,9 @@ function POSView() {
       setCart([]);
       setCustomerPhone('');
       setVoucherCode('');
+      setSelectedManualVoucherCodes([]);
+      setSelectedPersonalVoucherCodes([]);
+      localStorage.removeItem(POS_DRAFT_STORAGE_KEY);
       openPaymentModal(completedOrder);
     } catch (error) {
       if (createdOrder) {
@@ -416,7 +596,7 @@ function POSView() {
         </div>
 
         <div className="mb-3">
-          <label htmlFor="pos-voucher-code" className="mb-1 block text-xs font-medium text-gray-600">Mã voucher (tùy chọn)</label>
+          <label htmlFor="pos-voucher-code" className="mb-1 block text-xs font-medium text-gray-600">Mã voucher (tùy chọn, nhập nhiều mã cách nhau bởi dấu phẩy)</label>
           <input
             id="pos-voucher-code"
             type="text"
@@ -425,6 +605,49 @@ function POSView() {
             placeholder="Ví dụ: KHAITRUONG10"
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
+          {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && voucherDiscountAmount > 0 && (
+            <p className="mt-1 text-xs text-emerald-700">
+              Đã áp dụng voucher{' '}
+              <span className="font-semibold">
+                {(discountPreview?.voucherCodes && discountPreview.voucherCodes.length > 0
+                  ? discountPreview.voucherCodes
+                  : [discountPreview?.voucherCode, ...buildAppliedVoucherCodes()].filter(Boolean)
+                ).join(', ')}
+              </span>{' '}
+              · giảm {formatCurrency(voucherDiscountAmount)}
+            </p>
+          )}
+          {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && discountPreview?.voucherError && (
+            <p className="mt-1 text-xs text-amber-700">{discountPreview.voucherError}</p>
+          )}
+          {manualVoucherCodes.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-xs font-medium text-slate-700">Mã đã nhập</p>
+              <div className="flex flex-wrap gap-2">
+                {manualVoucherCodes.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => {
+                      setSelectedManualVoucherCodes((prev) => (
+                        prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+                      ));
+                    }}
+                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
+                      selectedManualVoucherCodes.includes(code)
+                        ? 'border-blue-300 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="font-semibold">{code}</span>
+                    <span className="ml-1 font-medium">
+                      {selectedManualVoucherCodes.includes(code) ? '(Đang sử dụng)' : '(Chưa dùng)'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {availableVouchers.length > 0 && (
             <div className="mt-2 space-y-1.5">
               <p className="text-xs font-medium text-emerald-700">Voucher riêng cho khách</p>
@@ -433,14 +656,26 @@ function POSView() {
                   <button
                     key={voucher.id}
                     type="button"
-                    onClick={() => setVoucherCode(voucher.code)}
-                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-left text-xs text-emerald-700 hover:bg-emerald-100"
+                    onClick={() => {
+                      const code = voucher.code.toUpperCase();
+                      setSelectedPersonalVoucherCodes((prev) => (
+                        prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+                      ));
+                    }}
+                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
+                      selectedPersonalVoucherCodes.includes(voucher.code.toUpperCase())
+                        ? 'border-blue-300 bg-blue-50 text-blue-700'
+                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    }`}
                   >
                     <span className="font-semibold">{voucher.code}</span>
                     <span className="ml-1">
                       {voucher.discountType === 'PERCENT'
                         ? `-${voucher.discountValue}%`
                         : `-${formatCurrency(voucher.discountValue)}`}
+                    </span>
+                    <span className="ml-1 font-medium">
+                      {selectedPersonalVoucherCodes.includes(voucher.code.toUpperCase()) ? '(Đang sử dụng)' : '(Chưa dùng)'}
                     </span>
                   </button>
                 ))}
@@ -504,9 +739,37 @@ function POSView() {
             <span className="text-gray-500">VAT ({taxPolicy.vatRatePercent}%)</span>
             <span className="font-medium text-gray-700">{formatCurrency(vat.vatAmount)}</span>
           </div>
+          {loadingDiscountPreview && (
+            <div className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+              Đang tính ưu đãi...
+            </div>
+          )}
+          {totalDiscountAmount > 0 && (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              <div className="flex items-center justify-between">
+                <span>Ưu đãi áp dụng</span>
+                <span className="font-semibold">-{formatCurrency(totalDiscountAmount)}</span>
+              </div>
+              {calendarDiscountAmount > 0 && (
+                <p className="mt-1 text-xs text-emerald-700">
+                  {discountPreview?.calendarDiscountLabel || 'Sự kiện/ngày lễ'}: -{formatCurrency(calendarDiscountAmount)}
+                </p>
+              )}
+              {voucherDiscountAmount > 0 && (
+                <p className="mt-1 text-xs text-emerald-700">
+                  Voucher{' '}
+                  {(discountPreview?.voucherCodes && discountPreview.voucherCodes.length > 0
+                    ? discountPreview.voucherCodes.join(', ')
+                    : [discountPreview?.voucherCode, ...buildAppliedVoucherCodes()].filter(Boolean).join(', ')
+                  )}
+                  : -{formatCurrency(voucherDiscountAmount)}
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex items-center justify-between mb-4">
             <span className="font-medium">Tổng thanh toán</span>
-            <span className="text-xl font-bold text-blue-600">{formatCurrency(vat.grossAmount)}</span>
+            <span className="text-xl font-bold text-blue-600">{formatCurrency(finalAmount)}</span>
           </div>
           <button onClick={placeOrder} disabled={cart.length === 0 || submitting}
             className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition">

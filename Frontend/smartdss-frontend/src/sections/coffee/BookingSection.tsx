@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarDays, Check, Clock, Phone, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Container from '@/components/coffee/Container';
 import SectionTitle from '@/components/coffee/SectionTitle';
+import { submitTableBooking } from '@/services/homepageApi';
 
 const TIME_SLOTS = [
-  '8:00', '9:00', '10:00', '11:00', '12:00', '13:00',
+  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
   '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00',
 ];
 
@@ -13,7 +15,7 @@ interface BookingForm {
   phone: string;
   date: string;
   time: string;
-  guests: string;
+  guests: number;
   note: string;
 }
 
@@ -23,20 +25,67 @@ export default function BookingSection() {
     phone: '',
     date: '',
     time: '',
-    guests: '2',
+    guests: 2,
     note: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const normalizePhone = (raw: string) => {
+    const cleaned = raw.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+84')) return `0${cleaned.slice(3)}`;
+    if (cleaned.startsWith('84') && cleaned.length > 9) return `0${cleaned.slice(2)}`;
+    return cleaned;
+  };
+
+  const isValidPhone = (phone: string) => /^0\d{9,10}$/.test(phone);
+
+  const resetForm = () => {
+    setForm({
+      name: '',
+      phone: '',
+      date: '',
+      time: '',
+      guests: 2,
+      note: '',
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    const normalizedPhone = normalizePhone(form.phone);
+    if (!isValidPhone(normalizedPhone)) {
+      toast.error('Số điện thoại không hợp lệ');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitTableBooking({
+        customerName: form.name.trim(),
+        customerPhone: normalizedPhone,
+        bookingDate: form.date,
+        bookingTime: form.time,
+        guestCount: form.guests,
+        note: form.note.trim() || undefined,
+      });
+      setSubmitted(true);
+      resetForm();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể đặt bàn lúc này';
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const set = (field: keyof BookingForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === 'guests' ? Number(e.target.value) : e.target.value,
+    }));
 
   const inputCls = 'w-full rounded-[var(--coffee-radius-sm)] border border-[rgba(107,80,64,0.2)] bg-white px-3.5 py-2.5 text-sm text-[var(--coffee-dark)] placeholder-[rgba(26,14,7,0.38)] outline-none transition focus:border-[var(--coffee-primary)] focus:ring-2 focus:ring-[rgba(107,80,64,0.12)]';
   const labelCls = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[rgba(26,14,7,0.6)]';
@@ -68,7 +117,7 @@ export default function BookingSection() {
                 {
                   icon: <Phone className="h-5 w-5 text-[var(--coffee-accent)]" />,
                   title: 'Liên hệ trực tiếp',
-                  desc: '(+84) 28 3821 0138\nhello@beanandbrew.vn',
+                  desc: '(+84) 0123456789\nC2SE.21@gmail.com',
                 },
               ].map((item) => (
                 <div
@@ -184,7 +233,7 @@ export default function BookingSection() {
                     {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                       <option key={n} value={n}>{n} người</option>
                     ))}
-                    <option value="11+">Trên 10 người (nhóm lớn)</option>
+                    <option value={11}>Trên 10 người (nhóm lớn)</option>
                   </select>
                 </div>
 
@@ -202,9 +251,10 @@ export default function BookingSection() {
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="coffee-interactive w-full rounded-[var(--coffee-radius-sm)] bg-gradient-to-r from-[var(--coffee-primary)] to-[var(--coffee-dark)] py-3 text-sm font-bold text-white shadow-md shadow-[rgba(107,80,64,0.3)] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)] focus-visible:ring-offset-2"
                 >
-                  Xác nhận đặt bàn
+                  {submitting ? 'Đang gửi...' : 'Xác nhận đặt bàn'}
                 </button>
 
                 <p className="text-center text-xs text-[rgba(26,14,7,0.48)]">

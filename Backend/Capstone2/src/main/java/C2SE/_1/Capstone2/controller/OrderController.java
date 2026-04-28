@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.controller;
 import C2SE._1.Capstone2.dto.ApiResponse;
 import C2SE._1.Capstone2.dto.OrderDTO;
 import C2SE._1.Capstone2.dto.PageResponse;
+import C2SE._1.Capstone2.dto.QrDiscountPreviewDTO;
 import C2SE._1.Capstone2.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,14 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderDTO>> createOrder(@Valid @RequestBody OrderDTO orderDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(orderService.createOrder(orderDTO)));
+    }
+
+    @GetMapping("/discount-preview")
+    public ResponseEntity<ApiResponse<QrDiscountPreviewDTO>> previewDiscount(
+            @RequestParam java.math.BigDecimal subtotal,
+            @RequestParam(required = false) String voucherCode,
+            @RequestParam(required = false) String customerPhone) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.previewDiscount(subtotal, voucherCode, customerPhone)));
     }
 
     @PutMapping("/{id}/status")

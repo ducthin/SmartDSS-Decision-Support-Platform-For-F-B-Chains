@@ -23,6 +23,7 @@ const UsersPage = lazy(() => import('@/pages/UsersPage'));
 const RecipesPage = lazy(() => import('@/pages/RecipesPage'));
 const ExternalFactorsPage = lazy(() => import('@/pages/ExternalFactorsPage'));
 const TablesPage = lazy(() => import('@/pages/TablesPage'));
+const BookingsPage = lazy(() => import('@/pages/BookingsPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const QrOrderPage = lazy(() => import('@/pages/QrOrderPage'));
 const AIPredictionPage = lazy(() => import('@/pages/AIPredictionPage'));
@@ -67,6 +68,7 @@ function App() {
               <Route path="/feedbacks" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><FeedbacksPage /></ProtectedRoute>} />
               <Route path="/external-factors" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
               <Route path="/tables" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><TablesPage /></ProtectedRoute>} />
+              <Route path="/bookings" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><BookingsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute roles={['ADMIN']}><SettingsPage /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
               <Route path="/admin/notification-test" element={<ProtectedRoute roles={['ADMIN']}><NotificationTestPage /></ProtectedRoute>} />

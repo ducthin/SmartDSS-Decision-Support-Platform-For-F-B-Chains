@@ -3,6 +3,7 @@ package C2SE._1.Capstone2.service.impl;
 import C2SE._1.Capstone2.dto.OrderDTO;
 import C2SE._1.Capstone2.dto.OrderItemDTO;
 import C2SE._1.Capstone2.dto.PageResponse;
+import C2SE._1.Capstone2.dto.QrDiscountPreviewDTO;
 import C2SE._1.Capstone2.entity.*;
 import C2SE._1.Capstone2.exception.BadRequestException;
 import C2SE._1.Capstone2.exception.InsufficientStockException;
@@ -147,7 +148,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(orderItems);
         order.setSubtotalAmount(subtotalAmount);
         order.setDiscountAmount(discountResult.totalDiscountAmount());
-        order.setVoucherCode(discountResult.normalizedVoucherCode());
+        order.setVoucherCode(discountResult.normalizedVoucherCodesJoined());
         order.setPromotionNote(discountResult.promotionNote());
         order.setTotalAmount(finalTotalAmount);
 
@@ -157,6 +158,50 @@ public class OrderServiceImpl implements OrderService {
             messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
         }
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QrDiscountPreviewDTO previewDiscount(BigDecimal subtotal, String voucherCode, String customerPhone) {
+        BigDecimal safeSubtotal = subtotal == null ? BigDecimal.ZERO : subtotal.max(BigDecimal.ZERO);
+        try {
+            OrderDiscountService.DiscountResult discountResult = orderDiscountService.preview(
+                    safeSubtotal,
+                    voucherCode,
+                    normalizeCustomerPhone(customerPhone),
+                    LocalDate.now());
+            BigDecimal finalAmount = safeSubtotal.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
+            return QrDiscountPreviewDTO.builder()
+                    .subtotalAmount(safeSubtotal)
+                    .calendarDiscountPercent(discountResult.calendarDiscountPercent())
+                    .calendarDiscountLabel(discountResult.calendarDiscountLabel())
+                    .calendarDiscountAmount(discountResult.calendarDiscountAmount())
+                    .voucherDiscountAmount(discountResult.voucherDiscountAmount())
+                    .totalDiscountAmount(discountResult.totalDiscountAmount())
+                    .finalAmount(finalAmount)
+                    .voucherCode(discountResult.normalizedVoucherCode())
+                    .voucherCodes(discountResult.normalizedVoucherCodes())
+                    .promotionNote(discountResult.promotionNote())
+                    .build();
+        } catch (BadRequestException ex) {
+            OrderDiscountService.DiscountResult calendarOnly = orderDiscountService.preview(
+                    safeSubtotal,
+                    null,
+                    normalizeCustomerPhone(customerPhone),
+                    LocalDate.now());
+            BigDecimal finalAmount = safeSubtotal.subtract(calendarOnly.totalDiscountAmount()).max(BigDecimal.ZERO);
+            return QrDiscountPreviewDTO.builder()
+                    .subtotalAmount(safeSubtotal)
+                    .calendarDiscountPercent(calendarOnly.calendarDiscountPercent())
+                    .calendarDiscountLabel(calendarOnly.calendarDiscountLabel())
+                    .calendarDiscountAmount(calendarOnly.calendarDiscountAmount())
+                    .voucherDiscountAmount(BigDecimal.ZERO)
+                    .totalDiscountAmount(calendarOnly.totalDiscountAmount())
+                    .finalAmount(finalAmount)
+                    .voucherError(ex.getMessage())
+                    .promotionNote(calendarOnly.promotionNote())
+                    .build();
+        }
     }
 
     @Override

@@ -53,6 +53,7 @@ export interface QrDiscountPreview {
   totalDiscountAmount: number;
   finalAmount: number;
   voucherCode?: string;
+  voucherCodes?: string[];
   voucherError?: string;
   promotionNote?: string;
 }
@@ -62,6 +63,30 @@ export interface TelegramLinkStatus {
   phone?: string;
   telegramUsername?: string;
   telegramFullName?: string;
+}
+
+export type BookingStatus = 'NEW' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+
+export interface PublicTableBookingRequest {
+  customerName: string;
+  customerPhone: string;
+  bookingDate: string;
+  bookingTime: string;
+  guestCount: number;
+  note?: string;
+}
+
+export interface TableBooking {
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  bookingDate: string;
+  bookingTime: string;
+  guestCount: number;
+  note?: string;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Paginated response

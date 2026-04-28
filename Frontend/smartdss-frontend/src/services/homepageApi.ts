@@ -66,6 +66,25 @@ export interface BestProductDTO {
   totalRevenue: number;
 }
 
+export interface PublicPromotionDTO {
+  id: string;
+  sourceType: 'EVENT' | 'HOLIDAY' | 'VOUCHER' | string;
+  badge: string;
+  title: string;
+  description?: string;
+  discountLabel?: string;
+  validUntil?: string;
+}
+
+export interface PublicTableBookingRequestDTO {
+  customerName: string;
+  customerPhone: string;
+  bookingDate: string;
+  bookingTime: string;
+  guestCount: number;
+  note?: string;
+}
+
 // ─── Generic fetcher ────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string): Promise<T> {
@@ -77,6 +96,19 @@ async function apiFetch<T>(path: string): Promise<T> {
   }
   const json = await res.json();
   // Backend wraps response: { success: true, data: T }
+  return (json?.data ?? json) as T;
+}
+
+async function apiPost<T, P>(path: string, payload: P): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json?.message || `API error ${res.status} on ${path}`);
+  }
   return (json?.data ?? json) as T;
 }
 
@@ -101,3 +133,11 @@ export const fetchStoreLocation = (): Promise<StoreLocationDTO> =>
 /** GET /api/v1/reports/best-products — top selling items by quantity */
 export const fetchBestProducts = (): Promise<BestProductDTO[]> =>
   apiFetch<BestProductDTO[]>('/api/v1/reports/best-products');
+
+/** GET /api/v1/public/home/promotions — real promotions for homepage */
+export const fetchHomepagePromotions = (): Promise<PublicPromotionDTO[]> =>
+  apiFetch<PublicPromotionDTO[]>('/api/v1/public/home/promotions');
+
+/** POST /api/v1/public/home/bookings — public booking request */
+export const submitTableBooking = (payload: PublicTableBookingRequestDTO) =>
+  apiPost('/api/v1/public/home/bookings', payload);

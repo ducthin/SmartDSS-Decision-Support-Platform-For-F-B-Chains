@@ -34,8 +34,8 @@ export default function FooterSection() {
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
             {[
               { icon: <MapPin className="h-4 w-4 text-[var(--coffee-accent)]" />, text: storeAddress },
-              { icon: <Phone className="h-4 w-4 text-[var(--coffee-accent)]" />, text: '(+84) 28 3821 0138' },
-              { icon: <Mail className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'hello@beanandbrew.vn' },
+              { icon: <Phone className="h-4 w-4 text-[var(--coffee-accent)]" />, text: '(+84) 0123456789' },
+              { icon: <Mail className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'C2SE.21@gmail.com' },
               { icon: <Clock className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'T2–T6 8h–22h · T7–CN 9h–21h' },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-[rgba(243,228,208,0.8)]">
@@ -107,7 +107,7 @@ export default function FooterSection() {
             <div className="space-y-2 text-sm text-[rgba(243,228,208,0.82)]">
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--coffee-accent)]" />
-                <span>42 Đường Grind, Quận 1, TP. Hồ Chí Minh</span>
+                <span>{storeAddress}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 shrink-0 text-[var(--coffee-accent)]" />
@@ -115,11 +115,11 @@ export default function FooterSection() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 shrink-0 text-[var(--coffee-accent)]" />
-                <span>(+84) 28 3821 0138</span>
+                <span>(+84) 0123456789</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 shrink-0 text-[var(--coffee-accent)]" />
-                <span>hello@beanandbrew.vn</span>
+                <span>C2SE.21@gmail.com</span>
               </div>
             </div>
 

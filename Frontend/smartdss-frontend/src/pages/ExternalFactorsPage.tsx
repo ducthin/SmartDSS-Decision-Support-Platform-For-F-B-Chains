@@ -60,6 +60,11 @@ const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const CUSTOMER_PHONE_REGEX = /^[+0-9][0-9]{8,19}$/;
 
 type Tab = 'weather' | 'calendar' | 'vouchers' | 'loyalty';
+type VoucherState = {
+  label: string;
+  className: string;
+  reason?: string;
+};
 
 const emptyEventForm: EventForm = {
   name: '', description: '', eventType: 'FESTIVAL', startDate: '', endDate: '',
@@ -144,6 +149,40 @@ export default function ExternalFactorsPage() {
 
   const formatDateTime = (value?: string) =>
     value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có';
+
+  const getVoucherState = (voucher: Voucher): VoucherState => {
+    const now = Date.now();
+    const validFromMs = voucher.validFrom ? new Date(voucher.validFrom).getTime() : null;
+    const validToMs = voucher.validTo ? new Date(voucher.validTo).getTime() : null;
+    const usedCount = voucher.usedCount || 0;
+    const usageLimit = voucher.usageLimit ?? null;
+
+    if (!voucher.active) {
+      return { label: 'Tạm dừng', className: 'bg-gray-100 text-gray-600' };
+    }
+    if (validFromMs && now < validFromMs) {
+      return {
+        label: 'Chưa hiệu lực',
+        className: 'bg-amber-100 text-amber-700',
+        reason: `Bắt đầu: ${new Date(voucher.validFrom as string).toLocaleString('vi-VN')}`,
+      };
+    }
+    if (validToMs && now > validToMs) {
+      return {
+        label: 'Hết hạn',
+        className: 'bg-rose-100 text-rose-700',
+        reason: `Hết hạn: ${new Date(voucher.validTo as string).toLocaleString('vi-VN')}`,
+      };
+    }
+    if (usageLimit !== null && usedCount >= usageLimit) {
+      return {
+        label: 'Hết lượt',
+        className: 'bg-orange-100 text-orange-700',
+        reason: `Đã dùng ${usedCount}/${usageLimit} lượt`,
+      };
+    }
+    return { label: 'Hoạt động', className: 'bg-green-100 text-green-700' };
+  };
 
   const todayStr = toLocalDateStr(new Date());
 
@@ -711,7 +750,9 @@ export default function ExternalFactorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {vouchers.map((v) => (
+                  {vouchers.map((v) => {
+                    const state = getVoucherState(v);
+                    return (
                     <tr key={v.id} className="border-b border-gray-100 align-top">
                       <td className="px-2 py-2 font-semibold text-indigo-700">{v.code}</td>
                       <td className="px-2 py-2">
@@ -736,9 +777,10 @@ export default function ExternalFactorsPage() {
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${v.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {v.active ? 'Hoạt động' : 'Tạm dừng'}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${state.className}`}>
+                          {state.label}
                         </span>
+                        {state.reason && <p className="mt-1 text-xs text-gray-500">{state.reason}</p>}
                       </td>
                       <td className="px-2 py-2">
                         {(v.usedCount || 0).toLocaleString('vi-VN')}
@@ -753,7 +795,8 @@ export default function ExternalFactorsPage() {
                         </td>
                       )}
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -102,12 +102,6 @@ export default function NavbarSection() {
 
           {/* ── Desktop actions ── */}
           <div className="hidden items-center gap-2 xl:flex">
-            <Link
-              to="/login"
-              className="coffee-interactive whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium text-[var(--coffee-primary)] hover:bg-[rgba(107,80,64,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)]"
-            >
-              Nhân viên
-            </Link>
             <Button href="#booking" size="sm">
               Đặt bàn ngay
             </Button>
@@ -165,13 +159,6 @@ export default function NavbarSection() {
               })}
             </nav>
             <div className="mt-2 space-y-2 border-t border-[rgba(107,80,64,0.1)] pt-2.5">
-              <Link
-                to="/login"
-                className="coffee-interactive block rounded-lg px-3 py-2 text-sm font-medium text-[var(--coffee-primary)] hover:bg-[rgba(107,80,64,0.06)]"
-                onClick={() => setMobileOpen(false)}
-              >
-                Đăng nhập nhân viên
-              </Link>
               <Button href="#booking" size="sm" fullWidth onClick={() => setMobileOpen(false)}>
                 Đặt bàn ngay
               </Button>

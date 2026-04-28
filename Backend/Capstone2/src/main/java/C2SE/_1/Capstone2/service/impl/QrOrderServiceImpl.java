@@ -141,6 +141,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                 .totalDiscountAmount(discountResult.totalDiscountAmount())
                 .finalAmount(finalAmount)
                 .voucherCode(discountResult.normalizedVoucherCode())
+                .voucherCodes(discountResult.normalizedVoucherCodes())
                 .voucherError(voucherError)
                 .promotionNote(discountResult.promotionNote())
                 .build();
@@ -207,7 +208,7 @@ public class QrOrderServiceImpl implements QrOrderService {
         order.setOrderItems(orderItems);
         order.setSubtotalAmount(subtotalAmount);
         order.setDiscountAmount(discountResult.totalDiscountAmount());
-        order.setVoucherCode(discountResult.normalizedVoucherCode());
+        order.setVoucherCode(discountResult.normalizedVoucherCodesJoined());
         order.setPromotionNote(discountResult.promotionNote());
         order.setTotalAmount(finalTotalAmount);
 

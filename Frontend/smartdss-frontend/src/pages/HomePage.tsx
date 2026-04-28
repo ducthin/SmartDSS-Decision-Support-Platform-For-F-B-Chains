@@ -1,14 +1,19 @@
 import { useEffect } from 'react';
 import CoffeeShopPage from '@/pages/CoffeeShopPage';
+import { useStoreLocation } from '@/hooks/useHomepageData';
 
-const HOME_TITLE = 'Bean & Brew — Đồ uống craft · Bánh tươi · TP Đà Nẵng';
-const HOME_DESCRIPTION =
-  'Đồ uống craft, bánh lò và món nhẹ tại TP Đà Nẵng — không gian ấm, thực đơn đổi theo mùa. Mang đi, đặt nhóm và tiệc nhỏ.';
+const DEFAULT_LOCATION = 'TP.HCM';
 
 export default function HomePage() {
+  const { location } = useStoreLocation();
+  const locationText = location?.address?.trim() || DEFAULT_LOCATION;
+
   useEffect(() => {
+    const homeTitle = `Bean & Brew — Đồ uống craft · Bánh tươi · ${locationText}`;
+    const homeDescription =
+      `Đồ uống craft, bánh lò và món nhẹ tại ${locationText} — không gian ấm, thực đơn đổi theo mùa. Mang đi, đặt nhóm và tiệc nhỏ.`;
     const previousTitle = document.title;
-    document.title = HOME_TITLE;
+    document.title = homeTitle;
 
     let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     const addedMeta = !meta;
@@ -19,7 +24,7 @@ export default function HomePage() {
       meta.setAttribute('name', 'description');
       document.head.appendChild(meta);
     }
-    meta.setAttribute('content', HOME_DESCRIPTION);
+    meta.setAttribute('content', homeDescription);
 
     return () => {
       document.title = previousTitle;
@@ -29,7 +34,7 @@ export default function HomePage() {
         meta?.setAttribute('content', previousDesc);
       }
     };
-  }, []);
+  }, [locationText]);
 
   return <CoffeeShopPage />;
 }

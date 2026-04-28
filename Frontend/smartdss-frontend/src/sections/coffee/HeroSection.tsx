@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, MapPin, Sparkles, Star, TrendingUp, Zap } from 'lucide-react';
 import { heroImage, heroStats, trustStripItems } from '@/assets/coffee/content';
+import { useStoreLocation } from '@/hooks/useHomepageData';
 import Container from '@/components/coffee/Container';
 
 export default function HeroSection() {
   const stripDoubled = [...trustStripItems, ...trustStripItems];
   const [visible, setVisible] = useState(false);
+  const { location } = useStoreLocation();
+  const storeAddress = location?.address?.trim() || '42 Đường Grind, Quận 1, TP.HCM';
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 100);
@@ -87,7 +90,7 @@ export default function HeroSection() {
               style={{ transitionDelay: '200ms' }}
             >
               Đồ uống craft pha tay, bánh handmade và món brunch tươi ngon — chuẩn bị
-              có chủ đích, phục vụ trong không gian ấm và gọn giữa lòng TP.HCM.
+              có chủ đích, phục vụ trong không gian ấm và gọn giữa lòng thành phố
             </p>
 
             {/* CTA Buttons */}
@@ -116,7 +119,7 @@ export default function HeroSection() {
               style={{ transitionDelay: '400ms' }}
             >
               <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--coffee-accent)]" />
-              42 Đường Grind, Quận 1, TP. Hồ Chí Minh
+              {storeAddress}
             </div>
           </div>
 
@@ -146,7 +149,7 @@ export default function HeroSection() {
               { icon: <Zap className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'Đặt qua QR — nhận tại bàn' },
               { icon: <Star className="h-4 w-4 text-[var(--coffee-accent)]" />, text: '98% khách hàng hài lòng' },
               { icon: <TrendingUp className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'Thực đơn cập nhật theo mùa' },
-              { icon: <MapPin className="h-4 w-4 text-[var(--coffee-accent)]" />, text: 'Quận 1, TP.HCM · Mở mỗi ngày' },
+              { icon: <MapPin className="h-4 w-4 text-[var(--coffee-accent)]" />, text: `${storeAddress} · Mở mỗi ngày` },
             ].map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-[rgba(26,14,7,0.78)]">
                 {f.icon}

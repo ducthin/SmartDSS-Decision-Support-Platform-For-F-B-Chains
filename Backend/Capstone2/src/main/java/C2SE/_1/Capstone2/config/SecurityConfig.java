@@ -62,6 +62,8 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/config/tax").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/home/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/home/bookings").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/qr/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/public/qr/**").permitAll()
                         .requestMatchers("/api/v1/public/telegram/**").permitAll()
@@ -169,6 +171,10 @@ public class SecurityConfig {
 
                         // Invoice requests - ADMIN, MANAGER
                         .requestMatchers("/api/v1/invoice-requests/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+
+                        // Table bookings - ADMIN, MANAGER
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookings/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/bookings/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
 
                         // Customer feedbacks - ADMIN, MANAGER
                         .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
