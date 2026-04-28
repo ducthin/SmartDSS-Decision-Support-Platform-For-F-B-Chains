@@ -19,7 +19,13 @@ const ratioStyles: Record<Ratio, string> = {
 
 export default function ImageWrapper({ src, alt, ratio = 'landscape', className, imageClassName }: ImageWrapperProps) {
   return (
-    <div className={cn('group relative overflow-hidden rounded-xl bg-[var(--coffee-secondary)]', ratioStyles[ratio], className)}>
+    <div
+      className={cn(
+        'group relative overflow-hidden rounded-[var(--coffee-radius-md)] bg-[var(--coffee-secondary)]',
+        ratioStyles[ratio],
+        className,
+      )}
+    >
       <img
         src={src}
         alt={alt}

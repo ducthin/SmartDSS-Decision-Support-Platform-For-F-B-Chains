@@ -26,7 +26,8 @@ const TablesPage = lazy(() => import('@/pages/TablesPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const QrOrderPage = lazy(() => import('@/pages/QrOrderPage'));
 const AIPredictionPage = lazy(() => import('@/pages/AIPredictionPage'));
-const CoffeeShopPage = lazy(() => import('@/pages/CoffeeShopPage'));
+const HomePage = lazy(() => import('@/pages/HomePage'));
+const PublicMenuPage = lazy(() => import('@/pages/PublicMenuPage'));
 const NotificationTestPage = lazy(() => import('@/pages/NotificationTestPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
@@ -45,13 +46,15 @@ function App() {
       <AuthProvider>
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-gray-500">Đang tải trang...</div>}>
           <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/coffee-shop" element={<Navigate to="/" replace />} />
+            <Route path="/menu" element={<PublicMenuPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/qr/:token" element={<QrOrderPage />} />
-            <Route path="/coffee-shop" element={<CoffeeShopPage />} />
             <Route element={<MainLayout />}>
-              <Route path="/" element={<HomeRoute />} />
+              <Route path="/dashboard" element={<HomeRoute />} />
               <Route path="/categories" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><CategoriesPage /></ProtectedRoute>} />
-              <Route path="/menu" element={<MenuPage />} />
+              <Route path="/items" element={<MenuPage />} />
               <Route path="/recipes" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><RecipesPage /></ProtectedRoute>} />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/invoice-requests" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><InvoiceRequestsPage /></ProtectedRoute>} />

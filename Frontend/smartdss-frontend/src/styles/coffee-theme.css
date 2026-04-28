@@ -1,16 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,600&display=swap');
 
 :root {
-  --coffee-primary: #6f4e37;
-  --coffee-secondary: #f5e6d3;
-  --coffee-accent: #e4ac5c;
-  --coffee-dark: #3e2a1f;
+  --coffee-text-primary: #1a0e07;
+  --coffee-text-secondary: #ffffff;
+  --coffee-text-tertiary: #f3e4d0;
+  --coffee-text-inverse: #6b5040;
+  --coffee-surface-base: #0d0705;
+  --coffee-surface-muted: #fdf7f0;
+  --coffee-primary: #6b5040;
+  --coffee-secondary: #f3e4d0;
+  --coffee-accent: #c9a27a;
+  --coffee-dark: #1a0e07;
+  --coffee-shadow-1: rgba(26, 14, 7, 0.18) 0px 20px 40px -8px;
+  --coffee-radius-sm: 16px;
+  --coffee-radius-md: 22px;
+  --coffee-radius-lg: 28px;
 }
 
 .coffee-theme {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: var(--coffee-dark);
-  background-color: #fffdf9;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  font-weight: 400;
+  color: var(--coffee-text-primary);
+  background-color: var(--coffee-surface-muted);
 }
 
 .coffee-theme h1,
@@ -19,25 +32,26 @@
 .coffee-theme h4,
 .coffee-theme h5,
 .coffee-theme h6 {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.015em;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .coffee-soft-shadow {
-  box-shadow: 0 16px 40px -24px rgba(62, 42, 31, 0.35);
+  box-shadow: var(--coffee-shadow-1);
 }
 
 .coffee-soft-shadow-lg {
-  box-shadow: 0 28px 60px -30px rgba(62, 42, 31, 0.5);
+  box-shadow: rgba(26, 14, 7, 0.22) 0px 28px 56px -12px;
 }
 
 .coffee-grid-pattern {
-  background-image: radial-gradient(rgba(111, 78, 55, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(107, 80, 64, 0.07) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
 .coffee-interactive {
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+  transition: transform 400ms ease, box-shadow 400ms ease, background-color 400ms ease, color 400ms ease;
 }
 
 @keyframes fadeIn {
@@ -94,23 +108,50 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(228, 172, 92, 0.55);
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 162, 122, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(228, 172, 92, 0);
+    box-shadow: 0 0 0 10px rgba(201, 162, 122, 0);
   }
 }
 
 @keyframes bounceSteam {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  30% { transform: translateY(-6px) scaleY(1.1); }
-  60% { transform: translateY(-2px) scaleY(0.95); }
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  30% {
+    transform: translateY(-6px) scaleY(1.1);
+  }
+  60% {
+    transform: translateY(-2px) scaleY(0.95);
+  }
 }
 
 @keyframes rippleOut {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.8); opacity: 0; }
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 45s linear infinite;
 }
 
 .animate-slide-in-up {
@@ -127,4 +168,24 @@
 
 .animate-ripple {
   animation: rippleOut 1.6s ease-out infinite;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Hover lift utility */
+.hover-lift {
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: rgba(26, 14, 7, 0.18) 0px 24px 48px -10px;
 }

@@ -71,6 +71,13 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
+                        // ── Homepage public read-only endpoints (no auth required) ──
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menu/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feedbacks/stats").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/settings/store-location").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reports/best-products").permitAll()
+
                         // User management - ADMIN only
                         .requestMatchers("/api/v1/users/**").hasRole(RoleName.ADMIN.name())
 

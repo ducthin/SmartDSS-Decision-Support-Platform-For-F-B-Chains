@@ -10,7 +10,7 @@ import {
 
 const navItems = [
   // Tổng quan
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER'] },
 
   // Vận hành hằng ngày
   { path: '/orders', label: 'Đơn hàng', icon: ShoppingCart, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
@@ -18,7 +18,7 @@ const navItems = [
   { path: '/shifts', label: 'Ca làm', icon: CalendarClock, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/table-settlement', label: 'Quản lý Bàn', icon: Wallet, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/tables', label: 'Quản lý QR bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/menu', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/items', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/categories', label: 'Danh mục', icon: FolderTree, roles: ['ADMIN', 'MANAGER'] },
   { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },
   { path: '/inventory', label: 'Kho hàng', icon: Package, roles: ['ADMIN', 'MANAGER'] },
@@ -56,8 +56,9 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
         {filteredNav.map((item) => {
-          const isActive = location.pathname === item.path || 
-            (item.path !== '/' && location.pathname.startsWith(item.path));
+          const isActive =
+            location.pathname === item.path ||
+            (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
           return (
             <Link
               key={item.path}
@@ -113,8 +114,9 @@ export function MobileHeader() {
           <div className="w-64 bg-white h-full p-4 space-y-2" onClick={(e) => e.stopPropagation()}>
             <div className="text-xl font-bold text-blue-600 mb-6">SmartDSS</div>
             {filteredNav.map((item) => {
-              const isActive = location.pathname === item.path ||
-                (item.path !== '/' && location.pathname.startsWith(item.path));
+              const isActive =
+                location.pathname === item.path ||
+                (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
               return (
                 <Link key={item.path} to={item.path} onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium

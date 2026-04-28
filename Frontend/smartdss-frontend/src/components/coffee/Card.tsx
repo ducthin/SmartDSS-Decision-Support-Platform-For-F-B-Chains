@@ -11,8 +11,8 @@ interface CardProps extends HTMLAttributes<HTMLElement> {
 
 const variantStyles: Record<CardVariant, string> = {
   default: 'bg-white',
-  product: 'border border-[rgba(111,78,55,0.12)] bg-white',
-  testimonial: 'border border-[rgba(111,78,55,0.14)] bg-[#fffaf3]',
+  product: 'border border-[rgba(107,80,64,0.12)] bg-white',
+  testimonial: 'border border-[rgba(107,80,64,0.14)] bg-[#fffaf3]',
 };
 
 export default function Card({
@@ -28,7 +28,7 @@ export default function Card({
       className={cn(
         'coffee-soft-shadow coffee-interactive rounded-xl p-5',
         variantStyles[variant],
-        hover && 'hover:-translate-y-1 hover:shadow-[0_24px_48px_-30px_rgba(62,42,31,0.65)]',
+        hover && 'hover:-translate-y-1 hover:shadow-[0_24px_48px_-30px_rgba(26,14,7,0.45)]',
         className,
       )}
       {...props}

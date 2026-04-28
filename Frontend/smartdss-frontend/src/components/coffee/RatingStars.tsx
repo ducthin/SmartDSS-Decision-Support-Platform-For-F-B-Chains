@@ -26,9 +26,9 @@ export default function RatingStars({ rating, reviewCount, className }: RatingSt
           );
         })}
       </div>
-      <span className="text-xs text-[rgba(62,42,31,0.75)]">
-        {rating.toFixed(1)}
-        {typeof reviewCount === 'number' ? ` (${reviewCount})` : ''}
+      <span className="text-xs text-[rgba(26,14,7,0.75)]">
+        {rating.toFixed(1).replace('.', ',')}
+        {typeof reviewCount === 'number' ? ` · ${reviewCount} đánh giá` : ''}
       </span>
     </div>
   );

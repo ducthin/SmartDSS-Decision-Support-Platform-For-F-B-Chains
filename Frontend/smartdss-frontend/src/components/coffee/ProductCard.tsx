@@ -18,13 +18,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-[var(--coffee-dark)]">{product.name}</h3>
-        <p className="text-sm leading-relaxed text-[rgba(62,42,31,0.78)]">{product.description}</p>
+        <p className="text-sm leading-relaxed text-[rgba(26,14,7,0.78)]">{product.description}</p>
         <RatingStars rating={product.rating} reviewCount={product.reviewCount} />
       </div>
       <div className="mt-auto flex items-center justify-between gap-3">
         <span className="text-sm font-semibold tracking-wide text-[var(--coffee-primary)]">{product.price}</span>
-        <Button href="#menu" variant="outline" size="sm">
-          Order now
+        <Button href="#menu" variant="outline" size="sm" className="shrink-0">
+          Thêm vào giỏ
         </Button>
       </div>
     </Card>

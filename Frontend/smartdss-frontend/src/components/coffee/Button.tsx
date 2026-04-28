@@ -25,7 +25,7 @@ type NativeButtonProps = SharedProps &
 type ButtonProps = LinkButtonProps | NativeButtonProps;
 
 const baseStyles =
-  'coffee-interactive inline-flex items-center justify-center rounded-xl font-semibold tracking-wide focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--coffee-secondary)]';
+  'coffee-interactive inline-flex items-center justify-center rounded-[var(--coffee-radius-sm)] font-semibold tracking-wide focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--coffee-surface-muted)]';
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:

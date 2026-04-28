@@ -24,6 +24,7 @@ export interface MenuEntry {
 export interface MenuCategory {
   title: string;
   subtitle: string;
+  emoji: string;
   items: MenuEntry[];
 }
 
@@ -46,157 +47,327 @@ export interface FooterColumnData {
   links: FooterLink[];
 }
 
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  badge: string;
+  color: string;
+  bgColor: string;
+  icon: string;
+  validUntil?: string;
+}
+
+export interface GalleryImage {
+  id: string;
+  src: string;
+  alt: string;
+  caption: string;
+}
+
+/** Thương hiệu: đồ uống craft + ẩm thực nhẹ — không chỉ cà phê. */
+export const brandName = 'Bean & Brew';
+export const brandTagline = 'Đồ uống craft · Bánh tươi · Món nhẹ';
+
 export const navItems: NavItem[] = [
-  { label: 'Home', href: '#home' },
-  { label: 'Featured', href: '#featured' },
-  { label: 'About', href: '#about' },
-  { label: 'Menu', href: '#menu' },
-  { label: 'Reviews', href: '#testimonials' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Trang chủ', href: '#home' },
+  { label: 'Món nổi bật', href: '#featured' },
+  { label: 'Câu chuyện', href: '#about' },
+  { label: 'Thực đơn', href: '/menu' },
+  { label: 'Ưu đãi', href: '#promotions' },
+  { label: 'Đặt bàn', href: '#booking' },
+  { label: 'Liên hệ', href: '#contact' },
+];
+
+/** Dải thông điệp — lặp trong marquee */
+export const trustStripItems = [
+  'Nguyên liệu tươi mỗi ngày',
+  'Đồ uống pha tay',
+  'Bánh & món nhẹ handmade',
+  'Thực đơn thay đổi theo mùa',
+  'Giao nhanh nội thành',
+  'Ưu đãi đặt nhóm & tiệc nhỏ',
+  'Wi-Fi miễn phí',
+  'Không gian làm việc thoải mái',
+  'Phục vụ từ 8h – 22h',
 ];
 
 export const heroImage =
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1400&q=80';
+  'https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=1400&q=80';
 
 export const heroStats = [
-  { label: 'Craft recipes', value: '40+' },
-  { label: 'Beans origins', value: '12' },
-  { label: 'Daily visitors', value: '1.5K' },
+  { label: 'Món trong thực đơn', value: '40+' },
+  { label: 'Khách hàng mỗi tháng', value: '8K+' },
+  { label: 'Năm phục vụ', value: '12' },
+  { label: 'Đánh giá 5 sao', value: '98%' },
 ];
 
 export const featuredProducts: FeaturedProduct[] = [
   {
-    id: 'espresso-noir',
-    name: 'Espresso Noir',
-    description: 'Single-origin espresso layered with dark chocolate and toasted almond notes.',
-    price: '95.000 VND',
+    id: 'espresso-house',
+    name: 'Espresso House Đặc Trưng',
+    description:
+      'Blend rang vừa: thơm sô-cô-la, caramel hóa than — ly đậm cho buổi sáng hoặc sau bữa trưa.',
+    price: '55.000 ₫',
     image:
-      'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80',
-    tag: 'Best Seller',
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=900&q=80',
+    tag: 'Bán chạy',
     rating: 4.9,
-    reviewCount: 148,
+    reviewCount: 212,
   },
   {
-    id: 'caramel-cloud',
-    name: 'Caramel Cloud Latte',
-    description: 'Silky milk foam, caramel drizzle, and a smooth medium roast base.',
-    price: '110.000 VND',
+    id: 'tra-sa-gung',
+    name: 'Trà sả gừng mật ong',
+    description:
+      'Không caffeine: sả thơm, gừng ấm, mật ong hoa nhã — phù hợp cả trẻ em và khách giảm cà phê.',
+    price: '48.000 ₫',
     image:
-      'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=900&q=80',
-    tag: 'Seasonal',
+      'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=900&q=80',
+    tag: 'Không cafein',
     rating: 4.8,
-    reviewCount: 97,
+    reviewCount: 156,
   },
   {
-    id: 'velvet-mocha',
-    name: 'Velvet Mocha',
-    description: 'Premium cocoa, espresso, and cream with a whisper of cinnamon.',
-    price: '120.000 VND',
+    id: 'croissant-la-dua',
+    name: 'Croissant bơ lá dứa',
+    description:
+      'Men chậm qua đêm, bơ lạt, lớp lá dứa thơm — giòn bên ngoài, xốp bên trong, nướng theo lô nhỏ.',
+    price: '42.000 ₫',
     image:
-      'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=900&q=80',
+    tag: 'Mới ra lò',
     rating: 4.7,
-    reviewCount: 84,
+    reviewCount: 189,
   },
   {
-    id: 'cold-brew-reserve',
-    name: 'Cold Brew Reserve',
-    description: '18-hour brew extraction for crisp body and naturally sweet finish.',
-    price: '105.000 VND',
+    id: 'benedict-brunch',
+    name: 'Trứng Benedict bánh muffin',
+    description:
+      'Trứng chần lòng đào, sốt hollandaise béo vừa, giăm bông xông khói và salad nhỏ — set brunch đủ no.',
+    price: '185.000 ₫',
     image:
-      'https://images.unsplash.com/photo-1485808191679-5f86510681a2?auto=format&fit=crop&w=900&q=80',
-    tag: 'Limited',
+      'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=900&q=80',
+    tag: 'Brunch',
     rating: 4.9,
-    reviewCount: 126,
+    reviewCount: 94,
+  },
+  {
+    id: 'matcha-latte',
+    name: 'Matcha Latte Nhật Bản',
+    description:
+      'Matcha ceremony grade pha cùng sữa tươi hấp nóng — vị chát nhẹ, ngọt dịu, màu xanh bắt mắt.',
+    price: '72.000 ₫',
+    image:
+      'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=900&q=80',
+    tag: 'Đặc biệt',
+    rating: 4.8,
+    reviewCount: 178,
   },
 ];
 
 export const aboutImage =
-  'https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&w=1200&q=80';
+  'https://images.unsplash.com/photo-1453614512568-c4024d13c247?auto=format&fit=crop&w=1200&q=80';
 
 export const aboutHighlights = [
-  'Hand-selected beans sourced from small farms in Ethiopia, Colombia, and Vietnam.',
-  'Small-batch roasting for consistent flavor and aromatic depth in every cup.',
-  'A calm lounge inspired by Japanese minimal interiors and European coffee bars.',
+  ' Bếp và quầy bar cùng một triết lý: nguyên liệu rõ nguồn, chế biến tỉ mỉ, trình bày gọn gàng.',
+  ' Thực đơn xoay vòng theo mùa: trái cây địa phương, thảo mộc, và hạt rang từ đối tác tin cậy.',
+  ' Không gian vừa để làm việc nhẹ, vừa để họp nhóm — ấm, yên, có Wi-Fi tốc độ cao.',
+  ' Đặt hàng & thanh toán qua QR — không cần chờ nhân viên, nhận ngay tại bàn.',
 ];
 
 export const menuCategories: MenuCategory[] = [
   {
-    title: 'Signature Espresso',
-    subtitle: 'Bold and aromatic classics with a premium touch.',
+    title: 'Đồ uống signature',
+    subtitle: 'Cà phê, trà artisan, sinh tố và đồ lạnh — pha theo đơn.',
+    emoji: '☕',
     items: [
-      { name: 'Espresso Doppio', description: 'Double shot, rich crema', price: '70.000 VND' },
-      { name: 'Cortado Atelier', description: 'Equal parts espresso and steamed milk', price: '82.000 VND' },
-      { name: 'Brown Sugar Americano', description: 'Smooth bitterness with caramelized sweetness', price: '78.000 VND' },
+      { name: 'Espresso Đôi', description: 'Hai shot, crema dày', price: '65.000 ₫' },
+      { name: 'Latte lá dứa', description: 'Sữa tươi, siro lá dứa nhà làm', price: '58.000 ₫', tag: 'Phổ biến' },
+      { name: 'Cold Brew đá bào', description: 'Ủ lạnh 18 giờ, pha phin chậm', price: '62.000 ₫', tag: 'Mới' },
+      { name: 'Trà sả gừng mật ong', description: 'Sả, gừng tươi, mật ong hoa', price: '48.000 ₫' },
+      {
+        name: 'Sinh tố xoài sữa chua',
+        description: 'Xoài chín, sữa chua Hy Lạp, đá xay',
+        price: '62.000 ₫',
+      },
     ],
   },
   {
-    title: 'Milk Creations',
-    subtitle: 'Creamy profiles crafted for comfort and balance.',
+    title: 'Bánh & món ngọt',
+    subtitle: 'Bánh men, tart và bánh ngọt nhỏ mỗi ngày.',
+    emoji: '🥐',
     items: [
-      { name: 'Velvet Cappuccino', description: 'Fine foam with cocoa dust', price: '92.000 VND', tag: 'Popular' },
-      { name: 'Maple Oat Latte', description: 'Oat milk and maple syrup blend', price: '115.000 VND' },
-      { name: 'Honey Cinnamon Flat White', description: 'Silky milk with warm spice notes', price: '108.000 VND' },
+      { name: 'Croissant bơ lá dứa', description: 'Men chậm qua đêm, bơ lạt Pháp', price: '42.000 ₫', tag: 'Hot' },
+      { name: 'Tiramisu cốc', description: 'Mascarpone, cà phê cold brew nhà pha', price: '72.000 ₫' },
+      { name: 'Tart chanh merengue', description: 'Vỏ bơ giòn, chanh thanh, merengue nhẹ', price: '68.000 ₫', tag: 'Theo mùa' },
+      { name: 'Bánh mì bơ tỏi', description: 'Baguette giòn, bơ tỏi thảo mộc', price: '35.000 ₫' },
+      { name: 'Cookies chocolate chunk', description: 'Lò nướng tại chỗ, 3 chiếc', price: '45.000 ₫' },
     ],
   },
   {
-    title: 'Slow Bar Specials',
-    subtitle: 'Slow extraction methods for layered complexity.',
+    title: 'Món nhẹ & brunch',
+    subtitle: 'Ăn nhẹ không ngấy — phù hợp trưa vội hoặc tối muộn.',
+    emoji: '🍳',
     items: [
-      { name: 'V60 Geisha', description: 'Floral aroma with citrus finish', price: '140.000 VND', tag: 'Premium' },
-      { name: 'Chemex House Blend', description: 'Clean body, bright fruit acidity', price: '125.000 VND' },
-      { name: 'Cold Drip Reserve', description: '10-hour ice drip extraction', price: '132.000 VND' },
+      { name: 'Trứng Benedict bánh muffin', description: 'Trứng chần, sốt hollandaise, giăm bông', price: '185.000 ₫', tag: 'Brunch' },
+      { name: 'Sandwich gà nướng rau củ', description: 'Bánh mì sourdough, sốt yogurt thảo mộc', price: '125.000 ₫' },
+      { name: 'Salad quinoa rau mầm', description: 'Sốt chanh dâu, hạt giòn', price: '98.000 ₫', tag: 'Healthy' },
+      { name: 'Mì ý sốt kem nấm chay', description: 'Kem nấm aromat, tiêu đen, parmesan', price: '135.000 ₫', tag: 'Chay' },
     ],
+  },
+];
+
+export const promotions: Promotion[] = [
+  {
+    id: 'promo-1',
+    title: 'Combo Sáng Tiết Kiệm',
+    description: 'Đặt 1 đồ uống + 1 bánh — giảm ngay 20%. Áp dụng từ 8h–11h các ngày thường.',
+    badge: 'Giảm 20%',
+    color: '#6b5040',
+    bgColor: 'rgba(201,162,122,0.12)',
+    icon: '',
+    validUntil: '31/12/2025',
+  },
+  {
+    id: 'promo-2',
+    title: 'Nhóm Từ 4 Người',
+    description: 'Đặt bàn cho 4 người trở lên — miễn phí 1 set bánh ngọt theo mùa.',
+    badge: 'Tặng bánh',
+    color: '#5a7a3a',
+    bgColor: 'rgba(90,122,58,0.1)',
+    icon: '',
+    validUntil: '31/12/2025',
+  },
+  {
+    id: 'promo-3',
+    title: 'Thành Viên Mới',
+    description: 'Đăng ký số điện thoại lần đầu qua QR — nhận ngay voucher giảm 15K đơn tiếp theo.',
+    badge: '−15.000 ₫',
+    color: '#7a3a5a',
+    bgColor: 'rgba(122,58,90,0.08)',
+    icon: '',
+  },
+];
+
+export const galleryImages: GalleryImage[] = [
+  {
+    id: 'g1',
+    src: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+    alt: 'Không gian quán ấm cúng',
+    caption: 'Không gian ấm cúng',
+  },
+  {
+    id: 'g2',
+    src: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
+    alt: 'Pha chế espresso tại quầy bar',
+    caption: 'Pha chế thủ công',
+  },
+  {
+    id: 'g3',
+    src: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=800&q=80',
+    alt: 'Ly cà phê latte art đẹp mắt',
+    caption: 'Latte Art đặc trưng',
+  },
+  {
+    id: 'g4',
+    src: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80',
+    alt: 'Bánh croissant nướng tươi',
+    caption: 'Bánh handmade mỗi ngày',
+  },
+  {
+    id: 'g5',
+    src: 'https://images.unsplash.com/photo-1481833761820-0509d3217039?auto=format&fit=crop&w=800&q=80',
+    alt: 'Set brunch đầy đủ tại quán',
+    caption: 'Brunch cuối tuần',
+  },
+  {
+    id: 'g6',
+    src: 'https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&w=800&q=80',
+    alt: 'Khu ngồi ngoài trời xanh mát',
+    caption: 'Góc ngoài trời',
   },
 ];
 
 export const testimonials: Testimonial[] = [
   {
     id: 't1',
-    name: 'An Nguyen',
-    role: 'Art Director',
+    name: 'Minh Anh',
+    role: 'TP. Hồ Chí Minh',
     quote:
-      'The atmosphere is elegant without trying too hard. Espresso Noir has become my weekly ritual.',
+      'Hay ngồi làm việc buổi sáng: espresso ổn định, croissant luôn nóng. Trưa gọi Benedict là đủ năng lượng cả ngày.',
     avatar:
       'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=256&q=80',
     rating: 5,
   },
   {
     id: 't2',
-    name: 'Liam Tran',
-    role: 'Product Designer',
+    name: 'Thu Hà',
+    role: 'Hà Nội',
     quote:
-      'Beautiful visual identity, friendly staff, and coffee quality that feels truly premium from first sip.',
+      'Con tôi uống trà sả gừng, mình uống latte — thực đơn rõ ràng, không gian yên. Giao đồ ăn vẫn giòn, ghi nhận.',
     avatar:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80',
     rating: 5,
   },
   {
     id: 't3',
-    name: 'Maria Le',
-    role: 'Entrepreneur',
+    name: 'Quang Dũng',
+    role: 'Đà Nẵng',
     quote:
-      'It is my go-to meeting spot. The menu feels curated and every drink arrives with great presentation.',
+      'Đặt tiệc sinh nhật nhỏ 12 người: bánh, đồ uống và món nhẹ được set sẵn. Đội ngũ lịch sự, đúng giờ.',
     avatar:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80',
-    rating: 4.8,
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
+    rating: 4.9,
+  },
+  {
+    id: 't4',
+    name: 'Lan Anh',
+    role: 'TP. Hồ Chí Minh',
+    quote:
+      'Đặt qua QR siêu tiện, không cần gọi nhân viên. Tiramisu và cold brew là combo tôi order mỗi lần ghé.',
+    avatar:
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=256&q=80',
+    rating: 5,
+  },
+  {
+    id: 't5',
+    name: 'Hữu Phước',
+    role: 'Bình Dương',
+    quote:
+      'Không gian cực kỳ phù hợp để làm việc remote. Wi-Fi nhanh, đồ uống ngon, nhân viên thân thiện. Highly recommend!',
+    avatar:
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=256&q=80',
+    rating: 5,
+  },
+  {
+    id: 't6',
+    name: 'Bảo Ngọc',
+    role: 'TP. Hồ Chí Minh',
+    quote:
+      'Latte lá dứa là món không thể thiếu mỗi sáng. Thực đơn theo mùa luôn có điều bất ngờ — tuần nào cũng muốn quay lại.',
+    avatar:
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=256&q=80',
+    rating: 5,
   },
 ];
 
 export const footerColumns: FooterColumnData[] = [
   {
-    title: 'Explore',
+    title: 'Khám phá',
     links: [
-      { label: 'Featured Drinks', href: '#featured' },
-      { label: 'Our Story', href: '#about' },
-      { label: 'Full Menu', href: '#menu' },
+      { label: 'Món nổi bật', href: '#featured' },
+      { label: 'Câu chuyện thương hiệu', href: '#about' },
+      { label: 'Toàn bộ thực đơn', href: '#menu' },
+      { label: 'Ưu đãi & khuyến mãi', href: '#promotions' },
     ],
   },
   {
-    title: 'Support',
+    title: 'Hỗ trợ',
     links: [
-      { label: 'Reservations', href: '#contact' },
-      { label: 'Delivery', href: '#menu' },
-      { label: 'Contact Team', href: '#contact' },
+      { label: 'Đặt bàn / tiệc nhỏ', href: '#contact' },
+      { label: 'Giao hàng & take-away', href: '#menu' },
+      { label: 'Đặt hàng qua QR', href: '#featured' },
+      { label: 'Liên hệ đội ngũ', href: '#contact' },
     ],
   },
 ];

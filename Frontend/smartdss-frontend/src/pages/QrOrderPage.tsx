@@ -202,7 +202,7 @@ export default function QrOrderPage() {
           // Phát hiện chuyển trạng thái → thông báo khách hàng
           if (prevStatus && prevStatus !== data.status) {
             if (data.status === 'COMPLETED') {
-              const itemNames = (data.orderItems || []).map((oi) => oi.menuItemName);
+              const itemNames = (data.orderItems || []).map((oi) => oi.menuItemName).filter((n): n is string => !!n);
               setOrderReadyNotif({ orderId: data.id, itemNames });
             } else if (data.status === 'PREPARING' && prevStatus === 'PENDING') {
               setPreparingNotif({ orderId: data.id });

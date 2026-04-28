@@ -1,60 +1,181 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Coffee, Menu, X } from 'lucide-react';
-import { navItems } from '@/assets/coffee/content';
+import { brandName, navItems } from '@/assets/coffee/content';
 import Button from '@/components/coffee/Button';
 import Container from '@/components/coffee/Container';
-import NavbarItem from '@/components/coffee/NavbarItem';
+
+/** Renders either a react-router <Link> or a plain <a> depending on href type */
+function NavLink({
+  href,
+  children,
+  className,
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
+  className: string;
+  onClick?: () => void;
+}) {
+  const isRoute = href.startsWith('/');
+  if (isRoute) {
+    return (
+      <Link to={href} className={className} onClick={onClick}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={href} className={className} onClick={onClick}>
+      {children}
+    </a>
+  );
+}
 
 export default function NavbarSection() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const isOnHomePage = location.pathname === '/';
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // On non-home pages, anchors (#home, #about...) should return to home first
+  function resolveHref(href: string): string {
+    if (!isOnHomePage && href.startsWith('#')) {
+      return `/${href}`;
+    }
+    return href;
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[rgba(111,78,55,0.1)] bg-[rgba(245,230,211,0.9)] backdrop-blur-md">
-      <Container className="py-3">
-        <div className="flex items-center justify-between gap-4">
-          <a href="#home" className="coffee-interactive inline-flex items-center gap-2 rounded-xl px-2 py-1.5 text-[var(--coffee-dark)]">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--coffee-primary)] text-[var(--coffee-secondary)]">
-              <Coffee className="h-5 w-5" />
-            </span>
-            <span className="text-lg font-semibold">Velvet Roast</span>
-          </a>
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'border-b border-[rgba(107,80,64,0.16)] bg-[rgba(253,247,240,0.98)] shadow-[0_2px_20px_-4px_rgba(26,14,7,0.14)] backdrop-blur-md'
+          : 'border-b border-transparent bg-[rgba(253,247,240,0.95)] backdrop-blur-sm'
+      }`}
+    >
+      <Container className="py-2.5">
+        <div className="flex items-center justify-between gap-3">
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => (
-              <NavbarItem key={item.href} label={item.label} href={item.href} />
-            ))}
+          {/* ── Brand logo ── */}
+          <Link
+            to="/"
+            className="coffee-interactive inline-flex shrink-0 items-center gap-2 rounded-xl px-1.5 py-1 text-[var(--coffee-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)]"
+          >
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--coffee-primary)] to-[var(--coffee-dark)] text-white shadow-sm">
+              <Coffee className="h-4 w-4" />
+            </span>
+            <span className="text-base font-bold tracking-tight text-[var(--coffee-dark)]">
+              {brandName}
+            </span>
+          </Link>
+
+          {/* ── Desktop nav (≥1280px) ── */}
+          <nav
+            className="hidden items-center gap-0.5 xl:flex"
+            aria-label="Điều hướng chính"
+          >
+            {navItems.map((item) => {
+              const resolved = resolveHref(item.href);
+              const isActive = location.pathname === item.href;
+              return (
+                <NavLink
+                  key={item.href}
+                  href={resolved}
+                  className={`coffee-interactive whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)] transition-colors ${
+                    isActive
+                      ? 'bg-[rgba(107,80,64,0.1)] text-[var(--coffee-primary)]'
+                      : 'text-[rgba(26,14,7,0.72)] hover:bg-[rgba(107,80,64,0.07)] hover:text-[var(--coffee-primary)]'
+                  }`}
+                >
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </nav>
 
-          <div className="hidden md:block">
-            <Button href="#contact" size="sm">
-              Reserve Table
+          {/* ── Desktop actions ── */}
+          <div className="hidden items-center gap-2 xl:flex">
+            <Link
+              to="/login"
+              className="coffee-interactive whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium text-[var(--coffee-primary)] hover:bg-[rgba(107,80,64,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)]"
+            >
+              Nhân viên
+            </Link>
+            <Button href="#booking" size="sm">
+              Đặt bàn ngay
             </Button>
           </div>
 
+          {/* ── Tablet: only show CTA + hamburger (lg..xl) ── */}
+          <div className="hidden items-center gap-2 lg:flex xl:hidden">
+            <Button href="#booking" size="sm">
+              Đặt bàn
+            </Button>
+            <button
+              type="button"
+              aria-expanded={mobileOpen}
+              aria-controls="coffee-mobile-nav"
+              aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
+              className="coffee-interactive inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(107,80,64,0.18)] text-[var(--coffee-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)]"
+              onClick={() => setMobileOpen((v) => !v)}
+            >
+              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {/* ── Mobile hamburger only (<lg) ── */}
           <button
             type="button"
-            aria-label="Toggle menu"
-            className="coffee-interactive inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(111,78,55,0.18)] text-[var(--coffee-primary)] md:hidden"
-            onClick={() => setMobileOpen((prev) => !prev)}
+            aria-expanded={mobileOpen}
+            aria-controls="coffee-mobile-nav"
+            aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
+            className="coffee-interactive inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(107,80,64,0.18)] text-[var(--coffee-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)] lg:hidden"
+            onClick={() => setMobileOpen((v) => !v)}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
 
+        {/* ── Mobile / tablet dropdown menu ── */}
         {mobileOpen && (
-          <div className="coffee-soft-shadow mt-3 space-y-1 rounded-xl border border-[rgba(111,78,55,0.12)] bg-white p-3 md:hidden">
-            {navItems.map((item) => (
-              <NavbarItem
-                key={item.href}
-                label={item.label}
-                href={item.href}
-                className="block"
+          <div
+            id="coffee-mobile-nav"
+            className="coffee-soft-shadow mt-2 rounded-xl border border-[rgba(107,80,64,0.12)] bg-white p-3 xl:hidden"
+          >
+            <nav className="space-y-0.5" aria-label="Menu di động">
+              {navItems.map((item) => {
+                const resolved = resolveHref(item.href);
+                return (
+                  <NavLink
+                    key={item.href}
+                    href={resolved}
+                    className="coffee-interactive block rounded-lg px-3 py-2 text-sm font-medium text-[rgba(26,14,7,0.78)] hover:bg-[rgba(107,80,64,0.06)] hover:text-[var(--coffee-primary)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+            <div className="mt-2 space-y-2 border-t border-[rgba(107,80,64,0.1)] pt-2.5">
+              <Link
+                to="/login"
+                className="coffee-interactive block rounded-lg px-3 py-2 text-sm font-medium text-[var(--coffee-primary)] hover:bg-[rgba(107,80,64,0.06)]"
                 onClick={() => setMobileOpen(false)}
-              />
-            ))}
-            <Button href="#contact" size="sm" fullWidth className="mt-2" onClick={() => setMobileOpen(false)}>
-              Reserve Table
-            </Button>
+              >
+                Đăng nhập nhân viên
+              </Link>
+              <Button href="#booking" size="sm" fullWidth onClick={() => setMobileOpen(false)}>
+                Đặt bàn ngay
+              </Button>
+            </div>
           </div>
         )}
       </Container>
