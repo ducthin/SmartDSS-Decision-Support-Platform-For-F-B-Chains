@@ -527,6 +527,7 @@ public class QrOrderServiceImpl implements QrOrderService {
         String createdAt = order.getCreatedAt() == null
                 ? ""
                 : order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String requestedAt = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
 
         BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
         BigDecimal netAmount = grossAmount;
@@ -584,8 +585,9 @@ public class QrOrderServiceImpl implements QrOrderService {
                     <div class="center muted">Bản xuất từ QR Order</div>
                     <div class="line"></div>
                     <table class="info">
-                      <tr><td class="label">Đơn hàng</td><td>#%s</td><td class="label">Thời gian</td><td>%s</td></tr>
-                      <tr><td class="label">Bàn</td><td>%s</td><td class="label">Mã số thuế</td><td>%s</td></tr>
+                      <tr><td class="label">Đơn hàng</td><td>#%s</td><td class="label">Thời gian lập</td><td>%s</td></tr>
+                      <tr><td class="label">Bàn</td><td>%s</td><td class="label">Giờ xuất HĐ</td><td>%s</td></tr>
+                      <tr><td class="label">Mã số thuế</td><td colspan="3">%s</td></tr>
                       <tr><td class="label">Tên công ty</td><td colspan="3">%s</td></tr>
                       <tr><td class="label">Địa chỉ</td><td colspan="3">%s</td></tr>
                       <tr><td class="label">Email</td><td>%s</td><td class="label">Điện thoại</td><td>%s</td></tr>
@@ -614,6 +616,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                 order.getId(),
                 escapeHtml(createdAt),
                 escapeHtml(table.getName()),
+                escapeHtml(requestedAt),
                 escapeHtml(dto.getTaxCode()),
                 escapeHtml(dto.getCompanyName()),
                 escapeHtml(dto.getAddress()),

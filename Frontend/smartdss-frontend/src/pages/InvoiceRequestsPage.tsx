@@ -84,7 +84,7 @@ export default function InvoiceRequestsPage() {
     }
   };
 
-  const cols = ['Mã YC', 'Đơn', 'Công ty', 'Email / SĐT', 'Cách nhận', 'Trạng thái', 'Thao tác'];
+  const cols = ['Mã YC', 'Thời gian', 'Đơn', 'Công ty', 'Email / SĐT', 'Cách nhận', 'Trạng thái', 'Thao tác'];
 
   return (
     <div className="space-y-6">
@@ -167,6 +167,14 @@ export default function InvoiceRequestsPage() {
                   <tr key={row.requestId} className="hover:bg-[rgba(253,247,240,0.5)] transition-colors">
                     <td className="pl-5 px-4 py-3.5">
                       <span className="font-mono text-xs font-semibold text-[rgba(107,80,64,0.6)]">#{row.requestId}</span>
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="text-xs font-medium text-[rgba(26,14,7,0.7)]">
+                        {row.createdAt ? new Date(row.createdAt).toLocaleString('vi-VN', {
+                          hour: '2-digit', minute: '2-digit',
+                          day: '2-digit', month: '2-digit', year: 'numeric'
+                        }) : '—'}
+                      </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="font-mono text-xs font-semibold text-[rgba(107,80,64,0.6)]">#{row.orderId}</span>

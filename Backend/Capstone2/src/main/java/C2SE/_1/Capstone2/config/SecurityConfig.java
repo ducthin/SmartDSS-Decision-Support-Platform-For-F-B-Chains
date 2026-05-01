@@ -101,8 +101,10 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/reports/best-products")
                                                 .permitAll()
 
-                                                // User management - ADMIN only
-                                                .requestMatchers("/api/v1/users/**").hasRole(RoleName.ADMIN.name())
+                                                // User management - ADMIN only, MANAGER can view
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/users", "/api/v1/users/**")
+                                                .hasAnyRole(RoleName.ADMIN.name(), RoleName.MANAGER.name())
+                                                .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole(RoleName.ADMIN.name())
 
                                                 // Menu & Category management - ADMIN, MANAGER
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/menu/**")

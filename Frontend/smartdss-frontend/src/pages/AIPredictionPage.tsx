@@ -1,490 +1,254 @@
 import '@/styles/coffee-theme.css';
-import { useState } from 'react';
-import {
-  Brain, TrendingUp, ShoppingBag, Package, RefreshCw,
-  AlertTriangle, Calendar, Info, Sparkles, Clock, MessageSquare,
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Brain, RefreshCw, Calendar, Sparkles, Info, AlertTriangle, Download } from 'lucide-react';
 import type { AIPrediction } from '@/types';
 import { predictionService } from '@/services/predictionService';
 import { reportService } from '@/services/reportService';
-import { formatCurrency } from '@/utils/helpers';
+import { mlAdminService, type RetrainStatus } from '@/services/mlAdminService';
+import RetrainPanel from '@/components/ai/RetrainPanel';
+import PredictionResult from '@/components/ai/PredictionResult';
 
-const CONFIDENCE_STYLES = {
-  high:   'bg-green-100 text-green-800 border-green-200',
-  medium: 'bg-amber-100 text-amber-800 border-amber-200',
-  low:    'bg-red-100 text-red-800 border-red-200',
-};
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function daysAgoISO(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0]; }
+function dayVN(d: string) { return ['Chủ nhật', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(d + 'T00:00:00').getDay()]; }
 
-function confidenceLabel(score: number) {
-  if (score >= 0.75) return { label: 'Cao',        pct: Math.round(score * 100), style: CONFIDENCE_STYLES.high };
-  if (score >= 0.45) return { label: 'Trung bình', pct: Math.round(score * 100), style: CONFIDENCE_STYLES.medium };
-  return                    { label: 'Thấp',        pct: Math.round(score * 100), style: CONFIDENCE_STYLES.low };
-}
-
-function todayISO() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function daysAgoISO(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().split('T')[0];
-}
-
-function dayOfWeekVN(dateStr: string) {
-  const days = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-  return days[new Date(dateStr + 'T00:00:00').getDay()];
-}
+type ActiveTab = 'predict' | 'retrain' | 'export';
 
 export default function AIPredictionPage() {
-  const [prediction,   setPrediction]   = useState<AIPrediction | null>(null);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(todayISO());
+  const [tab, setTab] = useState<ActiveTab>('predict');
+  const [prediction, setPrediction] = useState<AIPrediction | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(todayISO());
   const [analysedDate, setAnalysedDate] = useState<string | null>(null);
   const [compareLlm, setCompareLlm] = useState(false);
-  const [exportFromDate, setExportFromDate] = useState<string>(daysAgoISO(365));
-  const [exportToDate, setExportToDate] = useState<string>(todayISO());
-  const [exportingDataset, setExportingDataset] = useState(false);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportFrom, setExportFrom] = useState(daysAgoISO(365));
+  const [exportTo, setExportTo] = useState(todayISO());
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState<string | null>(null);
+  const [retrainStatus, setRetrainStatus] = useState<RetrainStatus | null>(null);
+  const [retrainLoading, setRetrainLoading] = useState(false);
+  const [retrainError, setRetrainError] = useState<string | null>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
 
   const isFuture = selectedDate > todayISO();
 
+  const fetchRetrain = useCallback(() => {
+    setRetrainLoading(true);
+    mlAdminService.getRetrainStatus()
+      .then(r => setRetrainStatus(r.data))
+      .catch(() => setRetrainError('Không kết nối được ML Service (port 8000).'))
+      .finally(() => setRetrainLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchRetrain();
+    const id = setInterval(fetchRetrain, 30_000);
+    return () => clearInterval(id);
+  }, [fetchRetrain]);
+
   const handleAnalyse = () => {
-    setLoading(true);
-    setError(null);
-    setPrediction(null);
+    setLoading(true); setError(null); setPrediction(null);
     predictionService.getTodayPrediction(selectedDate, { compareLlm })
-      .then((res) => {
-        setPrediction(res.data);
-        setAnalysedDate(selectedDate);
-      })
-      .catch((err) => {
-        setError(
-          err?.response?.data?.message ||
-          'Không thể kết nối tới AI Service. Kiểm tra Python ML Server đang chạy!'
-        );
-      })
+      .then(r => { setPrediction(r.data); setAnalysedDate(selectedDate); })
+      .catch(e => setError(e?.response?.data?.message || 'Không kết nối được AI Service. Kiểm tra Python ML Server!'))
       .finally(() => setLoading(false));
   };
 
-  const handleExportTrainingData = async () => {
-    setExportingDataset(true);
-    setExportError(null);
+  const handleExport = async () => {
+    setExporting(true); setExportErr(null);
     try {
-      const res = await reportService.downloadMlTrainingCsv(exportFromDate, exportToDate);
-      const contentDisposition = (res.headers?.['content-disposition'] ?? '') as string;
-      const filenameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
-      const fileName = filenameMatch?.[1] || `training_data_real_${exportFromDate}_${exportToDate}.csv`;
-
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const res = await reportService.downloadMlTrainingCsv(exportFrom, exportTo);
+      const cd = (res.headers?.['content-disposition'] ?? '') as string;
+      const name = cd.match(/filename="?([^";]+)"?/i)?.[1] || `training_data_${exportFrom}_${exportTo}.csv`;
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a'); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err: unknown) {
-      const maybeAxiosErr = err as {
-        response?: { data?: { message?: string } };
-      };
-      setExportError(
-        maybeAxiosErr?.response?.data?.message ||
-        'Không tải được dữ liệu thật từ backend. Kiểm tra đăng nhập Manager/Admin và server backend.'
-      );
-    } finally {
-      setExportingDataset(false);
-    }
+    } catch (e: unknown) {
+      const ax = e as { response?: { data?: { message?: string } } };
+      setExportErr(ax?.response?.data?.message || 'Không tải được. Kiểm tra đăng nhập Manager/Admin.');
+    } finally { setExporting(false); }
   };
 
-  const conf = prediction ? confidenceLabel(prediction.confidence_score) : null;
+  const handleTrigger = () => {
+    setTriggering(true); setTriggerMsg(null);
+    mlAdminService.triggerRetrain()
+      .then(r => { setTriggerMsg(r.data.message); setTimeout(fetchRetrain, 2000); })
+      .catch(() => setTriggerMsg('Không thể kích hoạt. Kiểm tra ML Service.'))
+      .finally(() => setTriggering(false));
+  };
+
+  const TABS: { id: ActiveTab; label: string }[] = [
+    { id: 'predict', label: 'Dự báo' },
+    { id: 'retrain', label: 'Auto-Retrain' },
+    { id: 'export', label: 'Xuất CSV' },
+  ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 p-6">
+    <div className="max-w-4xl mx-auto p-5 space-y-5">
 
-      {/* ── Page Header ─────────────────────────────────────── */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-[#c9a27a] to-[#6b5040] rounded-xl flex items-center justify-center text-white shadow-lg">
-          <Brain size={24} />
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 bg-gradient-to-br from-[#c9a27a] to-[#6b5040] rounded-xl flex items-center justify-center text-white shadow-md">
+          <Brain size={22} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-[#1a0e07] flex items-center gap-2">
-            AI Phân tích &amp; Dự báo
-            <span className="text-sm font-normal bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] px-2 py-0.5 rounded-full">
-              Powered by ML
-            </span>
+          <h1 className="text-xl font-bold text-[#1a0e07] flex items-center gap-2">
+            AI Phân tích & Dự báo
+            <span className="text-xs font-normal bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] px-2 py-0.5 rounded-full">ML</span>
+            {retrainStatus?.current_model_mape_pct != null && (
+              <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${retrainStatus.current_model_mape_pct < 15 ? 'bg-green-100 text-green-700'
+                  : retrainStatus.current_model_mape_pct < 25 ? 'bg-amber-100 text-amber-700'
+                    : 'bg-red-100 text-red-700'}`}>
+                MAPE {retrainStatus.current_model_mape_pct.toFixed(1)}%
+              </span>
+            )}
           </h1>
-          <p className="text-sm text-[rgba(26,14,7,0.5)] mt-0.5">
-            Dự báo doanh thu • Số đơn hàng • Gợi ý nhập kho — cho bất kỳ ngày nào
-          </p>
+          <p className="text-xs text-[rgba(26,14,7,0.45)]">Dự báo doanh thu · số đơn · gợi ý kho</p>
         </div>
       </div>
 
-      {/* ── Control Panel ───────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)] p-5">
-        <h2 className="text-sm font-semibold text-[rgba(26,14,7,0.5)] uppercase tracking-wide mb-4 flex items-center gap-2">
-          <Sparkles size={15} className="text-[#c9a27a]" />
-          Thiết lập Phân tích
-        </h2>
-
-        <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-end">
-          {/* Date picker */}
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1.5">
-              📅 Ngày cần dự báo
-            </label>
-            <div className="flex items-center gap-2 border border-[rgba(107,80,64,0.18)] rounded-xl px-3 py-2.5 bg-[rgba(253,247,240,0.6)] focus-within:border-[#c9a27a] focus-within:ring-4 focus-within:ring-[rgba(201,162,122,0.12)] transition-all">
-              <Calendar size={16} className="text-[rgba(107,80,64,0.4)] flex-shrink-0" />
-              <input
-                id="ai-prediction-date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => { setSelectedDate(e.target.value); setPrediction(null); }}
-                className="flex-1 bg-transparent text-sm text-[#1a0e07] outline-none cursor-pointer"
-              />
-              <span className="text-xs text-[rgba(26,14,7,0.4)] flex-shrink-0">
-                {dayOfWeekVN(selectedDate)}
-              </span>
-            </div>
-          </div>
-
-          {/* Shortcut buttons */}
-          <div className="flex gap-2">
-            {[
-              { label: 'Hôm nay',     delta: 0 },
-              { label: 'Ngày mai',    delta: 1 },
-              { label: 'Tuần tới',    delta: 7 },
-            ].map(({ label, delta }) => {
-              const d = new Date();
-              d.setDate(d.getDate() + delta);
-              const iso = d.toISOString().split('T')[0];
-              return (
-                <button
-                  key={label}
-                  onClick={() => { setSelectedDate(iso); setPrediction(null); }}
-                  className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
-                    selectedDate === iso
-                      ? 'bg-[#6b5040] text-white border-[#6b5040]'
-                      : 'bg-white text-[rgba(26,14,7,0.6)] border-[rgba(107,80,64,0.18)] hover:border-[#c9a27a] hover:text-[#6b5040]'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.6)] cursor-pointer select-none whitespace-nowrap">
-            <input
-              type="checkbox"
-              checked={compareLlm}
-              onChange={(e) => { setCompareLlm(e.target.checked); setPrediction(null); }}
-              className="rounded border-[rgba(107,80,64,0.3)] accent-[#6b5040]"
-            />
-            So sánh LLM (Groq)
-          </label>
-
-          {/* Analyse button */}
-          <button
-            id="btn-ai-analyse"
-            onClick={handleAnalyse}
-            disabled={loading}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all ${
-              loading
-                ? 'bg-[rgba(107,80,64,0.1)] text-[rgba(26,14,7,0.35)] cursor-not-allowed'
-                : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'
-            }`}
-          >
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-            {loading ? 'Đang phân tích...' : 'Phân tích ngay'}
+      {/* Tabs */}
+      <div className="flex gap-1 bg-[rgba(253,247,240,0.8)] p-1 rounded-xl border border-[rgba(107,80,64,0.08)]">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 text-sm py-2 rounded-lg font-medium transition-all ${tab === t.id
+                ? 'bg-white text-[#6b5040] shadow-sm border border-[rgba(107,80,64,0.1)]'
+                : 'text-[rgba(26,14,7,0.45)] hover:text-[#6b5040]'}`}>
+            {t.label}
           </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Dự báo ─────────────────────────────────────────── */}
+      {tab === 'predict' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] shadow-sm p-4 space-y-4">
+            <h2 className="text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide flex items-center gap-1.5">
+              <Sparkles size={13} className="text-[#c9a27a]" /> Thiết lập
+            </h2>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+              {/* Date */}
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.55)] mb-1">📅 Ngày dự báo</label>
+                <div className="flex items-center gap-2 border border-[rgba(107,80,64,0.15)] rounded-xl px-3 py-2 bg-[rgba(253,247,240,0.5)] focus-within:border-[#c9a27a] transition-colors">
+                  <Calendar size={14} className="text-[rgba(107,80,64,0.4)] shrink-0" />
+                  <input id="ai-date" type="date" value={selectedDate}
+                    onChange={e => { setSelectedDate(e.target.value); setPrediction(null); }}
+                    className="flex-1 bg-transparent text-sm text-[#1a0e07] outline-none" />
+                  <span className="text-xs text-[rgba(26,14,7,0.35)] shrink-0">{dayVN(selectedDate)}</span>
+                </div>
+              </div>
+
+              {/* Shortcuts */}
+              <div className="flex gap-1.5">
+                {[{ l: 'Hôm nay', d: 0 }, { l: 'Ngày mai', d: 1 }, { l: '+7', d: 7 }].map(({ l, d }) => {
+                  const dt = new Date(); dt.setDate(dt.getDate() + d);
+                  const iso = dt.toISOString().split('T')[0];
+                  return (
+                    <button key={l} onClick={() => { setSelectedDate(iso); setPrediction(null); }}
+                      className={`text-xs px-2.5 py-2 rounded-lg border transition-colors ${selectedDate === iso
+                          ? 'bg-[#6b5040] text-white border-[#6b5040]'
+                          : 'bg-white text-[rgba(26,14,7,0.55)] border-[rgba(107,80,64,0.15)] hover:border-[#c9a27a]'}`}>
+                      {l}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* LLM toggle + Analyse */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-[rgba(26,14,7,0.55)] cursor-pointer whitespace-nowrap">
+                  <input type="checkbox" checked={compareLlm}
+                    onChange={e => { setCompareLlm(e.target.checked); setPrediction(null); }}
+                    className="rounded accent-[#6b5040]" />
+                  So sánh LLM
+                </label>
+                <button id="btn-ai-analyse" onClick={handleAnalyse} disabled={loading}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all whitespace-nowrap ${loading ? 'bg-[rgba(107,80,64,0.08)] text-[rgba(26,14,7,0.3)] cursor-not-allowed'
+                      : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
+                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                  {loading ? 'Đang phân tích...' : 'Phân tích'}
+                </button>
+              </div>
+            </div>
+
+            {isFuture && (
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+                <Info size={13} className="mt-0.5 shrink-0" />
+                <span><strong>Dự báo tương lai</strong> — AI dùng thời tiết ước tính tháng {new Date(selectedDate + 'T00:00:00').getMonth() + 1} + ngày lễ đã đăng ký + thứ {dayVN(selectedDate)}.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              <div><p className="font-medium text-sm">Không thể phân tích</p><p className="text-xs mt-0.5">{error}</p></div>
+            </div>
+          )}
+
+          {/* Empty */}
+          {!prediction && !loading && !error && (
+            <div className="bg-white rounded-2xl border border-dashed border-[rgba(107,80,64,0.18)] p-12 text-center">
+              <div className="w-14 h-14 bg-[rgba(201,162,122,0.08)] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Brain size={28} className="text-[rgba(107,80,64,0.25)]" />
+              </div>
+              <p className="text-sm font-medium text-[rgba(26,14,7,0.35)]">Chọn ngày và bấm "Phân tích"</p>
+              <p className="text-xs text-[rgba(26,14,7,0.25)] mt-1">AI sẽ phân tích thời tiết · sự kiện · mật độ khu vực · chu kỳ tuần</p>
+            </div>
+          )}
+
+          {/* Result */}
+          {prediction && analysedDate && <PredictionResult prediction={prediction} date={analysedDate} />}
         </div>
+      )}
 
-        {/* Info banner for future dates */}
-        {isFuture && (
-          <div className="mt-4 flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
-            <Info size={16} className="mt-0.5 flex-shrink-0" />
+      {/* ── Tab: Auto-Retrain ────────────────────────────────────── */}
+      {tab === 'retrain' && (
+        <RetrainPanel
+          status={retrainStatus}
+          loading={retrainLoading}
+          error={retrainError}
+          triggerMsg={triggerMsg}
+          triggering={triggering}
+          onRefresh={fetchRetrain}
+          onTrigger={handleTrigger}
+        />
+      )}
+
+      {/* ── Tab: Xuất CSV ────────────────────────────────────────── */}
+      {tab === 'export' && (
+        <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] shadow-sm p-5 space-y-4">
+          <h2 className="text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide flex items-center gap-1.5">
+            <Download size={13} className="text-[#c9a27a]" /> Xuất dữ liệu thật để train AI
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-3 items-end">
             <div>
-              <span className="font-medium">Chế độ dự báo tương lai</span> —
-              AI sẽ sử dụng: <strong>sự kiện / ngày lễ bạn đã đăng ký</strong> trong hệ thống
-              + <strong>thời tiết ước tính theo mùa</strong> tháng {new Date(selectedDate + 'T00:00:00').getMonth() + 1}
-              + ngày trong tuần (<strong>{dayOfWeekVN(selectedDate)}</strong>).
-              <br />
-              <span className="text-blue-500 text-xs mt-0.5 block">
-                💡 Tạo Event trước cho {selectedDate} để AI phản ánh chính xác hơn.
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-emerald-800">Xuất dữ liệu thật để train AI</h3>
-            <span className="text-xs text-emerald-700">CSV chuẩn theo schema training_data.csv</span>
-          </div>
-
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <div>
-              <label className="block text-xs font-medium text-emerald-900 mb-1">Từ ngày</label>
-              <input
-                type="date"
-                value={exportFromDate}
-                onChange={(e) => setExportFromDate(e.target.value)}
-                className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm bg-white"
-              />
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.55)] mb-1">Từ ngày</label>
+              <input type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)}
+                className="w-full border border-[rgba(107,80,64,0.15)] rounded-xl px-3 py-2 text-sm bg-[rgba(253,247,240,0.5)] outline-none focus:border-[#c9a27a]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-emerald-900 mb-1">Đến ngày</label>
-              <input
-                type="date"
-                value={exportToDate}
-                onChange={(e) => setExportToDate(e.target.value)}
-                className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm bg-white"
-              />
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.55)] mb-1">Đến ngày</label>
+              <input type="date" value={exportTo} onChange={e => setExportTo(e.target.value)}
+                className="w-full border border-[rgba(107,80,64,0.15)] rounded-xl px-3 py-2 text-sm bg-[rgba(253,247,240,0.5)] outline-none focus:border-[#c9a27a]" />
             </div>
-            <button
-              onClick={handleExportTrainingData}
-              disabled={exportingDataset}
-              className={`h-10 rounded-lg text-sm font-semibold transition-colors ${
-                exportingDataset
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-              }`}
-            >
-              {exportingDataset ? 'Đang xuất CSV...' : 'Tải dữ liệu thật'}
+            <button onClick={handleExport} disabled={exporting}
+              className={`h-10 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${exporting ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
+              <Download size={14} />
+              {exporting ? 'Đang xuất...' : 'Tải CSV'}
             </button>
           </div>
-
-          {exportError && (
-            <p className="mt-3 text-xs text-red-600">{exportError}</p>
-          )}
-
-          <p className="mt-2 text-xs text-emerald-700">
-            Gồm các cột: weather, holiday, event impact, lag sales, revenue, orders để huấn luyện mô hình tại ml-service.
+          {exportErr && <p className="text-xs text-red-600">{exportErr}</p>}
+          <p className="text-xs text-[rgba(26,14,7,0.4)] bg-[rgba(253,247,240,0.6)] rounded-lg px-3 py-2">
+            CSV chuẩn schema: date · weather · holiday · event · lag sales · revenue · orders — dùng để huấn luyện mô hình AI.
           </p>
-        </div>
-      </div>
-
-      {/* ── Error ───────────────────────────────────────────── */}
-      {error && (
-        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700">
-          <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium">Không thể phân tích</p>
-            <p className="text-sm mt-0.5">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty ───────────────────────────────────────────── */}
-      {!prediction && !loading && !error && (
-        <div className="bg-white rounded-2xl border border-dashed border-[rgba(107,80,64,0.2)] p-16 text-center">
-          <div className="w-16 h-16 bg-[rgba(201,162,122,0.1)] rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Brain size={32} className="text-[rgba(107,80,64,0.3)]" />
-          </div>
-          <h3 className="text-base font-semibold text-[rgba(26,14,7,0.4)] mb-1">Chọn ngày và bấm "Phân tích ngay"</h3>
-          <p className="text-sm text-[rgba(26,14,7,0.3)]">
-            AI sẽ phân tích từ thời tiết, sự kiện, mật độ khu vực và thứ ngày trong tuần
-          </p>
-        </div>
-      )}
-
-      {/* ── Result ──────────────────────────────────────────── */}
-      {prediction && analysedDate && (
-        <div className="space-y-4 animate-in fade-in duration-300">
-
-          {/* Result header */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Clock size={14} />
-              Kết quả dự báo cho <strong className="text-gray-800">{dayOfWeekVN(analysedDate)}, {analysedDate}</strong>
-            </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${conf?.style}`}>
-              Độ tự tin: {conf?.label} ({conf?.pct}%)
-            </span>
-            {analysedDate > todayISO() && (
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
-                📅 Dự báo tương lai
-              </span>
-            )}
-          </div>
-
-          {/* Message */}
-          {prediction.message && (
-            <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">{prediction.message}</p>
-          )}
-
-          {/* Hôm nay: đã thu + baseline ML + hậu chỉnh EOD */}
-          {prediction.prediction_kind === 'eod_adjusted' &&
-            prediction.ml_baseline_revenue != null && (
-              <div className="rounded-2xl border border-teal-200 bg-teal-50/80 p-4 text-sm text-teal-900 space-y-2">
-                <p className="font-semibold flex items-center gap-2">
-                  <Clock size={16} />
-                  Dự báo theo giờ & số liệu thực (cuối ngày)
-                </p>
-                {prediction.analysis_at_local && (
-                  <p className="text-xs text-teal-700">
-                    Phân tích lúc <strong>{prediction.analysis_at_local}</strong>
-                    {prediction.day_progress_fraction != null && (
-                      <> — ước ~<strong>{Math.round(prediction.day_progress_fraction * 100)}%</strong> &quot;nhịp ngày&quot; điển hình đã qua</>
-                    )}
-                  </p>
-                )}
-                <div className="grid sm:grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/70 rounded-lg px-3 py-2 border border-teal-100">
-                    <span className="text-teal-600">Đã ghi nhận hôm nay</span>
-                    <p className="font-bold text-teal-900">
-                      {formatCurrency(prediction.actual_revenue_so_far ?? 0)}
-                      <span className="font-normal text-teal-700">
-                        {' '}
-                        · {prediction.actual_orders_so_far ?? 0} đơn
-                      </span>
-                    </p>
-                  </div>
-                  <div className="bg-white/70 rounded-lg px-3 py-2 border border-teal-100">
-                    <span className="text-teal-600">ML cả ngày (trước chỉnh)</span>
-                    <p className="font-bold text-teal-900">
-                      {formatCurrency(prediction.ml_baseline_revenue)}
-                      <span className="font-normal text-teal-700">
-                        {' '}
-                        · {prediction.ml_baseline_orders ?? '—'} đơn
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-teal-800">
-                  Số <strong>doanh thu / đơn lớn</strong> phía trên là <strong>ước cuối ngày</strong> sau khi trộn ML với thực tế đã thu (phù hợp khi đang trong ngày).
-                </p>
-              </div>
-            )}
-
-          {prediction.prediction_kind === 'full_day_ml' &&
-            analysedDate === todayISO() &&
-            (prediction.actual_revenue_so_far ?? 0) > 0 && (
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                Đã thu {formatCurrency(prediction.actual_revenue_so_far!)} — hệ thống vẫn hiển thị{' '}
-                <strong>dự báo ML cả ngày</strong> (chưa đủ điều kiện hậu chỉnh hoặc còn sớm).
-              </p>
-            )}
-
-          {/* Core KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl border border-indigo-200 p-5">
-              <div className="flex items-center gap-2 text-indigo-500 mb-2">
-                <TrendingUp size={18} />
-                <span className="text-xs font-semibold uppercase tracking-wider">Doanh thu dự kiến</span>
-              </div>
-              <p className="text-3xl font-bold text-indigo-900">{formatCurrency(prediction.predicted_revenue)}</p>
-              <p className="text-xs text-indigo-400 mt-1">
-                {prediction.prediction_kind === 'eod_adjusted'
-                  ? 'Ước tổng cuối ngày (ML + đã thu thực + giờ hiện tại)'
-                  : 'Tổng doanh thu trong ngày (ML cả ngày)'}
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 p-5">
-              <div className="flex items-center gap-2 text-purple-500 mb-2">
-                <ShoppingBag size={18} />
-                <span className="text-xs font-semibold uppercase tracking-wider">Số đơn dự kiến</span>
-              </div>
-              <p className="text-3xl font-bold text-purple-900">{prediction.predicted_orders} <span className="text-lg font-normal">đơn</span></p>
-              <p className="text-xs text-purple-400 mt-1">
-                ≈ {formatCurrency(prediction.predicted_revenue / Math.max(1, prediction.predicted_orders))} / đơn
-              </p>
-            </div>
-          </div>
-
-          {/* So sánh OpenAI (tùy chọn) */}
-          {prediction.llm_comparison && (
-            <div
-              className={`rounded-2xl border p-5 ${
-                prediction.llm_comparison.status === 'ok'
-                  ? 'bg-slate-50 border-slate-200'
-                  : prediction.llm_comparison.status === 'skipped'
-                    ? 'bg-gray-50 border-gray-200'
-                    : 'bg-red-50 border-red-200'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-700">
-                <MessageSquare size={18} />
-                So sánh LLM
-                {prediction.llm_comparison.model && (
-                  <span className="text-xs font-normal text-slate-500">
-                    (model: {prediction.llm_comparison.model})
-                  </span>
-                )}
-                <span className="ml-auto text-xs font-mono uppercase text-slate-400">
-                  {prediction.llm_comparison.status}
-                </span>
-              </div>
-              {prediction.llm_comparison.status === 'ok' && (
-                <>
-                  {prediction.llm_comparison.comment_vi && (
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{prediction.llm_comparison.comment_vi}</p>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                    {prediction.llm_comparison.rough_revenue_vnd != null && (
-                      <span className="text-slate-600">
-                        Ước lượng LLM (tham khảo):{' '}
-                        <strong>{formatCurrency(prediction.llm_comparison.rough_revenue_vnd)}</strong>
-                      </span>
-                    )}
-                    {prediction.llm_comparison.rough_orders != null && (
-                      <span className="text-slate-600">
-                        Đơn (tham khảo): <strong>{prediction.llm_comparison.rough_orders}</strong>
-                      </span>
-                    )}
-                    {prediction.llm_comparison.vs_ml && (
-                      <span className="text-slate-500">
-                        So với ML: <strong>{prediction.llm_comparison.vs_ml}</strong>
-                      </span>
-                    )}
-                  </div>
-                </>
-              )}
-              {(prediction.llm_comparison.status === 'skipped' || prediction.llm_comparison.status === 'error') &&
-                prediction.llm_comparison.detail && (
-                  <p className="text-sm text-gray-600">{prediction.llm_comparison.detail}</p>
-                )}
-            </div>
-          )}
-
-          {/* Inventory DSS */}
-          {Object.keys(prediction.predicted_inventory_demand).length > 0 && (
-            <div className="bg-white rounded-2xl border border-amber-200 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <Package size={16} className="text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800">Gợi ý Nhập kho (chỉ khi thiếu)</h3>
-                  <p className="text-xs text-gray-400">
-                    So sánh nhu cầu ước với <strong>tồn hiện tại</strong> — chỉ hiện mức <strong>cần nhập thêm</strong> (nếu đủ hàng thì không gợi ý).
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {Object.entries(prediction.predicted_inventory_demand).map(([name, qty]) => (
-                  <div
-                    key={name}
-                    className="flex flex-col bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-100 px-4 py-3"
-                  >
-                    <span className="text-xs text-gray-500 mb-1">{name}</span>
-                    <span className="text-xl font-bold text-amber-800">
-                      {typeof qty === 'number' && !Number.isInteger(qty) ? qty.toFixed(2) : qty}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-xs text-gray-400 mt-3 bg-gray-50 rounded-lg px-3 py-2">
-                ⚠️ Số liệu là <strong>mức thiếu gợi ý</strong> theo ~{prediction.predicted_orders} đơn dự kiến. Kiểm tra lại tồn và đơn vị trước khi đặt hàng.
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>
