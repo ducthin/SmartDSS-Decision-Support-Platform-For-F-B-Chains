@@ -26,6 +26,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     Page<Order> findAll(Pageable pageable);
 
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("SELECT o FROM Order o WHERE o.id = :id")
+        Page<Order> searchById(@Param("id") Long id, Pageable pageable);
+
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("SELECT o FROM Order o WHERE o.status = :status AND o.id = :id")
+        Page<Order> searchByStatusAndId(@Param("status") OrderStatus status,
+                                                                        @Param("id") Long id,
+                                                                        Pageable pageable);
+
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     Optional<Order> findById(Long id);
 

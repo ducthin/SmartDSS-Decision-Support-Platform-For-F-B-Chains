@@ -56,7 +56,7 @@ export default function Button(props: ButtonProps) {
   const fullWidth = props.fullWidth ?? false;
 
   if (isLinkButton(props)) {
-    const { children, className, href, ...anchorProps } = props;
+    const { children, className, href, fullWidth: _fullWidth, ...anchorProps } = props;
     return (
       <a href={href} className={getClasses(variant, size, fullWidth, className)} {...anchorProps}>
         {children}
@@ -64,7 +64,7 @@ export default function Button(props: ButtonProps) {
     );
   }
 
-  const { children, className, type = 'button', ...buttonProps } = props;
+  const { children, className, type = 'button', fullWidth: _fullWidth, ...buttonProps } = props;
   return (
     <button type={type} className={getClasses(variant, size, fullWidth, className)} {...buttonProps}>
       {children}

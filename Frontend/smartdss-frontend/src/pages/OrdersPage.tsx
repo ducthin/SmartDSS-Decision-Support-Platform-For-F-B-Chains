@@ -1011,6 +1011,7 @@ function OrderListView() {
   const [pageData, setPageData] = useState<PageResponse<Order> | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'ALL' | 'ONLINE' | 'INSTORE'>('ALL');
+  const [orderSearch, setOrderSearch] = useState('');
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
   const [billOrder, setBillOrder] = useState<Order | null>(null);
   const [loadingBillId, setLoadingBillId] = useState<number | null>(null);
@@ -1028,7 +1029,8 @@ function OrderListView() {
   const canSeeTaxBreakdown = ['ADMIN', 'MANAGER'].includes(userRole);
 
   const loadOrders = useCallback(() => {
-    orderService.getAll(page, 10, statusFilter || undefined)
+    const keyword = orderSearch.trim() || undefined;
+    orderService.getAll(page, 10, statusFilter || undefined, keyword)
       .then((res) => {
         const data = res.data.data;
         setOrders(data.content);
@@ -1052,7 +1054,7 @@ function OrderListView() {
       })
       .catch(() => toast.error('Lỗi tải đơn hàng'))
       .finally(() => setLoading(false));
-  }, [page, statusFilter]);
+  }, [page, statusFilter, orderSearch]);
 
   const handleSocketUpdate = useCallback((data?: Order) => {
     if (data && data.id) {
@@ -1276,9 +1278,14 @@ function OrderListView() {
     if (sourceFilter === 'ONLINE') return orders.filter((o) => (o.tableNumber || '').toUpperCase() === 'ONLINE');
     return orders.filter((o) => (o.tableNumber || '').toUpperCase() !== 'ONLINE');
   }, [orders, sourceFilter]);
-  const paidOrderCountFiltered = filteredOrders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
-  const completedOrderCountFiltered = filteredOrders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
-  const pendingOrderCountFiltered = filteredOrders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
+  const visibleOrders = filteredOrders;
+  const paidOrderCountFiltered = visibleOrders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
+  const completedOrderCountFiltered = visibleOrders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
+  const pendingOrderCountFiltered = visibleOrders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
+
+  useEffect(() => {
+    setPage(0);
+  }, [orderSearch, statusFilter]);
 
   const renderOrderActions = (order: Order) => (
     <div className="flex flex-wrap gap-2">
@@ -1302,7 +1309,7 @@ function OrderListView() {
           {paymentStatusByOrder[order.id]?.status !== 'PAID' ? (
             <button
               onClick={() => openPaymentModal(order)}
-              className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
+              className="inline-flex items-center gap-1 rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
             >
               <QrCode size={13} /> Thanh toán
             </button>
@@ -1350,7 +1357,7 @@ function OrderListView() {
               Theo dõi trạng thái món, thanh toán và thao tác bill trong cùng một thẻ.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[420px]">
+          <div className="grid grid-cols-3 gap-2 sm:min-w-105">
             <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
               <p className="text-xs text-gray-500">Đang xử lý</p>
               <p className="text-lg font-bold text-gray-900">{pendingOrderCountFiltered}</p>
@@ -1366,24 +1373,48 @@ function OrderListView() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Filter size={16} />
             <span>{pageData ? `${pageData.totalElements} đơn hàng` : `${orders.length} đơn hàng`}</span>
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-              className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="PENDING">Chờ xử lý</option>
-              <option value="PREPARING">Đang pha chế</option>
-              <option value="COMPLETED">Hoàn thành</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
+          <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto xl:flex-1 xl:justify-end">
+            <label className="relative w-full sm:w-80 xl:w-96">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                placeholder="Tìm theo ID hóa đơn"
+                className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-9 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+              {orderSearch && (
+                <button
+                  type="button"
+                  onClick={() => setOrderSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Xóa tìm kiếm đơn hàng"
+                >
+                  ×
+                </button>
+              )}
+            </label>
+
+            <label className="relative w-full sm:w-64">
+              <span className="sr-only">Lọc theo trạng thái</span>
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 hidden text-gray-400" />
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+                className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="PENDING">Chờ xử lý</option>
+                <option value="PREPARING">Đang pha chế</option>
+                <option value="COMPLETED">Hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+            </label>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1397,7 +1428,7 @@ function OrderListView() {
           <button
             type="button"
             onClick={() => setSourceFilter('ONLINE')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ONLINE' ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ONLINE' ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'}`}
           >
             ONLINE
           </button>
@@ -1412,7 +1443,7 @@ function OrderListView() {
       </div>
 
       <div className="space-y-3">
-        {filteredOrders.map((order) => {
+        {visibleOrders.map((order) => {
           const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
           const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
           const originalTax = calculateVatBreakdown(originalAmount, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
@@ -1425,7 +1456,7 @@ function OrderListView() {
               key={order.id}
               className={`overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md ${
                 isOnlineOrder
-                  ? 'border-violet-200 bg-violet-50'
+                  ? 'border-sky-200 bg-sky-50'
                   : 'border-gray-200 bg-white hover:border-blue-200'
               }`}
             >
@@ -1449,7 +1480,7 @@ function OrderListView() {
                     );
                   })()}
                   {(order.tableNumber || '').toUpperCase() === 'ONLINE' && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
                       ONLINE
                     </span>
                   )}
@@ -1488,7 +1519,7 @@ function OrderListView() {
                                 {formatCurrency(unitPrice)} × {quantity}
                               </p>
                               {isOnlineOrder && parsedOnlineNote?.itemNotesByIndex?.[idx] ? (
-                                <p className="mt-1 text-xs text-violet-800 wrap-break-word">
+                                <p className="mt-1 text-xs text-sky-800 wrap-break-word">
                                   Ghi chú món: {parsedOnlineNote.itemNotesByIndex[idx]}
                                 </p>
                               ) : null}
@@ -1514,14 +1545,14 @@ function OrderListView() {
                         const showAddressOrNote = !!deliveryAddress || !!customerNote;
                         if (!showAddressOrNote || !parsed) {
                           return (
-                            <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm leading-5 wrap-break-word text-violet-900">
+                            <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-5 wrap-break-word text-sky-900">
                               {order.note}
                             </div>
                           );
                         }
 
                         return (
-                          <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm leading-5 wrap-break-word text-violet-900">
+                          <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-5 wrap-break-word text-sky-900">
                             {deliveryAddress ? (
                               <div>
                                 <span className="font-semibold">Địa chỉ giao:</span> {deliveryAddress}
@@ -1600,11 +1631,15 @@ function OrderListView() {
           );
         })}
 
-        {filteredOrders.length === 0 && (
+        {visibleOrders.length === 0 && (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center">
             <ReceiptText className="mx-auto mb-3 text-gray-300" size={34} />
-            <p className="font-medium text-gray-700">Chưa có đơn hàng</p>
-            <p className="mt-1 text-sm text-gray-400">Các đơn mới sẽ hiển thị tại đây.</p>
+            <p className="font-medium text-gray-700">
+              {orderSearch.trim() ? 'Không tìm thấy đơn hàng khớp với từ khóa' : 'Chưa có đơn hàng'}
+            </p>
+            <p className="mt-1 text-sm text-gray-400">
+              {orderSearch.trim() ? 'Hãy thử tìm theo mã, bàn, SĐT hoặc tên món.' : 'Các đơn mới sẽ hiển thị tại đây.'}
+            </p>
           </div>
         )}
 

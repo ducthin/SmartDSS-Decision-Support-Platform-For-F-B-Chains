@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Coffee } from 'lucide-react';
 import toast from 'react-hot-toast';
-
+import '@/styles/coffee-theme.css';
+import logoImg from '@/assets/img/logo.png';
 export default function LoginPage() {
   const { login, token, loading } = useAuth();
   const [username, setUsername] = useState('');
@@ -27,35 +27,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <Coffee className="text-blue-600" size={32} />
+    <div className="coffee-theme min-h-screen flex items-center justify-center bg-[#fffdf9] text-[var(--coffee-dark)] px-4 overflow-hidden relative">
+      <div className="pointer-events-none fixed -left-32 top-1/4 h-96 w-96 rounded-full bg-[rgba(201,162,122,0.08)] blur-3xl" />
+      <div className="pointer-events-none fixed -right-32 top-2/3 h-96 w-96 rounded-full bg-[rgba(107,80,64,0.07)] blur-3xl" />
+
+      <div className="relative z-10 bg-white rounded-[22px] border border-[rgba(111,78,55,0.1)] shadow-[0_26px_55px_-30px_rgba(62,42,31,0.2)] p-8 w-full max-w-md">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center">
+            <img src={logoImg} alt="SmartDSS Logo" className="w-80 h-48 object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">SmartDSS</h1>
-          <p className="text-gray-500 mt-1">Hệ thống quản lý bán hàng F&B</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
+            <label className="block text-sm font-medium text-[var(--coffee-dark)] mb-1">Tên đăng nhập</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              className="w-full px-4 py-2.5 border border-[rgba(111,78,55,0.2)] rounded-lg focus:ring-2 focus:ring-[var(--coffee-primary)] focus:border-[var(--coffee-primary)] outline-none transition bg-white text-[var(--coffee-dark)]"
               placeholder="Nhập tên đăng nhập"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+            <label className="block text-sm font-medium text-[var(--coffee-dark)] mb-1">Mật khẩu</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              className="w-full px-4 py-2.5 border border-[rgba(111,78,55,0.2)] rounded-lg focus:ring-2 focus:ring-[var(--coffee-primary)] focus:border-[var(--coffee-primary)] outline-none transition bg-white text-[var(--coffee-dark)]"
               placeholder="Nhập mật khẩu"
               required
             />
@@ -63,12 +64,12 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+            className="w-full bg-[var(--coffee-primary)] text-white py-2.5 rounded-lg font-medium hover:bg-[var(--coffee-dark)] disabled:opacity-50 transition"
           >
             {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
       </div>
-    </div>
+    </div >
   );
 }

@@ -102,7 +102,7 @@ export default function OrderTrackingPage() {
       onConnect: () => {
         // Public order status updates (online orders only)
         client.subscribe('/topic/public-orders', (message) => {
-          let payload: any = null;
+          let payload: Record<string, unknown> | null = null;
           try {
             payload = JSON.parse(message.body);
           } catch {
@@ -123,9 +123,9 @@ export default function OrderTrackingPage() {
               return [
                 {
                   orderId: incomingOrderId,
-                  orderStatus: order.status,
-                  totalAmount: order.totalAmount,
-                  createdAt: order.createdAt,
+                  orderStatus: String(order?.status ?? ''),
+                  totalAmount: Number(order?.totalAmount ?? 0),
+                  createdAt: String(order?.createdAt ?? ''),
                   paymentStatus: 'PENDING',
                   paymentMethod: 'PENDING',
                 },
@@ -137,9 +137,9 @@ export default function OrderTrackingPage() {
               if (o.orderId !== incomingOrderId) return o;
               return {
                 ...o,
-                orderStatus: order.status,
-                totalAmount: order.totalAmount ?? o.totalAmount,
-                createdAt: order.createdAt ?? o.createdAt,
+                orderStatus: String(order?.status ?? o.orderStatus),
+                totalAmount: Number(order?.totalAmount ?? o.totalAmount),
+                createdAt: String(order?.createdAt ?? o.createdAt),
               };
             });
           });
@@ -147,7 +147,7 @@ export default function OrderTrackingPage() {
 
         // Public payment updates
         client.subscribe('/topic/public-orders-payment', (message) => {
-          let payload: any = null;
+          let payload: Record<string, unknown> | null = null;
           try {
             payload = JSON.parse(message.body);
           } catch {
@@ -163,8 +163,8 @@ export default function OrderTrackingPage() {
               if (o.orderId !== incomingOrderId) return o;
               return {
                 ...o,
-                paymentStatus: payment?.status,
-                paymentMethod: payment?.paymentMethod,
+                paymentStatus: String(payment?.status ?? o.paymentStatus),
+                paymentMethod: String(payment?.paymentMethod ?? o.paymentMethod),
               };
             }),
           );
@@ -179,12 +179,12 @@ export default function OrderTrackingPage() {
   }, [trackingPhone]);
 
   return (
-    <div className="coffee-theme min-h-screen bg-[#fffdf9] text-[var(--coffee-dark)]">
+    <div className="coffee-theme min-h-screen text-[var(--coffee-dark)]">
       <NavbarSection />
 
       <div className="mx-auto max-w-2xl px-4 py-10">
         <div className="mb-6 rounded-2xl border bg-white p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--coffee-dark)]">Theo dõi đơn hàng</h1>
+          <h1 className="text-xl font-bold">Theo dõi đơn hàng</h1>
           <p className="mt-1 text-sm text-gray-600">
             Nhập số điện thoại để xem trạng thái đơn online (chuyển khoản hoặc COD).
           </p>
@@ -200,7 +200,8 @@ export default function OrderTrackingPage() {
               type="button"
               onClick={() => fetchOrders().catch(() => {})}
               disabled={loading}
-              className="rounded-lg bg-[var(--coffee-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: 'var(--coffee-primary)' }}
             >
               Xem đơn
             </button>
@@ -251,7 +252,7 @@ export default function OrderTrackingPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-[var(--coffee-primary)]">{formatPrice(o.totalAmount || 0)}</div>
+                      <div className="text-sm font-bold" style={{ color: 'var(--coffee-primary)' }}>{formatPrice(o.totalAmount || 0)}</div>
                       <div className="mt-1 text-xs text-gray-500">Tổng</div>
                     </div>
                   </div>

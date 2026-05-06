@@ -227,8 +227,6 @@ export default function InventoryPage() {
               <th className="text-left py-3 px-4 font-medium text-gray-500">Tồn kho</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Đơn vị</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Mức tối thiểu</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Giá vốn nội bộ</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Giá thị trường tham khảo</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
               <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
             </tr>
@@ -242,22 +240,6 @@ export default function InventoryPage() {
                   <td className="py-3 px-4">{inv.quantity}</td>
                   <td className="py-3 px-4 text-gray-500">{inv.unit}</td>
                   <td className="py-3 px-4 text-gray-500">{inv.minimumStock}</td>
-                  <td className="py-3 px-4 text-gray-700">
-                    {inv.unitCost != null ? formatCurrency(inv.unitCost) : <span className="text-gray-400">Chưa có</span>}
-                  </td>
-                  <td className="py-3 px-4 text-gray-700">
-                    {inv.marketUnitPrice != null ? (
-                      <div className="leading-tight">
-                        <div>{formatCurrency(inv.marketUnitPrice)}</div>
-                        {inv.marketPriceSource && <div className="text-xs text-gray-400">Nguồn: {inv.marketPriceSource}</div>}
-                        {inv.marketPriceUpdatedAt && (
-                          <div className="text-xs text-gray-400">Cập nhật: {new Date(inv.marketPriceUpdatedAt).toLocaleString('vi-VN')}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">Chưa có</span>
-                    )}
-                  </td>
                   <td className="py-3 px-4">
                     {isLow ? (
                       <span className="flex items-center gap-1 text-red-600 text-xs font-medium">
@@ -276,10 +258,6 @@ export default function InventoryPage() {
                       className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">
                       <PenSquare size={14} /> Sửa
                     </button>
-                    <button onClick={() => openMarketPriceModal(inv)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs hover:bg-violet-200">
-                      <PenSquare size={14} /> Giá TT
-                    </button>
                     <button onClick={() => openModal('add', inv)}
                       className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">
                       <Plus size={14} /> Nhập
@@ -292,7 +270,7 @@ export default function InventoryPage() {
                 </tr>
               );
             })}
-            {inventory.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-gray-400">Chưa có nguyên liệu</td></tr>}
+            {inventory.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có nguyên liệu</td></tr>}
           </tbody>
         </table>
         {pageData && (

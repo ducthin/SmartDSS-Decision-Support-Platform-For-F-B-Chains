@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { getRoleKey } from '@/utils/helpers';
+import { getRoleKey, getApiErrorMessage } from '@/utils/helpers';
+import { settingsService } from '@/services/settingsService';
 import { weatherService } from '@/services/weatherService';
 import { eventService } from '@/services/eventService';
 import { holidayService } from '@/services/holidayService';
@@ -148,9 +149,11 @@ export default function ExternalFactorsPage() {
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [voucherForm, setVoucherForm] = useState<VoucherForm>(emptyVoucherForm);
   const [voucherSort, setVoucherSort] = useState<VoucherSort>('newest');
+  const [voucherSearch, setVoucherSearch] = useState('');
 
   // Loyalty state
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
+  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
   const [loyaltyAccounts, setLoyaltyAccounts] = useState<LoyaltyAccount[]>([]);
   const [loyaltyTiers, setLoyaltyTiers] = useState<LoyaltyTier[]>(defaultLoyaltyTiers);
@@ -162,6 +165,11 @@ export default function ExternalFactorsPage() {
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
   const [loadingLoyaltyAccounts, setLoadingLoyaltyAccounts] = useState(false);
   const [loyaltyError, setLoyaltyError] = useState('');
+
+  // Loyalty points config state
+  const [loyaltyPointsLoading, setLoyaltyPointsLoading] = useState(true);
+  const [savingLoyaltyPoints, setSavingLoyaltyPoints] = useState(false);
+  const [loyaltyPointsPerTenThousand, setLoyaltyPointsPerTenThousand] = useState('1');
 
   const toLocalDateStr = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -356,6 +364,32 @@ export default function ExternalFactorsPage() {
       .then((res) => setLoyaltyTiers(res.data.data?.length ? res.data.data : defaultLoyaltyTiers))
       .catch(() => setLoyaltyTiers(defaultLoyaltyTiers));
   }, []);
+
+  useEffect(() => {
+    settingsService.getLoyaltyPolicy()
+      .then((res) => setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd ?? 1)))
+      .catch(() => setLoyaltyPointsPerTenThousand('1'))
+      .finally(() => setLoyaltyPointsLoading(false));
+  }, []);
+
+  const saveLoyaltyPointsPolicy = async () => {
+    if (!canEdit) return toast.error('Không có quyền');
+    const points = Number(loyaltyPointsPerTenThousand.trim());
+    if (!Number.isInteger(points) || points < 0 || points > 100) {
+      toast.error('Điểm tích lũy phải là số nguyên từ 0 đến 100');
+      return;
+    }
+    setSavingLoyaltyPoints(true);
+    try {
+      const res = await settingsService.updateLoyaltyPolicy({ pointsPerTenThousandVnd: points });
+      setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd));
+      toast.success('Đã lưu cấu hình điểm tích lũy');
+    } catch (e) {
+      toast.error(getApiErrorMessage(e, 'Không thể lưu cấu hình điểm tích lũy'));
+    } finally {
+      setSavingLoyaltyPoints(false);
+    }
+  };
 
   // Event CRUD
   const openEventCreate = () => {
@@ -626,6 +660,12 @@ export default function ExternalFactorsPage() {
     return next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [voucherSort, vouchers]);
 
+  const filteredVouchers = useMemo(() => {
+    const keyword = voucherSearch.trim().toUpperCase();
+    if (!keyword) return sortedVouchers;
+    return sortedVouchers.filter((voucher) => voucher.code.toUpperCase().includes(keyword));
+  }, [sortedVouchers, voucherSearch]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -843,6 +883,26 @@ export default function ExternalFactorsPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+                <Search size={16} className="text-gray-400" />
+                <input
+                  type="text"
+                  value={voucherSearch}
+                  onChange={(e) => setVoucherSearch(e.target.value)}
+                  placeholder="Tìm theo mã voucher"
+                  className="w-44 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                />
+                {voucherSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setVoucherSearch('')}
+                    className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    aria-label="Xóa tìm kiếm voucher"
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+              <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
                 <ArrowUpDown size={16} className="text-gray-400" />
                 <select
                   value={voucherSort}
@@ -865,6 +925,8 @@ export default function ExternalFactorsPage() {
             <p className="text-sm text-gray-500">Đang tải voucher...</p>
           ) : vouchers.length === 0 ? (
             <p className="text-sm text-gray-400">Chưa có voucher nào</p>
+          ) : filteredVouchers.length === 0 ? (
+            <p className="text-sm text-gray-400">Không tìm thấy voucher nào khớp mã đã nhập</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -880,52 +942,52 @@ export default function ExternalFactorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedVouchers.map((v) => {
+                  {filteredVouchers.map((v) => {
                     const state = getVoucherState(v);
                     return (
-                    <tr key={v.id} className="border-b border-gray-100 align-top">
-                      <td className="px-2 py-2 font-semibold text-indigo-700">{v.code}</td>
-                      <td className="px-2 py-2">
-                        <p className="font-medium text-gray-800">{v.name}</p>
-                        {v.description && <p className="text-xs text-gray-500">{v.description}</p>}
-                      </td>
-                      <td className="px-2 py-2">
-                        {v.discountType === 'PERCENT'
-                          ? `${v.discountValue}%`
-                          : formatCurrency(v.discountValue)}
-                        <p className="text-xs text-gray-500">{VOUCHER_DISCOUNT_TYPE_LABELS[v.discountType]}</p>
-                        {v.maxDiscountAmount ? <p className="text-xs text-gray-500">Tối đa {formatCurrency(v.maxDiscountAmount)}</p> : null}
-                      </td>
-                      <td className="px-2 py-2">
-                        {v.minOrderAmount ? <p>Từ {formatCurrency(v.minOrderAmount)}</p> : <p>Không</p>}
-                        {(v.validFrom || v.validTo) && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {v.validFrom ? new Date(v.validFrom).toLocaleString('vi-VN') : 'Ngay'}
-                            {' - '}
-                            {v.validTo ? new Date(v.validTo).toLocaleString('vi-VN') : 'Không giới hạn'}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${state.className}`}>
-                          {state.label}
-                        </span>
-                        {state.reason && <p className="mt-1 text-xs text-gray-500">{state.reason}</p>}
-                      </td>
-                      <td className="px-2 py-2">
-                        {(v.usedCount || 0).toLocaleString('vi-VN')}
-                        {v.usageLimit ? ` / ${v.usageLimit.toLocaleString('vi-VN')}` : ''}
-                      </td>
-                      {canEdit && (
+                      <tr key={v.id} className="border-b border-gray-100 align-top">
+                        <td className="px-2 py-2 font-semibold text-indigo-700">{v.code}</td>
                         <td className="px-2 py-2">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => openVoucherEdit(v)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                            <button onClick={() => deleteVoucher(v.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
-                          </div>
+                          <p className="font-medium text-gray-800">{v.name}</p>
+                          {v.description && <p className="text-xs text-gray-500">{v.description}</p>}
                         </td>
-                      )}
-                    </tr>
-                  );
+                        <td className="px-2 py-2">
+                          {v.discountType === 'PERCENT'
+                            ? `${v.discountValue}%`
+                            : formatCurrency(v.discountValue)}
+                          <p className="text-xs text-gray-500">{VOUCHER_DISCOUNT_TYPE_LABELS[v.discountType]}</p>
+                          {v.maxDiscountAmount ? <p className="text-xs text-gray-500">Tối đa {formatCurrency(v.maxDiscountAmount)}</p> : null}
+                        </td>
+                        <td className="px-2 py-2">
+                          {v.minOrderAmount ? <p>Từ {formatCurrency(v.minOrderAmount)}</p> : <p>Không</p>}
+                          {(v.validFrom || v.validTo) && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {v.validFrom ? new Date(v.validFrom).toLocaleString('vi-VN') : 'Ngay'}
+                              {' - '}
+                              {v.validTo ? new Date(v.validTo).toLocaleString('vi-VN') : 'Không giới hạn'}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${state.className}`}>
+                            {state.label}
+                          </span>
+                          {state.reason && <p className="mt-1 text-xs text-gray-500">{state.reason}</p>}
+                        </td>
+                        <td className="px-2 py-2">
+                          {(v.usedCount || 0).toLocaleString('vi-VN')}
+                          {v.usageLimit ? ` / ${v.usageLimit.toLocaleString('vi-VN')}` : ''}
+                        </td>
+                        {canEdit && (
+                          <td className="px-2 py-2">
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => openVoucherEdit(v)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
+                              <button onClick={() => deleteVoucher(v.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
                   })}
                 </tbody>
               </table>
@@ -936,40 +998,49 @@ export default function ExternalFactorsPage() {
 
       {tab === 'loyalty' && (
         <div className="space-y-4">
+
+          {/* Loyalty points config card */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Quản lý tích điểm theo SĐT</h3>
-              <p className="text-xs text-gray-500">Nhập số điện thoại để tra cứu hoặc tạo hồ sơ tích điểm cho khách hàng</p>
+            <div className="mb-3">
+              <h3 className="text-base font-semibold text-gray-800">Cấu hình điểm tích lũy</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Số điểm nhận được cho mỗi 10.000đ thanh toán. Thay đổi áp dụng cho đơn hoàn thành sau khi lưu.
+              </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={loyaltyPhone}
-                  onChange={(e) => setLoyaltyPhone(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      lookupLoyaltyAccount();
-                    }
-                  }}
-                  placeholder="Ví dụ: 09xxxxxxxx"
-                  className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
+            {loyaltyPointsLoading ? (
+              <p className="text-sm text-gray-400">Đang tải...</p>
+            ) : (
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Điểm / 10.000đ</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={loyaltyPointsPerTenThousand}
+                    onChange={(e) => setLoyaltyPointsPerTenThousand(e.target.value)}
+                    disabled={!canEdit || savingLoyaltyPoints}
+                    className="w-36 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100"
+                  />
+                </div>
+                <div className="text-sm text-gray-500">
+                  Ví dụ đơn 100.000đ →{' '}
+                  <span className="font-semibold text-gray-800">
+                    {Math.max(0, Number(loyaltyPointsPerTenThousand) || 0) * 10} điểm
+                  </span>
+                </div>
+                {canEdit && (
+                  <button
+                    onClick={saveLoyaltyPointsPolicy}
+                    disabled={savingLoyaltyPoints}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {savingLoyaltyPoints ? 'Đang lưu...' : 'Lưu cấu hình'}
+                  </button>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={lookupLoyaltyAccount}
-                disabled={loadingLoyalty}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-              >
-                <Search size={16} /> {loadingLoyalty ? 'Đang tra...' : 'Tra cứu'}
-              </button>
-            </div>
-            {loyaltyError && <p className="mt-2 text-xs text-red-600">{loyaltyError}</p>}
+            )}
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -1045,9 +1116,8 @@ export default function ExternalFactorsPage() {
                   )}
 
                   {/* Active badge */}
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    tier.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${tier.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
                     {tier.active ? 'Đang dùng' : 'Tắt'}
                   </span>
 
@@ -1228,94 +1298,77 @@ export default function ExternalFactorsPage() {
             })()}
           </div>
 
-          {false && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold">Cấp bậc thành viên</h3>
-                <p className="text-xs text-gray-500">Cấu hình điều kiện lên hạng và voucher tự động cho hạng Bạc/Vàng trong 30 ngày gần nhất</p>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Quản lý tích điểm theo SĐT</h3>
+              <p className="text-xs text-gray-500">Nhập số điện thoại để tra cứu hoặc tạo hồ sơ tích điểm cho khách hàng</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={loyaltyPhone}
+                  onChange={(e) => {
+                    setLoyaltyPhone(e.target.value);
+                    setShowPhoneSuggestions(true);
+                  }}
+                  onFocus={() => setShowPhoneSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowPhoneSuggestions(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setShowPhoneSuggestions(false);
+                      lookupLoyaltyAccount();
+                    }
+                  }}
+                  placeholder="Ví dụ: 09xxxxxxxx"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+                {showPhoneSuggestions && loyaltyPhone.trim() && loyaltyAccounts.some(acc => acc.phone.includes(loyaltyPhone.trim()) && acc.phone !== loyaltyPhone.trim()) && (
+                  <ul className="absolute z-10 w-full mt-1 top-full left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {loyaltyAccounts
+                      .filter((acc) => acc.phone.includes(loyaltyPhone.trim()) && acc.phone !== loyaltyPhone.trim())
+                      .slice(0, 5)
+                      .map((acc) => {
+                        const matchIndex = acc.phone.indexOf(loyaltyPhone.trim());
+                        const matchLen = loyaltyPhone.trim().length;
+                        return (
+                          <li
+                            key={acc.id}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm flex justify-between items-center border-b border-gray-50 last:border-0"
+                            onClick={() => {
+                              setLoyaltyPhone(acc.phone);
+                              setLoyaltyAccount(acc);
+                              setLoyaltyError('');
+                              setShowPhoneSuggestions(false);
+                            }}
+                          >
+                            <span className="font-medium text-gray-800">
+                              {acc.phone.slice(0, matchIndex)}
+                              <span className="text-blue-600 bg-blue-50">{acc.phone.slice(matchIndex, matchIndex + matchLen)}</span>
+                              {acc.phone.slice(matchIndex + matchLen)}
+                            </span>
+                            <span className="text-xs text-amber-600 font-medium">{acc.pointsBalance.toLocaleString('vi-VN')} đ</span>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                )}
               </div>
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={saveTierPolicy}
-                  disabled={savingTierPolicy}
-                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {savingTierPolicy ? 'Đang lưu...' : 'Lưu cấp bậc'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={lookupLoyaltyAccount}
+                disabled={loadingLoyalty}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                <Search size={16} /> {loadingLoyalty ? 'Đang tra...' : 'Tra cứu'}
+              </button>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {([
-                { key: 'bac' as const, label: 'Hạng Bạc', tone: 'border-slate-200 bg-slate-50', prefix: 'bac' as const },
-                { key: 'vang' as const, label: 'Hạng Vàng', tone: 'border-amber-200 bg-amber-50', prefix: 'vang' as const },
-              ]).map((tier) => {
-                const ordersKey = `${tier.prefix}MinOrders` as keyof LoyaltyTierPolicy;
-                const spentKey = `${tier.prefix}MinSpent` as keyof LoyaltyTierPolicy;
-                const discountKey = `${tier.prefix}DiscountPercent` as keyof LoyaltyTierPolicy;
-                const maxDiscountKey = `${tier.prefix}MaxDiscountAmount` as keyof LoyaltyTierPolicy;
-                return (
-                  <div key={tier.key} className={`rounded-xl border p-4 ${tier.tone}`}>
-                    <h4 className="mb-3 font-semibold text-gray-900">{tier.label}</h4>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Tối thiểu số đơn</span>
-                        <input
-                          type="number"
-                          min={1}
-                          value={tierPolicy[ordersKey]}
-                          onChange={(e) => setTierPolicy({ ...tierPolicy, [ordersKey]: Number(e.target.value) || 1 })}
-                          disabled={!canEdit}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
-                        />
-                      </label>
-                      <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Hoặc chi tiêu từ</span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={10000}
-                          value={tierPolicy[spentKey]}
-                          onChange={(e) => setTierPolicy({ ...tierPolicy, [spentKey]: Number(e.target.value) || 0 })}
-                          disabled={!canEdit}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
-                        />
-                      </label>
-                      <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Voucher giảm (%)</span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.1}
-                          value={tierPolicy[discountKey]}
-                          onChange={(e) => setTierPolicy({ ...tierPolicy, [discountKey]: Number(e.target.value) || 0 })}
-                          disabled={!canEdit}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
-                        />
-                      </label>
-                      <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Giảm tối đa</span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={10000}
-                          value={tierPolicy[maxDiscountKey]}
-                          onChange={(e) => setTierPolicy({ ...tierPolicy, [maxDiscountKey]: Number(e.target.value) || 0 })}
-                          disabled={!canEdit}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {loyaltyError && <p className="mt-2 text-xs text-red-600">{loyaltyError}</p>}
           </div>
-
-          )}
 
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

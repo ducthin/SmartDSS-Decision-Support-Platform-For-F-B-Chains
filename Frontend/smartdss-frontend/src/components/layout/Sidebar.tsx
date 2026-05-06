@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleKey, formatRoleName } from '@/utils/helpers';
+import logoImg from '@/assets/img/logo.png';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
@@ -25,12 +26,12 @@ const navItems = [
   { path: '/inventory', label: 'Kho hàng', icon: Package, roles: ['ADMIN', 'MANAGER'] },
 
   // Phân tích và tối ưu
-  { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
-  { path: '/finance',        label: 'Tài chính',   icon: Wallet,             roles: ['ADMIN', 'MANAGER'] },
-  { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },
+  { path: '/reports', label: 'Báo cáo', icon: BarChart3, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/finance', label: 'Tài chính', icon: Wallet, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/ai-prediction', label: 'AI Dự báo', icon: Brain, roles: ['ADMIN', 'MANAGER'] },
   { path: '/promotions', label: 'Ưu đãi', icon: Gift, roles: ['ADMIN', 'MANAGER'] },
   { path: '/external-factors', label: 'Yếu tố ngoài', icon: CloudSun, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },
+  { path: '/feedbacks', label: 'Feedback KH', icon: MessageSquareText, roles: ['ADMIN', 'MANAGER'] },
 
   // Quản trị hệ thống
   { path: '/users', label: 'Nhân viên', icon: Users, roles: ['ADMIN'] },
@@ -48,9 +49,14 @@ export default function Sidebar() {
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col transition-all duration-300`}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 shrink-0">
-        {!collapsed && <span className="text-xl font-bold text-blue-600">SmartDSS</span>}
-        <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100">
+      <div className="h-16 flex items-center justify-center border-b border-gray-200 shrink-0 relative">
+        {!collapsed && (
+          <img src={logoImg} alt="SmartDSS Logo" className="h-16 w-auto max-w-[160px] object-contain" />
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={`p-1 rounded hover:bg-gray-100 ${collapsed ? '' : 'absolute right-4'}`}
+        >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>

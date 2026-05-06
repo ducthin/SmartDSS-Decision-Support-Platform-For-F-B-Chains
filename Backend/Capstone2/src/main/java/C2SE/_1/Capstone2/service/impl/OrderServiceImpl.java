@@ -64,6 +64,21 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrders(Pageable pageable) {
+        return getAllOrders(pageable, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getAllOrders(Pageable pageable, String keyword) {
+        Long orderId = parseOrderIdKeyword(keyword);
+        if (Long.valueOf(Long.MIN_VALUE).equals(orderId)) {
+            return PageResponse.of(Page.empty(pageable), List.of());
+        }
+        if (orderId != null) {
+            Page<Order> page = orderRepository.searchById(orderId, pageable);
+            return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
+        }
+
         Page<Order> page = orderRepository.findAll(pageable);
         return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
     }
@@ -71,14 +86,43 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable) {
+        return getOrdersByStatus(status, pageable, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable, String keyword) {
         OrderStatus orderStatus;
         try {
             orderStatus = OrderStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Invalid order status: " + status);
         }
-        Page<Order> page = orderRepository.findByStatus(orderStatus, pageable);
+
+        Long orderId = parseOrderIdKeyword(keyword);
+        if (Long.valueOf(Long.MIN_VALUE).equals(orderId)) {
+            return PageResponse.of(Page.empty(pageable), List.of());
+        }
+        Page<Order> page = orderId != null
+                ? orderRepository.searchByStatusAndId(orderStatus, orderId, pageable)
+                : orderRepository.findByStatus(orderStatus, pageable);
         return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
+    }
+
+    private Long parseOrderIdKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String normalized = keyword.trim().replaceFirst("^#", "");
+        if (normalized.isBlank()) {
+            return null;
+        }
+        try {
+            long parsed = Long.parseLong(normalized);
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ex) {
+            return Long.MIN_VALUE;
+        }
     }
 
     @Override
