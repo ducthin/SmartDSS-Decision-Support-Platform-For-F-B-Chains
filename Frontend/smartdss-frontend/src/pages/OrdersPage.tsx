@@ -26,6 +26,74 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const CUSTOMER_PHONE_REGEX = /^[+0-9][0-9]{8,19}$/;
+const ITEM_NOTES_MARKER = '[ITEM_NOTES]';
+
+type OnlineOrderParsedNote = {
+  customer?: string;
+  deliveryAddress?: string;
+  customerNote?: string;
+  itemNotesByIndex?: Record<number, string>;
+};
+
+function parseOnlineOrderNote(rawNote?: string | null): OnlineOrderParsedNote | null {
+  if (!rawNote) return null;
+  const note = rawNote.trim();
+  if (!note) return null;
+
+  const parts = note
+    .split(' | ')
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  let customer: string | undefined;
+  let deliveryAddress: string | undefined;
+  let customerNote: string | undefined;
+
+  for (const part of parts) {
+    const cleaned = part.replace(/^\[ONLINE\]\s*/i, '');
+    if (cleaned.toLowerCase().startsWith('khách:')) {
+      customer = cleaned.split(':')[1]?.trim() || '';
+      continue;
+    }
+    if (cleaned.startsWith('Địa chỉ giao:')) {
+      deliveryAddress = cleaned.split('Địa chỉ giao:')[1]?.trim() || '';
+      continue;
+    }
+    if (cleaned.startsWith('Ghi chú:')) {
+      customerNote = cleaned.split('Ghi chú:')[1]?.trim() || '';
+      continue;
+    }
+  }
+
+  let parsedItemNotesByIndex: Record<number, string> | undefined;
+  if (customerNote) {
+    const markerIndex = customerNote.indexOf(ITEM_NOTES_MARKER);
+    if (markerIndex >= 0) {
+      const before = customerNote.slice(0, markerIndex).trim();
+      const after = customerNote.slice(markerIndex + ITEM_NOTES_MARKER.length).trim();
+      const map: Record<number, string> = {};
+      if (after) {
+        const lines = after
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+        for (const line of lines) {
+          const eqIdx = line.indexOf('=');
+          if (eqIdx <= 0) continue;
+          const idxStr = line.slice(0, eqIdx).trim();
+          const idx = Number.parseInt(idxStr, 10);
+          const value = line.slice(eqIdx + 1).trim();
+          if (!Number.isNaN(idx) && value) map[idx] = value;
+        }
+      }
+      customerNote = before || undefined;
+      if (Object.keys(map).length > 0) parsedItemNotesByIndex = map;
+    }
+  }
+
+  const hasAny = !!(customer || deliveryAddress || customerNote || parsedItemNotesByIndex);
+  return hasAny ? { customer, deliveryAddress, customerNote, itemNotesByIndex: parsedItemNotesByIndex } : null;
+}
 
 interface CartItem {
   key: string;
@@ -804,7 +872,7 @@ function POSView() {
                 }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
-                <span className="inline-flex items-center gap-1"><Wallet size={16} /> Tiền mặt</span>
+                <span className="inline-flex items-center gap-1"><Wallet size={16} /> COD (tiền mặt)</span>
               </button>
               <button
                 onClick={() => {
@@ -814,7 +882,7 @@ function POSView() {
                 }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
-                <span className="inline-flex items-center gap-1"><QrCode size={16} /> QR chuyển khoản</span>
+                <span className="inline-flex items-center gap-1"><QrCode size={16} /> Chuyển khoản (QR)</span>
               </button>
             </div>
 
@@ -942,6 +1010,7 @@ function OrderListView() {
   const [page, setPage] = useState(0);
   const [pageData, setPageData] = useState<PageResponse<Order> | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'ONLINE' | 'INSTORE'>('ALL');
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
   const [billOrder, setBillOrder] = useState<Order | null>(null);
   const [loadingBillId, setLoadingBillId] = useState<number | null>(null);
@@ -1202,9 +1271,14 @@ function OrderListView() {
     URL.revokeObjectURL(url);
   };
 
-  const paidOrderCount = orders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
-  const completedOrderCount = orders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
-  const pendingOrderCount = orders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
+  const filteredOrders = useMemo(() => {
+    if (sourceFilter === 'ALL') return orders;
+    if (sourceFilter === 'ONLINE') return orders.filter((o) => (o.tableNumber || '').toUpperCase() === 'ONLINE');
+    return orders.filter((o) => (o.tableNumber || '').toUpperCase() !== 'ONLINE');
+  }, [orders, sourceFilter]);
+  const paidOrderCountFiltered = filteredOrders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
+  const completedOrderCountFiltered = filteredOrders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
+  const pendingOrderCountFiltered = filteredOrders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
 
   const renderOrderActions = (order: Order) => (
     <div className="flex flex-wrap gap-2">
@@ -1279,15 +1353,15 @@ function OrderListView() {
           <div className="grid grid-cols-3 gap-2 sm:min-w-[420px]">
             <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
               <p className="text-xs text-gray-500">Đang xử lý</p>
-              <p className="text-lg font-bold text-gray-900">{pendingOrderCount}</p>
+              <p className="text-lg font-bold text-gray-900">{pendingOrderCountFiltered}</p>
             </div>
             <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
               <p className="text-xs text-gray-500">Hoàn thành</p>
-              <p className="text-lg font-bold text-gray-900">{completedOrderCount}</p>
+              <p className="text-lg font-bold text-gray-900">{completedOrderCountFiltered}</p>
             </div>
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
               <p className="text-xs text-emerald-700">Đã thu tiền</p>
-              <p className="text-lg font-bold text-emerald-700">{paidOrderCount}</p>
+              <p className="text-lg font-bold text-emerald-700">{paidOrderCountFiltered}</p>
             </div>
           </div>
         </div>
@@ -1312,27 +1386,71 @@ function OrderListView() {
             </select>
           </div>
         </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSourceFilter('ALL')}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            Tất cả nguồn
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceFilter('ONLINE')}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ONLINE' ? 'bg-violet-600 text-white' : 'bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+          >
+            ONLINE
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceFilter('INSTORE')}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'INSTORE' ? 'bg-slate-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            Tại quầy/Bàn
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">
-        {orders.map((order) => {
+        {filteredOrders.map((order) => {
           const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
           const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
           const originalTax = calculateVatBreakdown(originalAmount, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
           const discountAmount = order.discountAmount ?? 0;
           const payment = paymentStatusByOrder[order.id];
+          const isOnlineOrder = (order.tableNumber || '').toUpperCase() === 'ONLINE';
+          const parsedOnlineNote = isOnlineOrder ? parseOnlineOrderNote(order.note) : null;
           return (
-            <article key={order.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md">
+            <article
+              key={order.id}
+              className={`overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md ${
+                isOnlineOrder
+                  ? 'border-violet-200 bg-violet-50'
+                  : 'border-gray-200 bg-white hover:border-blue-200'
+              }`}
+            >
               <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/80 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-gray-900 shadow-sm">#{order.id}</span>
-                  {order.tableNumber ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                      {order.tableNumber}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-600">
-                      POS
+                  {(() => {
+                    const isOnline = (order.tableNumber || '').toUpperCase() === 'ONLINE';
+                    if (isOnline) return null;
+                    if (order.tableNumber) {
+                      return (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                          {order.tableNumber}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-600">
+                        POS
+                      </span>
+                    );
+                  })()}
+                  {(order.tableNumber || '').toUpperCase() === 'ONLINE' && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                      ONLINE
                     </span>
                   )}
                   <StatusBadge status={order.status} />
@@ -1369,6 +1487,11 @@ function OrderListView() {
                               <p className="mt-1 text-xs text-gray-500">
                                 {formatCurrency(unitPrice)} × {quantity}
                               </p>
+                              {isOnlineOrder && parsedOnlineNote?.itemNotesByIndex?.[idx] ? (
+                                <p className="mt-1 text-xs text-violet-800 wrap-break-word">
+                                  Ghi chú món: {parsedOnlineNote.itemNotesByIndex[idx]}
+                                </p>
+                              ) : null}
                             </div>
                             <div className="shrink-0 text-right">
                               <span className="inline-flex rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-bold text-gray-700">
@@ -1382,9 +1505,41 @@ function OrderListView() {
                     })}
                   </div>
                   {order.note && (
-                    <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm italic leading-5 text-orange-700 wrap-break-word">
-                      Ghi chú: {order.note}
-                    </div>
+                    (order.tableNumber || '').toUpperCase() === 'ONLINE' ? (
+                      (() => {
+                        const parsed = parsedOnlineNote;
+                        const deliveryAddress = parsed?.deliveryAddress?.trim();
+                        const customerNote = parsed?.customerNote?.trim();
+
+                        const showAddressOrNote = !!deliveryAddress || !!customerNote;
+                        if (!showAddressOrNote || !parsed) {
+                          return (
+                            <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm leading-5 wrap-break-word text-violet-900">
+                              {order.note}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm leading-5 wrap-break-word text-violet-900">
+                            {deliveryAddress ? (
+                              <div>
+                                <span className="font-semibold">Địa chỉ giao:</span> {deliveryAddress}
+                              </div>
+                            ) : null}
+                            {customerNote ? (
+                              <div className="mt-2">
+                                <span className="font-semibold">Ghi chú:</span> {customerNote}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm italic leading-5 text-orange-700 wrap-break-word">
+                        Ghi chú: {order.note}
+                      </div>
+                    )
                   )}
                 </div>
 
@@ -1445,7 +1600,7 @@ function OrderListView() {
           );
         })}
 
-        {orders.length === 0 && (
+        {filteredOrders.length === 0 && (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-12 text-center">
             <ReceiptText className="mx-auto mb-3 text-gray-300" size={34} />
             <p className="font-medium text-gray-700">Chưa có đơn hàng</p>
@@ -1486,7 +1641,7 @@ function OrderListView() {
                 }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
-                <span className="inline-flex items-center gap-1"><Wallet size={16} /> Tiền mặt</span>
+                <span className="inline-flex items-center gap-1"><Wallet size={16} /> COD (tiền mặt)</span>
               </button>
               <button
                 onClick={() => {
@@ -1496,7 +1651,7 @@ function OrderListView() {
                 }}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
               >
-                <span className="inline-flex items-center gap-1"><QrCode size={16} /> QR chuyển khoản</span>
+                <span className="inline-flex items-center gap-1"><QrCode size={16} /> Chuyển khoản (QR)</span>
               </button>
             </div>
 
@@ -1634,7 +1789,7 @@ function OrderListView() {
               <p>Giờ: <span className="font-medium text-gray-800">{new Date(billOrder.createdAt).toLocaleString('vi-VN')}</span></p>
               {paymentStatusByOrder[billOrder.id]?.status === 'PAID' && (
                 <>
-                  <p>Thanh toán: <span className="font-medium text-gray-800">{paymentStatusByOrder[billOrder.id].paymentMethod === 'QR' ? 'QR chuyển khoản' : 'Tiền mặt'}</span></p>
+                  <p>Thanh toán: <span className="font-medium text-gray-800">{paymentStatusByOrder[billOrder.id].paymentMethod === 'QR' ? 'Chuyển khoản (QR)' : 'COD (tiền mặt)'}</span></p>
                 </>
               )}
             </div>
@@ -1721,7 +1876,7 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
   const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
   const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
   const discountAmount = order.discountAmount ?? 0;
-  const discountRow = discountAmount > 0
+    const discountRow = discountAmount > 0
     ? `<div class="discount"><div><span>${escapeHtml(order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi')}</span><span>-${formatCurrency(discountAmount)}</span></div>${order.promotionNote ? `<p>${escapeHtml(order.promotionNote)}</p>` : ''}</div>`
     : '';
   const rows = order.orderItems.map((item) => {
@@ -1773,7 +1928,7 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
     <div>Bàn: ${escapeHtml(order.tableNumber || 'POS')}</div>
     <div>Thu ngân: ${escapeHtml(order.createdByName || 'N/A')}</div>
     <div>Giờ: ${new Date(order.createdAt).toLocaleString('vi-VN')}</div>
-    <div>Thanh toán: ${paid.paymentMethod === 'QR' ? 'QR chuyển khoản' : 'Tiền mặt'}</div>
+    <div>Thanh toán: ${paid.paymentMethod === 'QR' ? 'Chuyển khoản (QR)' : 'COD (tiền mặt)'}</div>
   </div>
   <table>
     <thead>

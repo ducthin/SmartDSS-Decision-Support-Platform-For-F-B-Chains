@@ -48,7 +48,9 @@ public class VoucherServiceImpl implements VoucherService {
     @Transactional(readOnly = true)
     public List<VoucherDTO> getAvailablePersonalVouchers(String phone) {
         String normalizedPhone = normalizePhone(phone);
-        return voucherMapper.toDTOList(voucherRepository.findAvailablePersonalVouchers(normalizedPhone, LocalDateTime.now()));
+        return voucherMapper.toDTOList(
+                voucherRepository.findAvailablePersonalVouchers(List.of(normalizedPhone), LocalDateTime.now())
+        );
     }
 
     @Override

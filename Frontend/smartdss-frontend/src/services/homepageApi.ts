@@ -1,3 +1,5 @@
+import type { QrDiscountPreview, Order } from '@/types';
+import api from './api';
 /**
  * Homepage public API client
  * Base URL: http://localhost:8080
@@ -15,14 +17,14 @@ export interface CategoryDTO {
 }
 
 export interface DrinkSizeOptionDTO {
-  sizeCode: string;
+  code: string;
   label: string;
-  extraPrice: number;
+  priceExtra: number;
 }
 
 export interface DrinkToppingOptionDTO {
-  toppingId: number;
-  name: string;
+  code: string;
+  label: string;
   price: number;
 }
 
@@ -76,6 +78,13 @@ export interface PublicPromotionDTO {
   validUntil?: string;
 }
 
+export interface PublicPersonalVoucherDTO {
+  code: string;
+  title: string;
+  discountLabel?: string;
+  validUntil?: string;
+}
+
 export interface PublicTableBookingRequestDTO {
   customerName: string;
   customerPhone: string;
@@ -85,31 +94,36 @@ export interface PublicTableBookingRequestDTO {
   note?: string;
 }
 
+export interface PublicOrderLineDTO {
+  menuItemId: number;
+  quantity: number;
+  selectedSizeCode?: string;
+  selectedToppingCodes?: string[];
+}
+
+export interface PublicOnlineOrderDTO {
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  voucherCode?: string;
+  note?: string;
+  orderItems: PublicOrderLineDTO[];
+}
+
 // ─── Generic fetcher ────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+  const res = await api.get<{ success: boolean; data: T; message?: string }>(path, {
+    baseURL: BASE_URL,
   });
-  if (!res.ok) {
-    throw new Error(`API error ${res.status} on ${path}`);
-  }
-  const json = await res.json();
-  // Backend wraps response: { success: true, data: T }
-  return (json?.data ?? json) as T;
+  return (res.data?.data ?? (res.data as unknown as T)) as T;
 }
 
 async function apiPost<T, P>(path: string, payload: P): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+  const res = await api.post<{ success: boolean; data: T; message?: string }>(path, payload, {
+    baseURL: BASE_URL,
   });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(json?.message || `API error ${res.status} on ${path}`);
-  }
-  return (json?.data ?? json) as T;
+  return (res.data?.data ?? (res.data as unknown as T)) as T;
 }
 
 // ─── Homepage API functions ─────────────────────────────────────────────────
@@ -141,3 +155,23 @@ export const fetchHomepagePromotions = (): Promise<PublicPromotionDTO[]> =>
 /** POST /api/v1/public/home/bookings — public booking request */
 export const submitTableBooking = (payload: PublicTableBookingRequestDTO) =>
   apiPost('/api/v1/public/home/bookings', payload);
+
+/** GET /api/v1/public/home/orders/discount-preview — public order discount preview */
+export const previewPublicOrderDiscount = (params: { subtotal: number; voucherCode?: string; customerPhone?: string }) => {
+  const query = new URLSearchParams();
+  query.set('subtotal', String(params.subtotal));
+  if (params.voucherCode?.trim()) query.set('voucherCode', params.voucherCode.trim());
+  if (params.customerPhone?.trim()) query.set('customerPhone', params.customerPhone.trim());
+  return apiFetch<QrDiscountPreview>(`/api/v1/public/home/orders/discount-preview?${query.toString()}`);
+};
+
+/** POST /api/v1/public/home/orders — place online order */
+export const submitPublicOnlineOrder = (payload: PublicOnlineOrderDTO) =>
+  apiPost<Order, PublicOnlineOrderDTO>('/api/v1/public/home/orders', payload);
+
+/** GET /api/v1/public/home/personal-vouchers?customerPhone=... */
+export const fetchPersonalVouchers = (customerPhone: string): Promise<PublicPersonalVoucherDTO[]> => {
+  const query = new URLSearchParams();
+  query.set('customerPhone', customerPhone);
+  return apiFetch<PublicPersonalVoucherDTO[]>(`/api/v1/public/home/personal-vouchers?${query.toString()}`);
+};

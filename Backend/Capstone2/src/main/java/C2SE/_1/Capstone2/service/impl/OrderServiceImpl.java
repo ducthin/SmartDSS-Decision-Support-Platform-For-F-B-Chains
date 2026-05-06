@@ -154,6 +154,9 @@ public class OrderServiceImpl implements OrderService {
 
         OrderDTO result = orderMapper.toDTO(orderRepository.save(order));
         messagingTemplate.convertAndSend("/topic/orders", result);
+        if ("ONLINE".equalsIgnoreCase(result.getTableNumber())) {
+            messagingTemplate.convertAndSend("/topic/public-orders", result);
+        }
         if (result.getQrClientSessionId() != null && !result.getQrClientSessionId().isBlank()) {
             messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
         }
@@ -247,6 +250,9 @@ public class OrderServiceImpl implements OrderService {
 
         OrderDTO result = orderMapper.toDTO(savedOrder);
         messagingTemplate.convertAndSend("/topic/orders", result);
+        if ("ONLINE".equalsIgnoreCase(result.getTableNumber())) {
+            messagingTemplate.convertAndSend("/topic/public-orders", result);
+        }
         if (result.getQrClientSessionId() != null && !result.getQrClientSessionId().isBlank()) {
             messagingTemplate.convertAndSend("/topic/qr-orders/" + result.getQrClientSessionId(), result);
         }
@@ -281,6 +287,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void createSalesTransactionFromOrder(Order order) {
+        // Đơn online có thể đã được tạo SalesTransaction khi khởi tạo QR trước khi order chuyển COMPLETED.
+        if (salesTransactionRepository.findByOrderId(order.getId()).isPresent()) {
+            return;
+        }
+
         List<SalesItem> salesItems = new ArrayList<>();
         BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
         BigDecimal rate = vatRatePercent.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);

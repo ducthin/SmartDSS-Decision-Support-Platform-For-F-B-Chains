@@ -96,4 +96,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     List<Order> findByTableNumberAndCustomerPhoneInOrderByCreatedAtDesc(String tableNumber, List<String> customerPhones);
+
+    List<Order> findByCustomerPhoneOrderByCreatedAtDesc(String customerPhone);
 }

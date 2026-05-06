@@ -8,10 +8,6 @@ import type { RankedProduct } from '@/hooks/useHomepageData';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-}
-
 const FALLBACK_IMG =
   'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80';
 
