@@ -357,9 +357,14 @@ public class QrOrderServiceImpl implements QrOrderService {
             }
         });
 
+        String priorityStr = (callDTO != null && callDTO.getPriority() != null) ? callDTO.getPriority() : "NORMAL";
+        StaffCall.StaffCallPriority priority = StaffCall.StaffCallPriority.valueOf(priorityStr.toUpperCase());
+
         StaffCall call = StaffCall.builder()
                 .tableName(tableName)
                 .message(callDTO != null ? callDTO.getMessage() : null)
+                .priority(priority)
+                .status(StaffCall.StaffCallStatus.PENDING)
                 .build();
 
         StaffCall saved = staffCallRepository.save(call);
@@ -367,6 +372,8 @@ public class QrOrderServiceImpl implements QrOrderService {
                 .id(saved.getId())
                 .tableName(saved.getTableName())
                 .message(saved.getMessage())
+                .priority(saved.getPriority().toString())
+                .status(saved.getStatus().toString())
                 .createdAt(saved.getCreatedAt())
                 .build();
 

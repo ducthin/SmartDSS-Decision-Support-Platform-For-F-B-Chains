@@ -13,6 +13,8 @@ public class StaffCallDTO {
     private Long id;
     private String tableName;
     private String message;
+    private String priority;
+    private String status;
     private LocalDateTime createdAt;
 }
 

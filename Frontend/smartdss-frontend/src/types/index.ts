@@ -502,11 +502,14 @@ export interface StaffCall {
   id: number;
   tableName: string;
   message?: string;
+  priority?: 'NORMAL' | 'URGENT';
+  status?: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
 }
 
 export interface QrStaffCallForm {
   message?: string;
+  priority?: 'NORMAL' | 'URGENT';
 }
 
 // Customer Feedback

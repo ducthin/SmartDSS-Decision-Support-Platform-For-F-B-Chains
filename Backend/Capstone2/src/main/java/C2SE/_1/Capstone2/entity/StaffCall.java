@@ -22,5 +22,25 @@ public class StaffCall extends BaseEntity {
 
     @Column(length = 500)
     private String message;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private StaffCallPriority priority;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private StaffCallStatus status;
+
+    public enum StaffCallPriority {
+        NORMAL,
+        URGENT
+    }
+
+    public enum StaffCallStatus {
+        PENDING,
+        ACCEPTED,
+        COMPLETED,
+        CANCELLED
+    }
 }
 

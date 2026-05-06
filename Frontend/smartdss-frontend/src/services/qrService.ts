@@ -31,7 +31,7 @@ export const qrService = {
   requestInvoice: (token: string, data: QrInvoiceRequest) =>
     qrApi.post<ApiResponse<QrInvoiceResponse>>(`/${token}/invoice`, data),
   callStaff: (token: string, data?: QrStaffCallForm) =>
-    qrApi.post<ApiResponse<StaffCall>>(`/${token}/call`, data || {}),
+    qrApi.post<ApiResponse<StaffCall>>(`/${token}/call`, data || { priority: 'NORMAL' }),
   getTelegramOptInLink: (phone: string) =>
     publicApi.get<ApiResponse<string>>('/telegram/opt-in-link', { params: { phone } }),
   getTelegramLinkStatus: (phone: string) =>

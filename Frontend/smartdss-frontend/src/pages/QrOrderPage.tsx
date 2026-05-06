@@ -5,10 +5,11 @@ import toast, { Toaster } from 'react-hot-toast';
 import '@/styles/coffee-theme.css';
 import { qrService } from '@/services/qrService';
 import { publicConfigService } from '@/services/publicConfigService';
-import type { MenuItem, Order, DiningTable, QrDiscountPreview, QrFeedbackForm, TaxPolicy } from '@/types';
+import type { MenuItem, Order, DiningTable, QrDiscountPreview, QrFeedbackForm, QrStaffCallForm, TaxPolicy } from '@/types';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
 import { calculateVatBreakdown, drinkCartLineKey, unitPriceWithDrinkOptions } from '@/utils/helpers';
 import DrinkCustomizeModal from '@/components/DrinkCustomizeModal';
+import StaffCallModal from '@/components/qr-order/StaffCallModal';
 import { getOrCreateQrClientSessionId } from '@/utils/qrClientSession';
 import QrPageHeader from '@/components/qr-order/QrPageHeader';
 import QrMenuPanel from '@/components/qr-order/QrMenuPanel';
@@ -71,6 +72,7 @@ export default function QrOrderPage() {
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [menuSearch, setMenuSearch] = useState('');
   const [callingStaff, setCallingStaff] = useState(false);
+  const [staffCallModalOpen, setStaffCallModalOpen] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [feedbackPreviewUrls, setFeedbackPreviewUrls] = useState<string[]>([]);
   const [taxPolicy, setTaxPolicy] = useState<TaxPolicy>({ vatRatePercent: 8, priceIncludesVat: true });
@@ -437,13 +439,14 @@ export default function QrOrderPage() {
     }
   };
 
-  const callStaff = async () => {
+  const callStaff = async (data: QrStaffCallForm) => {
     if (!token) return;
     if (callingStaff) return;
     setCallingStaff(true);
     try {
-      await qrService.callStaff(token);
+      await qrService.callStaff(token, data);
       toast.success('Đã gọi nhân viên. Vui lòng chờ một chút.');
+      setStaffCallModalOpen(false);
     } catch {
       toast.error('Không thể gọi nhân viên, vui lòng thử lại');
     } finally {
@@ -570,7 +573,7 @@ export default function QrOrderPage() {
         tableName={table.name}
         tab={tab}
         onTabChange={setTab}
-        onCallStaff={callStaff}
+        onCallStaff={() => setStaffCallModalOpen(true)}
         callingStaff={callingStaff}
       />
 
@@ -691,6 +694,13 @@ export default function QrOrderPage() {
           </div>
         </div>
       )}
+
+      <StaffCallModal
+        open={staffCallModalOpen}
+        loading={callingStaff}
+        onClose={() => setStaffCallModalOpen(false)}
+        onConfirm={callStaff}
+      />
     </div>
   );
 }
