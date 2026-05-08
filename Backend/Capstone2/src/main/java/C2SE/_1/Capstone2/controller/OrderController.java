@@ -27,12 +27,13 @@ public class OrderController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String source) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("id"), Sort.Order.desc("createdAt")));
         if (status != null && !status.isBlank()) {
-            return ResponseEntity.ok(ApiResponse.success(orderService.getOrdersByStatus(status, pageable, keyword)));
+            return ResponseEntity.ok(ApiResponse.success(orderService.getOrdersByStatus(status, pageable, keyword, source)));
         }
-        return ResponseEntity.ok(ApiResponse.success(orderService.getAllOrders(pageable, keyword)));
+        return ResponseEntity.ok(ApiResponse.success(orderService.getAllOrders(pageable, keyword, source)));
     }
 
     @GetMapping("/{id}")

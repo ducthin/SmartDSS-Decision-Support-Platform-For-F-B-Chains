@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { settingsService, resolveBackendUrl } from '@/services/settingsService';
@@ -191,22 +192,22 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Cài đặt</h1>
-        <p className="text-sm text-gray-500 mt-1">Thiết lập hệ thống chung cho toàn bộ nhân viên.</p>
+        <h1 className="text-2xl font-bold text-[#1a0e07]">Cài đặt</h1>
+        <p className="text-sm text-[rgba(26,14,7,0.5)] mt-1">Thiết lập hệ thống chung cho toàn bộ nhân viên.</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+      <div className="bg-white border border-[rgba(107,80,64,0.1)] rounded-2xl p-5 space-y-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-gray-800">Âm thanh “Gọi nhân viên” (QR)</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="font-semibold text-[#1a0e07]">Âm thanh "Gọi nhân viên" (QR)</h2>
+            <p className="text-sm text-[rgba(26,14,7,0.5)] mt-1">
               File này sẽ được phát trên thiết bị nhân viên khi có khách gọi qua QR (khi đã bật thông báo).
             </p>
           </div>
           {soundUrl && (
             <button
               onClick={clearSound}
-              className="text-sm px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50"
+              className="text-sm px-3 py-1.5 rounded-xl border border-[rgba(107,80,64,0.18)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition"
             >
               Xóa
             </button>
@@ -214,15 +215,15 @@ export default function SettingsPage() {
         </div>
 
         {loading ? (
-          <div className="text-sm text-gray-500">Đang tải...</div>
+          <div className="text-sm text-[rgba(26,14,7,0.45)]">Đang tải...</div>
         ) : (
           <div className="space-y-3">
             <div className="text-sm">
-              <span className="text-gray-500">Trạng thái:</span>{' '}
+              <span className="text-[rgba(26,14,7,0.5)]">Trạng thái:</span>{' '}
               {soundUrl ? (
-                <span className="font-medium text-green-700">Đã cấu hình</span>
+                <span className="font-medium text-emerald-700">Đã cấu hình</span>
               ) : (
-                <span className="font-medium text-gray-600">Chưa cấu hình (dùng beep mặc định)</span>
+                <span className="font-medium text-[rgba(26,14,7,0.5)]">Chưa cấu hình (dùng beep mặc định)</span>
               )}
             </div>
 
@@ -236,86 +237,86 @@ export default function SettingsPage() {
                 accept="audio/*"
                 disabled={!canManage || uploading}
                 onChange={(e) => onPickFile(e.target.files?.[0])}
-                className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[rgba(201,162,122,0.15)] file:text-[#6b5040] hover:file:bg-[rgba(201,162,122,0.25)] transition"
               />
-              {uploading && <span className="text-sm text-gray-500">Đang upload...</span>}
+              {uploading && <span className="text-sm text-[rgba(26,14,7,0.45)]">Đang upload...</span>}
             </div>
 
             {!canManage && (
-              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                 Chỉ ADMIN mới được thay đổi âm thanh.
               </div>
             )}
           </div>
         )}
       </div>
-      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+      <div className="bg-white border border-[rgba(107,80,64,0.1)] rounded-2xl p-5 space-y-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div>
-          <h2 className="font-semibold text-gray-800">Vị trí quán để phân tích khu vực</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="font-semibold text-[#1a0e07]">Vị trí quán để phân tích khu vực</h2>
+          <p className="text-sm text-[rgba(26,14,7,0.5)] mt-1">
             Nhập tọa độ quán để hệ thống ước lượng khu vực đông/không đông và hỗ trợ quyết định vận hành.
           </p>
         </div>
 
         {locationLoading ? (
-          <div className="text-sm text-gray-500">Đang tải...</div>
+          <div className="text-sm text-[rgba(26,14,7,0.45)]">Đang tải...</div>
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Vĩ độ (Latitude)</label>
+                <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Vĩ độ (Latitude)</label>
                 <input
                   type="text"
                   value={locationForm.latitude}
                   onChange={(e) => setLocationForm((p) => ({ ...p, latitude: e.target.value }))}
                   disabled={!canManage || savingLocation}
                   placeholder="Ví dụ: 16.0748"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3 py-2 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.12)] disabled:opacity-50 bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Kinh độ (Longitude)</label>
+                <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Kinh độ (Longitude)</label>
                 <input
                   type="text"
                   value={locationForm.longitude}
                   onChange={(e) => setLocationForm((p) => ({ ...p, longitude: e.target.value }))}
                   disabled={!canManage || savingLocation}
                   placeholder="Ví dụ: 108.2240"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3 py-2 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.12)] disabled:opacity-50 bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Địa chỉ mô tả</label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Địa chỉ mô tả</label>
               <input
                 type="text"
                 value={locationForm.address}
                 onChange={(e) => setLocationForm((p) => ({ ...p, address: e.target.value }))}
                 disabled={!canManage || savingLocation}
                 placeholder="Ví dụ: 123 Trần Phú, Hải Châu, Đà Nẵng"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3 py-2 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.12)] disabled:opacity-50 bg-white"
               />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setShowMapPicker(true)}
                 disabled={!canManage || savingLocation}
-                className="text-sm px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="text-sm px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] disabled:opacity-50 transition"
               >
                 Chọn trên bản đồ
               </button>
               <button
                 onClick={openExternalMap}
-                className="text-sm px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
+                className="text-sm px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition"
               >
                 Mở Google Maps
               </button>
               <button
                 onClick={saveLocation}
                 disabled={!canManage || savingLocation}
-                className="text-sm px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="text-sm px-4 py-2 rounded-xl bg-[#6b5040] text-white font-medium hover:brightness-110 disabled:opacity-50 transition active:scale-95"
               >
                 {savingLocation ? 'Đang lưu...' : 'Lưu vị trí'}
               </button>
@@ -326,22 +327,22 @@ export default function SettingsPage() {
                     .catch((e) => toast.error(getApiErrorMessage(e, 'Không thể kiểm tra dữ liệu lưu')));
                 }}
                 disabled={verifyingLocation}
-                className="text-sm px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                className="text-sm px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] disabled:opacity-50 transition"
               >
                 {verifyingLocation ? 'Đang kiểm tra...' : 'Kiểm tra lưu'}
               </button>
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-[rgba(26,14,7,0.4)]">
               Bạn có thể bấm vào map để lấy chính xác vĩ độ/kinh độ, sau đó lưu để dùng cho phân tích mật độ khu vực.
             </span>
             {lastVerifiedAt && (
-              <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+              <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
                 Dữ liệu vị trí đã xác minh lúc {new Date(lastVerifiedAt).toLocaleString('vi-VN')}.
               </p>
             )}
 
             {!canManage && (
-              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                 Chỉ ADMIN mới được thay đổi vị trí quán.
               </div>
             )}

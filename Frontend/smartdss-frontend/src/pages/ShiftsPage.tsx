@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarClock, Download, LogIn, LogOut, Pencil, Plus, ReceiptText, RefreshCw, UserRoundCheck, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -78,13 +79,13 @@ function resolveShiftDateTime(item: ShiftAssignment, point: 'start' | 'end') {
 
 function getShiftDisplayState(item: ShiftAssignment) {
   if (item.status === 'CANCELLED') {
-    return { label: 'Đã hủy', className: 'bg-gray-100 text-gray-600', canCheckIn: false };
+    return { label: 'Đã hủy', className: 'bg-[rgba(107,80,64,0.08)] text-[rgba(26,14,7,0.5)]', canCheckIn: false };
   }
   if (item.status === 'COMPLETED') {
     return { label: 'Đã kết ca', className: 'bg-emerald-100 text-emerald-700', canCheckIn: false };
   }
   if (item.status === 'CHECKED_IN') {
-    return { label: 'Đang làm', className: 'bg-blue-100 text-blue-700', canCheckIn: false };
+    return { label: 'Đang làm', className: 'bg-[rgba(201,162,122,0.18)] text-[#6b5040]', canCheckIn: false };
   }
 
   const now = new Date();
@@ -97,7 +98,7 @@ function getShiftDisplayState(item: ShiftAssignment) {
     return { label: 'Đã quá ca - chưa vào ca', className: 'bg-rose-100 text-rose-700', canCheckIn: false };
   }
   if (now < earliestCheckIn) {
-    return { label: 'Chưa tới giờ vào ca', className: 'bg-slate-100 text-slate-600', canCheckIn: false };
+    return { label: 'Chưa tới giờ vào ca', className: 'bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.55)]', canCheckIn: false };
   }
   return { label: 'Có thể vào ca', className: 'bg-amber-100 text-amber-700', canCheckIn: true };
 }
@@ -675,14 +676,14 @@ export default function ShiftsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CalendarClock size={24} /> Quản lý ca làm
+          <h1 className="text-2xl font-bold text-[#1a0e07] flex items-center gap-2">
+            <CalendarClock size={24} className="text-[#c9a27a]" /> Quản lý ca làm
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Tách lịch ca cho quầy POS và nhân viên order/bưng bê.</p>
+          <p className="text-sm text-[rgba(26,14,7,0.45)] mt-1">Tách lịch ca cho quầy POS và nhân viên order/bưng bê.</p>
         </div>
         <button
           onClick={refreshAll}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-[rgba(107,80,64,0.2)] px-4 py-2 text-sm font-medium text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
         >
           <RefreshCw size={16} /> Làm mới
         </button>
@@ -696,32 +697,32 @@ export default function ShiftsPage() {
               key={option.value}
               type="button"
               onClick={() => setActiveShiftType(option.value)}
-              className={`rounded-xl border p-4 text-left transition ${active ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-200'}`}
+              className={`rounded-xl border p-4 text-left transition-all ${active ? 'border-[#c9a27a] bg-[rgba(201,162,122,0.08)] shadow-sm' : 'border-[rgba(107,80,64,0.12)] bg-white hover:border-[#c9a27a] hover:bg-[rgba(253,247,240,0.5)]'}`}
             >
-              <div className={`text-sm font-semibold ${active ? 'text-blue-700' : 'text-gray-900'}`}>{option.label}</div>
-              <p className="mt-1 text-sm text-gray-500">{option.description}</p>
+              <div className={`text-sm font-semibold ${active ? 'text-[#6b5040]' : 'text-[#1a0e07]'}`}>{option.label}</div>
+              <p className="mt-1 text-sm text-[rgba(26,14,7,0.45)]">{option.description}</p>
             </button>
           );
         })}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Từ ngày</label>
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Từ ngày</label>
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Đến ngày</label>
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Đến ngày</label>
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
         </div>
         {isManager && (
           <>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Nhân viên</label>
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Nhân viên</label>
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
               >
                 <option value="">Tất cả</option>
                 {staffUsers.map((u) => (
@@ -730,11 +731,11 @@ export default function ShiftsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Trạng thái ca</label>
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Trạng thái ca</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as AssignmentStatusFilter)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
               >
                 <option value="ALL">Tất cả</option>
                 <option value="ASSIGNED">ASSIGNED</option>
@@ -746,15 +747,15 @@ export default function ShiftsPage() {
           </>
         )}
         {!isManager && (
-          <div className="md:col-span-3 flex items-end text-sm text-gray-600">
+          <div className="md:col-span-3 flex items-end text-sm text-[rgba(26,14,7,0.45)]">
             Tài khoản nhân viên chỉ xem ca/chấm công của chính mình.
           </div>
         )}
       </div>
 
       {(myPendingAssignment || myCheckedInAssignment) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
-          <div className="text-sm text-amber-900">
+        <div className="bg-[rgba(201,162,122,0.1)] border border-[rgba(201,162,122,0.3)] rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
+          <div className="text-sm text-[#7a5c3e]">
             {myCheckedInAssignment
               ? `Bạn đang trong ca ${myCheckedInAssignment.shiftTemplateName} (${myCheckedInAssignment.shiftDate})`
               : `Bạn có ${myPendingAssignment?.shiftTemplateName} cần check-in`}
@@ -764,7 +765,7 @@ export default function ShiftsPage() {
               <button
                 onClick={() => handleCheckIn(myPendingAssignment.id)}
                 disabled={processingAssignmentId === myPendingAssignment.id}
-                className="inline-flex items-center gap-2 rounded-lg bg-green-600 text-white px-3 py-2 text-sm font-medium hover:bg-green-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all"
               >
                 <LogIn size={16} /> Check-in
               </button>
@@ -773,7 +774,7 @@ export default function ShiftsPage() {
               <button
                 onClick={() => handleCheckOut(myCheckedInAssignment.id)}
                 disabled={processingAssignmentId === myCheckedInAssignment.id}
-                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 text-white px-3 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-orange-600 text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all"
               >
                 <LogOut size={16} /> Check-out
               </button>
@@ -784,57 +785,57 @@ export default function ShiftsPage() {
 
       {isManager && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Mẫu ca dùng chung</h2>
+          <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 space-y-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+            <h2 className="font-semibold text-[#1a0e07]">Mẫu ca dùng chung</h2>
             <div className="grid grid-cols-2 gap-3">
               <input
                 value={templateForm.name}
                 onChange={(e) => setTemplateForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="Tên ca (VD: Ca sáng)"
-                className="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="col-span-2 rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition"
               />
-              <input type="time" value={templateForm.startTime} onChange={(e) => setTemplateForm((p) => ({ ...p, startTime: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              <input type="time" value={templateForm.endTime} onChange={(e) => setTemplateForm((p) => ({ ...p, endTime: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              <input type="number" min={0} max={240} value={templateForm.breakMinutes} onChange={(e) => setTemplateForm((p) => ({ ...p, breakMinutes: Number(e.target.value) || 0 }))} placeholder="Phút nghỉ" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              <button onClick={handleCreateTemplate} disabled={savingTemplate} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-60">
+              <input type="time" value={templateForm.startTime} onChange={(e) => setTemplateForm((p) => ({ ...p, startTime: e.target.value }))} className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <input type="time" value={templateForm.endTime} onChange={(e) => setTemplateForm((p) => ({ ...p, endTime: e.target.value }))} className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <input type="number" min={0} max={240} value={templateForm.breakMinutes} onChange={(e) => setTemplateForm((p) => ({ ...p, breakMinutes: Number(e.target.value) || 0 }))} placeholder="Phút nghỉ" className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <button onClick={handleCreateTemplate} disabled={savingTemplate} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#6b5040] text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
                 <Plus size={16} /> {savingTemplate ? 'Đang tạo...' : 'Tạo mẫu'}
               </button>
             </div>
 
             <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
               {activeTemplates.map((template) => (
-                <div key={template.id} className="border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+                <div key={template.id} className="border border-[rgba(107,80,64,0.12)] rounded-xl px-3 py-2 flex items-center justify-between gap-3 bg-white">
                   <div>
-                    <div className="text-sm font-medium text-gray-800">{template.name}</div>
-                    <div className="text-xs text-gray-500">{template.startTime} - {template.endTime} • nghỉ {template.breakMinutes}p</div>
+                    <div className="text-sm font-medium text-[#1a0e07]">{template.name}</div>
+                    <div className="text-xs text-[rgba(26,14,7,0.45)]">{template.startTime} - {template.endTime} • nghỉ {template.breakMinutes}p</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => openEditTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50">
+                    <button onClick={() => openEditTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-lg border border-[rgba(107,80,64,0.2)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.06)] transition-colors">
                       Sửa
                     </button>
-                    <button onClick={() => handleDeactivateTemplate(template.id)} className="text-xs px-2.5 py-1.5 rounded-md border border-red-300 text-red-600 hover:bg-red-50">
+                    <button onClick={() => handleDeactivateTemplate(template.id)} className="text-xs px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
                       Ngừng dùng
                     </button>
                   </div>
                 </div>
               ))}
-              {activeTemplates.length === 0 && <div className="text-sm text-gray-500">Không có mẫu ca đang dùng.</div>}
+              {activeTemplates.length === 0 && <div className="text-sm text-[rgba(26,14,7,0.4)]">Không có mẫu ca đang dùng.</div>}
 
               {inactiveTemplates.length > 0 && (
                 <div className="pt-2">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Mẫu ca đã ngừng dùng</div>
+                  <div className="text-xs font-semibold text-[rgba(26,14,7,0.4)] uppercase tracking-wide mb-2">Mẫu ca đã ngừng dùng</div>
                   <div className="space-y-2">
                     {inactiveTemplates.map((template) => (
-                      <div key={template.id} className="border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between gap-3 bg-gray-50">
+                      <div key={template.id} className="border border-[rgba(107,80,64,0.1)] rounded-xl px-3 py-2 flex items-center justify-between gap-3 bg-[rgba(253,247,240,0.5)]">
                         <div>
-                          <div className="text-sm font-medium text-gray-700">{template.name}</div>
-                          <div className="text-xs text-gray-500">{template.startTime} - {template.endTime} • nghỉ {template.breakMinutes}p</div>
+                          <div className="text-sm font-medium text-[rgba(26,14,7,0.6)]">{template.name}</div>
+                          <div className="text-xs text-[rgba(26,14,7,0.35)]">{template.startTime} - {template.endTime} • nghỉ {template.breakMinutes}p</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openEditTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50">
+                          <button onClick={() => openEditTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-lg border border-[rgba(107,80,64,0.2)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.06)] transition-colors">
                             Sửa
                           </button>
-                          <button onClick={() => handleRestoreTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-md border border-green-300 text-green-700 hover:bg-green-50">
+                          <button onClick={() => handleRestoreTemplate(template)} className="text-xs px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors">
                             Khôi phục
                           </button>
                         </div>
@@ -846,42 +847,40 @@ export default function ShiftsPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Phân ca nhanh - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
+          <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 space-y-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+            <h2 className="font-semibold text-[#1a0e07]">Phân ca nhanh - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
             <div className="grid grid-cols-2 gap-3">
-              <select value={assignmentForm.userId} onChange={(e) => setAssignmentForm((p) => ({ ...p, userId: Number(e.target.value) }))} className="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <select value={assignmentForm.userId} onChange={(e) => setAssignmentForm((p) => ({ ...p, userId: Number(e.target.value) }))} className="col-span-2 rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition">
                 {staffUsers.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
               </select>
-              <select value={assignmentForm.shiftTemplateId} onChange={(e) => setAssignmentForm((p) => ({ ...p, shiftTemplateId: Number(e.target.value) }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <select value={assignmentForm.shiftTemplateId} onChange={(e) => setAssignmentForm((p) => ({ ...p, shiftTemplateId: Number(e.target.value) }))} className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition">
                 {activeTemplates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 {activeTemplates.length === 0 && <option value={0}>Không có mẫu ca active</option>}
               </select>
-              <input type="date" value={assignmentForm.shiftDate} onChange={(e) => setAssignmentForm((p) => ({ ...p, shiftDate: e.target.value }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              <input value={assignmentForm.note} onChange={(e) => setAssignmentForm((p) => ({ ...p, note: e.target.value }))} placeholder="Ghi chú" className="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-              <button onClick={handleCreateAssignment} disabled={savingAssignment || activeTemplates.length === 0} className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-700 disabled:opacity-60">
+              <input type="date" value={assignmentForm.shiftDate} onChange={(e) => setAssignmentForm((p) => ({ ...p, shiftDate: e.target.value }))} className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <input value={assignmentForm.note} onChange={(e) => setAssignmentForm((p) => ({ ...p, note: e.target.value }))} placeholder="Ghi chú" className="col-span-2 rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <button onClick={handleCreateAssignment} disabled={savingAssignment || activeTemplates.length === 0} className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
                 <Plus size={16} /> {savingAssignment ? 'Đang lưu...' : 'Phân ca'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <h2 className="font-semibold text-gray-900">Phân ca theo tuần - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
+          <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 space-y-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+            <h2 className="font-semibold text-[#1a0e07]">Phân ca theo tuần - {SHIFT_TYPE_LABELS[activeShiftType]}</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Tuần bắt đầu (Thứ 2)</label>
-                <input type="date" value={bulkWeekStart} onChange={(e) => setBulkWeekStart(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Tuần bắt đầu (Thứ 2)</label>
+                <input type="date" value={bulkWeekStart} onChange={(e) => setBulkWeekStart(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
               </div>
-
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Mẫu ca</label>
-                <select value={bulkTemplateId} onChange={(e) => setBulkTemplateId(Number(e.target.value))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Mẫu ca</label>
+                <select value={bulkTemplateId} onChange={(e) => setBulkTemplateId(Number(e.target.value))} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition">
                   {activeTemplates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   {activeTemplates.length === 0 && <option value={0}>Không có mẫu ca active</option>}
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Chọn ngày trong tuần</label>
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Chọn ngày trong tuần</label>
                 <div className="flex flex-wrap gap-2">
                   {WEEKDAY_OPTIONS.map((opt) => {
                     const active = bulkWeekDays.includes(opt.value);
@@ -890,7 +889,7 @@ export default function ShiftsPage() {
                         type="button"
                         key={opt.value}
                         onClick={() => toggleBulkWeekDay(opt.value)}
-                        className={`px-2.5 py-1.5 rounded-md text-xs font-medium border ${active ? 'bg-blue-600 border-blue-700 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${active ? 'bg-[#6b5040] border-[#6b5040] text-white' : 'border-[rgba(107,80,64,0.18)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.06)]'}`}
                       >
                         {opt.label}
                       </button>
@@ -898,22 +897,19 @@ export default function ShiftsPage() {
                   })}
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Chọn nhân viên</label>
-                <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-2">
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Chọn nhân viên</label>
+                <div className="max-h-32 overflow-y-auto border border-[rgba(107,80,64,0.15)] rounded-xl p-2 space-y-2">
                   {staffUsers.map((staff) => (
-                    <label key={staff.id} className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" checked={bulkUserIds.includes(staff.id)} onChange={() => toggleBulkUser(staff.id)} className="rounded border-gray-300" />
+                    <label key={staff.id} className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.7)]">
+                      <input type="checkbox" checked={bulkUserIds.includes(staff.id)} onChange={() => toggleBulkUser(staff.id)} className="rounded border-[rgba(107,80,64,0.3)]" />
                       <span>{staff.fullName}</span>
                     </label>
                   ))}
                 </div>
               </div>
-
-              <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="Ghi chú chung" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-
-              <button onClick={handleBulkAssign} disabled={savingBulkAssignment || activeTemplates.length === 0} className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-60">
+              <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="Ghi chú chung" className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
+              <button onClick={handleBulkAssign} disabled={savingBulkAssignment || activeTemplates.length === 0} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#6b5040] text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
                 <UserRoundCheck size={16} /> {savingBulkAssignment ? 'Đang phân ca...' : 'Phân ca theo tuần'}
               </button>
             </div>
@@ -921,24 +917,24 @@ export default function ShiftsPage() {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 font-semibold">Danh sách ca - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
+      <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl overflow-hidden shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+        <div className="px-4 py-3 border-b border-[rgba(107,80,64,0.07)] font-semibold text-[#1a0e07]">Danh sách ca - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Đang tải...</div>
+          <div className="p-8 text-center text-[rgba(26,14,7,0.4)]">Đang tải...</div>
         ) : filteredAssignments.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Chưa có dữ liệu ca theo bộ lọc hiện tại.</div>
+          <div className="p-8 text-center text-[rgba(26,14,7,0.4)]">Chưa có dữ liệu ca theo bộ lọc hiện tại.</div>
         ) : (
           <div className="overflow-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-[rgba(253,247,240,0.6)]">
                 <tr>
-                  <th className="px-3 py-2 text-left">Ngày</th>
-                  <th className="px-3 py-2 text-left">Ca</th>
-                  {isManager && <th className="px-3 py-2 text-left">Nhân viên</th>}
-                  <th className="px-3 py-2 text-left">Trạng thái</th>
-                  <th className="px-3 py-2 text-left">Check-in</th>
-                  <th className="px-3 py-2 text-left">Check-out</th>
-                  <th className="px-3 py-2 text-right">Thao tác</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Ngày</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Ca</th>
+                  {isManager && <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Nhân viên</th>}
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Trạng thái</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Check-in</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Check-out</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-[rgba(26,14,7,0.45)] uppercase tracking-wide">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -946,41 +942,41 @@ export default function ShiftsPage() {
                   const isMine = item.userId === currentUserId;
                   const shiftState = getShiftDisplayState(item);
                   return (
-                    <tr key={item.id} className="border-t border-gray-100">
-                      <td className="px-3 py-2">{item.shiftDate}</td>
-                      <td className="px-3 py-2">{item.shiftTemplateName} ({item.startTime} - {item.endTime})</td>
-                      {isManager && <td className="px-3 py-2">{item.userFullName}</td>}
+                    <tr key={item.id} className="border-t border-[rgba(107,80,64,0.05)] hover:bg-[rgba(253,247,240,0.4)] transition-colors">
+                      <td className="px-3 py-2 text-[rgba(26,14,7,0.7)]">{item.shiftDate}</td>
+                      <td className="px-3 py-2 text-[rgba(26,14,7,0.7)]">{item.shiftTemplateName} ({item.startTime} - {item.endTime})</td>
+                      {isManager && <td className="px-3 py-2 text-[rgba(26,14,7,0.7)]">{item.userFullName}</td>}
                       <td className="px-3 py-2">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${shiftState.className}`}>
                           {shiftState.label}
                         </span>
                       </td>
-                      <td className="px-3 py-2">{formatDateTime(item.checkInAt)}</td>
-                      <td className="px-3 py-2">{formatDateTime(item.checkOutAt)}</td>
+                      <td className="px-3 py-2 text-xs text-[rgba(26,14,7,0.55)]">{formatDateTime(item.checkInAt)}</td>
+                      <td className="px-3 py-2 text-xs text-[rgba(26,14,7,0.55)]">{formatDateTime(item.checkOutAt)}</td>
                       <td className="px-3 py-2 text-right">
                         <div className="inline-flex gap-2">
                           {isMine && item.status === 'ASSIGNED' && shiftState.canCheckIn && (
-                            <button onClick={() => handleCheckIn(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-md bg-green-600 text-white px-2.5 py-1.5 text-xs hover:bg-green-700 disabled:opacity-60">
+                            <button onClick={() => handleCheckIn(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 text-white px-2.5 py-1.5 text-xs hover:brightness-110 disabled:opacity-60 transition-all">
                               <LogIn size={14} /> Vào ca
                             </button>
                           )}
                           {isMine && item.status === 'ASSIGNED' && !shiftState.canCheckIn && (
-                            <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1.5 text-xs text-gray-500">
+                            <span className="inline-flex items-center rounded-lg bg-[rgba(107,80,64,0.07)] px-2.5 py-1.5 text-xs text-[rgba(26,14,7,0.45)]">
                               {shiftState.label}
                             </span>
                           )}
                           {isMine && item.status === 'CHECKED_IN' && (
-                            <button onClick={() => handleCheckOut(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-md bg-orange-600 text-white px-2.5 py-1.5 text-xs hover:bg-orange-700 disabled:opacity-60">
+                            <button onClick={() => handleCheckOut(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-lg bg-orange-600 text-white px-2.5 py-1.5 text-xs hover:brightness-110 disabled:opacity-60 transition-all">
                               <LogOut size={14} /> Kết ca
                             </button>
                           )}
                           {isManager && (
-                            <button onClick={() => openEditAssignment(item)} className="inline-flex items-center gap-1 rounded-md border border-blue-300 text-blue-700 px-2.5 py-1.5 text-xs hover:bg-blue-50">
+                            <button onClick={() => openEditAssignment(item)} className="inline-flex items-center gap-1 rounded-lg border border-[rgba(107,80,64,0.2)] text-[#6b5040] px-2.5 py-1.5 text-xs hover:bg-[rgba(107,80,64,0.06)] transition-colors">
                               <Pencil size={14} /> Sửa
                             </button>
                           )}
                           {isManager && item.status === 'ASSIGNED' && (
-                            <button onClick={() => handleCancel(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-md border border-red-300 text-red-600 px-2.5 py-1.5 text-xs hover:bg-red-50 disabled:opacity-60">
+                            <button onClick={() => handleCancel(item.id)} disabled={processingAssignmentId === item.id} className="inline-flex items-center gap-1 rounded-lg border border-red-200 text-red-600 px-2.5 py-1.5 text-xs hover:bg-red-50 disabled:opacity-60 transition-colors">
                               <XCircle size={14} /> Hủy
                             </button>
                           )}
@@ -1088,7 +1084,7 @@ export default function ShiftsPage() {
                             <button
                               type="button"
                               onClick={() => openRevenueDetails(row)}
-                              className="inline-flex items-center justify-end gap-1 rounded-md px-2 py-1 font-medium text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                              className="inline-flex items-center justify-end gap-1 rounded-lg px-2 py-1 font-medium text-[#6b5040] hover:bg-[rgba(107,80,64,0.06)] hover:text-[#4a3020] transition-colors"
                               title="Xem chi tiết doanh thu từng ca"
                             >
                               <ReceiptText size={14} />
@@ -1101,7 +1097,7 @@ export default function ShiftsPage() {
                       )}
                     </tr>
                   ))}
-                  <tr className="border-t border-gray-200 bg-gray-50 font-medium">
+                  <tr className="border-t border-[rgba(107,80,64,0.1)] bg-[rgba(253,247,240,0.6)] font-semibold">
                     <td className="px-3 py-2">Tổng</td>
                     <td className="px-3 py-2 text-right">{summaryTotals.totalAssignments}</td>
                     <td className="px-3 py-2 text-right">{summaryTotals.completedCount}</td>
@@ -1133,21 +1129,21 @@ export default function ShiftsPage() {
         <div className="space-y-4">
           {selectedRevenueSummary && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="rounded-lg border border-gray-200 p-3">
-                <p className="text-xs text-gray-500">Nhóm ca</p>
-                <p className="font-semibold text-gray-900">{SHIFT_TYPE_LABELS[selectedRevenueSummary.shiftType || activeShiftType]}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.12)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">Nhóm ca</p>
+                <p className="font-semibold text-[#1a0e07]">{SHIFT_TYPE_LABELS[selectedRevenueSummary.shiftType || activeShiftType]}</p>
               </div>
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-xs text-blue-700">Tổng doanh thu trong ca</p>
-                <p className="font-semibold text-blue-800">{formatCurrency(selectedRevenueSummary.totalRevenueDuringShift || 0)}</p>
+              <div className="rounded-xl border border-[rgba(201,162,122,0.3)] bg-[rgba(201,162,122,0.08)] p-3">
+                <p className="text-xs text-[#7a5c3e]">Tổng doanh thu trong ca</p>
+                <p className="font-semibold text-[#6b5040]">{formatCurrency(selectedRevenueSummary.totalRevenueDuringShift || 0)}</p>
               </div>
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                 <p className="text-xs text-emerald-700">Thu ngân tự xử lý</p>
                 <p className="font-semibold text-emerald-800">{formatCurrency(selectedRevenueSummary.totalCashierRevenueDuringShift || 0)}</p>
               </div>
-              <div className="rounded-lg border border-gray-200 p-3">
-                <p className="text-xs text-gray-500">Khoảng ngày</p>
-                <p className="font-semibold text-gray-900">{fromDate} - {toDate}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.12)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">Khoảng ngày</p>
+                <p className="font-semibold text-[#1a0e07]">{fromDate} - {toDate}</p>
               </div>
             </div>
           )}
@@ -1249,7 +1245,7 @@ export default function ShiftsPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setSelectedRevenueSummary(null)}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+              className="px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.2)] text-sm text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
             >
               Đóng
             </button>
@@ -1310,8 +1306,8 @@ export default function ShiftsPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setEditingAssignment(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">Hủy</button>
-            <button onClick={handleUpdateAssignment} disabled={savingEditAssignment} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60">
+            <button onClick={() => setEditingAssignment(null)} className="px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.2)] text-sm text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">Hủy</button>
+            <button onClick={handleUpdateAssignment} disabled={savingEditAssignment} className="px-4 py-2 rounded-xl bg-[#6b5040] text-white text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
               {savingEditAssignment ? 'Đang lưu...' : 'Lưu thay đổi'}
             </button>
           </div>
@@ -1378,8 +1374,8 @@ export default function ShiftsPage() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">Hủy</button>
-            <button onClick={handleUpdateTemplate} disabled={savingEditTemplate} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60">
+            <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 rounded-xl border border-[rgba(107,80,64,0.2)] text-sm text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">Hủy</button>
+            <button onClick={handleUpdateTemplate} disabled={savingEditTemplate} className="px-4 py-2 rounded-xl bg-[#6b5040] text-white text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
               {savingEditTemplate ? 'Đang lưu...' : 'Lưu mẫu ca'}
             </button>
           </div>

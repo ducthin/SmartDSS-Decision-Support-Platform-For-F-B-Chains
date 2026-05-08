@@ -30,8 +30,8 @@ const SOURCE_TYPE_LABELS = {
 } as const;
 
 const SOURCE_TYPE_STYLES = {
-  REALTIME: 'bg-blue-100 text-blue-700',
-  CACHE: 'bg-slate-100 text-slate-700',
+  REALTIME: 'bg-[rgba(201,162,122,0.18)] text-[#6b5040]',
+  CACHE: 'bg-[rgba(107,80,64,0.08)] text-[rgba(26,14,7,0.55)]',
   FALLBACK: 'bg-orange-100 text-orange-700',
 } as const;
 
@@ -47,7 +47,7 @@ export default function WeatherTab({
   return (
     <div className="space-y-4">
       {weather ? (
-        <div className="bg-linear-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-[#6b5040] to-[#c9a27a] rounded-xl p-6 text-white shadow-[0_4px_20px_-4px_rgba(107,80,64,0.35)]">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -77,35 +77,35 @@ export default function WeatherTab({
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
+        <div className="bg-white rounded-xl border border-[rgba(107,80,64,0.12)] p-8 text-center text-[rgba(26,14,7,0.4)] shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
           Chưa có dữ liệu thời tiết hôm nay
           {canEdit && (
-            <button onClick={onFetchNow} className="ml-3 text-blue-600 hover:underline">Lấy ngay</button>
+            <button onClick={onFetchNow} className="ml-3 text-[#6b5040] hover:underline font-medium">Lấy ngay</button>
           )}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-[rgba(107,80,64,0.12)] p-6 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Activity size={18} />
+            <h3 className="text-lg font-semibold text-[#1a0e07] flex items-center gap-2">
+              <Activity size={18} className="text-[#c9a27a]" />
               Phân tích mật độ khu vực quanh quán
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-[rgba(26,14,7,0.45)] mt-1">
               Dựa trên số lượng điểm dịch vụ/xung quanh để ước lượng khu vực đông hay thưa.
             </p>
           </div>
           <button
             onClick={onRefreshAreaBusyness}
-            className="text-sm px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50"
+            className="text-sm px-3 py-1.5 rounded-xl border border-[rgba(107,80,64,0.2)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
           >
             Làm mới
           </button>
         </div>
 
         {loadingAreaBusyness ? (
-          <p className="text-sm text-gray-500 mt-4">Đang phân tích...</p>
+          <p className="text-sm text-[rgba(26,14,7,0.4)] mt-4">Đang phân tích...</p>
         ) : areaBusyness ? (
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -117,56 +117,56 @@ export default function WeatherTab({
                   {SOURCE_TYPE_LABELS[areaBusyness.sourceType]}
                 </span>
               )}
-              <span className="text-sm text-gray-600">Điểm mật độ: {areaBusyness.score}</span>
+              <span className="text-sm text-[rgba(26,14,7,0.55)]">Điểm mật độ: {areaBusyness.score}</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">POI tổng</p>
-                <p className="text-lg font-semibold">{areaBusyness.poiCount}</p>
+              <div className="rounded-xl bg-[rgba(253,247,240,0.6)] border border-[rgba(107,80,64,0.08)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">POI tổng</p>
+                <p className="text-lg font-semibold text-[#1a0e07]">{areaBusyness.poiCount}</p>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">Ăn uống</p>
-                <p className="text-lg font-semibold">{areaBusyness.foodCount}</p>
+              <div className="rounded-xl bg-[rgba(253,247,240,0.6)] border border-[rgba(107,80,64,0.08)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">Ăn uống</p>
+                <p className="text-lg font-semibold text-[#1a0e07]">{areaBusyness.foodCount}</p>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">Giao thông</p>
-                <p className="text-lg font-semibold">{areaBusyness.transitCount}</p>
+              <div className="rounded-xl bg-[rgba(253,247,240,0.6)] border border-[rgba(107,80,64,0.08)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">Giao thông</p>
+                <p className="text-lg font-semibold text-[#1a0e07]">{areaBusyness.transitCount}</p>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">Thương mại</p>
-                <p className="text-lg font-semibold">{areaBusyness.commerceCount}</p>
+              <div className="rounded-xl bg-[rgba(253,247,240,0.6)] border border-[rgba(107,80,64,0.08)] p-3">
+                <p className="text-xs text-[rgba(26,14,7,0.45)]">Thương mại</p>
+                <p className="text-lg font-semibold text-[#1a0e07]">{areaBusyness.commerceCount}</p>
               </div>
             </div>
 
-            <p className="text-sm text-gray-700">{areaBusyness.recommendation}</p>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
+            <p className="text-sm text-[rgba(26,14,7,0.65)]">{areaBusyness.recommendation}</p>
+            <p className="text-xs text-[rgba(26,14,7,0.4)] flex items-center gap-1">
               <MapPin size={12} />
               {areaBusyness.address || `${areaBusyness.latitude}, ${areaBusyness.longitude}`} · Nguồn: {areaBusyness.source}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[rgba(26,14,7,0.3)]">
               Cập nhật: {new Date(areaBusyness.analyzedAt).toLocaleString('vi-VN')}
             </p>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 mt-4">
+          <p className="text-sm text-[rgba(26,14,7,0.4)] mt-4">
             Chưa có dữ liệu mật độ khu vực. Vào Cài đặt để nhập vị trí quán trước.
           </p>
         )}
       </div>
 
       {weatherRange.length > 1 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Lịch sử thời tiết gần đây</h3>
+        <div className="bg-white rounded-xl border border-[rgba(107,80,64,0.12)] p-6 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+          <h3 className="text-lg font-semibold text-[#1a0e07] mb-4">Lịch sử thời tiết gần đây</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {weatherRange.map((w) => (
-              <div key={w.id} className="border border-gray-100 rounded-lg p-3">
-                <p className="text-sm text-gray-500">{new Date(w.recordDate).toLocaleDateString('vi-VN')}</p>
+              <div key={w.id} className="border border-[rgba(107,80,64,0.1)] rounded-xl p-3 bg-[rgba(253,247,240,0.4)]">
+                <p className="text-sm text-[rgba(26,14,7,0.45)]">{new Date(w.recordDate).toLocaleDateString('vi-VN')}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <img src={`https://openweathermap.org/img/wn/${w.icon}.png`} alt="" className="w-8 h-8" />
-                  <span className="text-lg font-bold">{w.temperature.toFixed(1)}°C</span>
+                  <span className="text-lg font-bold text-[#1a0e07]">{w.temperature.toFixed(1)}°C</span>
                 </div>
-                <p className="text-xs text-gray-400 capitalize">{w.description}</p>
+                <p className="text-xs text-[rgba(26,14,7,0.4)] capitalize">{w.description}</p>
               </div>
             ))}
           </div>

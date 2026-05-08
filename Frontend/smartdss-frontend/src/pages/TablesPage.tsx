@@ -1,5 +1,6 @@
+import '@/styles/coffee-theme.css';
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, QrCode, RefreshCw, X, Download, Copy } from 'lucide-react';
+import { Plus, Edit2, Trash2, QrCode, RefreshCw, X, Download, Copy, CheckCircle, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,17 +39,8 @@ export default function TablesPage() {
 
   useEffect(() => { fetchTables(); }, [fetchTables]);
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ name: '', active: true });
-    setShowModal(true);
-  };
-
-  const openEdit = (t: DiningTable) => {
-    setEditing(t);
-    setForm({ name: t.name, active: t.active });
-    setShowModal(true);
-  };
+  const openCreate = () => { setEditing(null); setForm({ name: '', active: true }); setShowModal(true); };
+  const openEdit = (t: DiningTable) => { setEditing(t); setForm({ name: t.name, active: t.active }); setShowModal(true); };
 
   const save = async () => {
     if (!form.name.trim()) { toast.error('Tên bàn không được để trống'); return; }
@@ -96,8 +88,7 @@ export default function TablesPage() {
     if (!svg) return;
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
+    canvas.width = 400; canvas.height = 400;
     const ctx = canvas.getContext('2d');
     const img = new Image();
     img.onload = () => {
@@ -113,7 +104,7 @@ export default function TablesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(107,80,64,0.15)] border-t-[#c9a27a]" />
       </div>
     );
   }
@@ -121,107 +112,169 @@ export default function TablesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Quản lý bàn</h1>
-          <p className="text-gray-500 text-sm mt-1">Tạo và quản lý mã QR cho từng bàn</p>
+          <h1 className="text-2xl font-bold text-[#1a0e07]">Quản lý QR Bàn</h1>
+          <p className="mt-0.5 text-sm text-[rgba(26,14,7,0.5)]">Tạo và quản lý mã QR cho từng bàn</p>
         </div>
         {canEdit && (
-          <button onClick={openCreate}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            <Plus className="h-4 w-4" /> Thêm bàn
+          <button
+            id="table-add-btn"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#6b5040] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_-4px_rgba(107,80,64,0.5)] transition hover:brightness-110 active:scale-95"
+          >
+            <Plus size={16} /> Thêm bàn
           </button>
         )}
       </div>
 
-      {/* Table grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {tables.map(t => (
-          <div key={t.id} className={`bg-white rounded-xl shadow-sm border-2 p-4 ${t.active ? 'border-green-200' : 'border-gray-200 opacity-60'}`}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-lg text-gray-800">{t.name}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                {t.active ? 'Hoạt động' : 'Tắt'}
-              </span>
-            </div>
-
-            {/* QR Preview */}
-            <div className="flex justify-center mb-3 cursor-pointer" onClick={() => setShowQr(t)}>
-              <QRCodeSVG value={getQrUrl(t)} size={120} level="M" />
-            </div>
-
-            <div className="flex gap-1 justify-center">
-              <button onClick={() => setShowQr(t)} title="Xem QR"
-                className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">
-                <QrCode className="h-4 w-4" />
-              </button>
-              <button onClick={() => copyQrUrl(t)} title="Sao chép link"
-                className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg transition">
-                <Copy className="h-4 w-4" />
-              </button>
-              {canEdit && (
-                <>
-                  <button onClick={() => openEdit(t)} title="Sửa"
-                    className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition">
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => regenerateQr(t.id)} title="Tạo QR mới"
-                    className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition">
-                    <RefreshCw className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => deleteTable(t.id)} title="Xóa"
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </>
-              )}
-            </div>
+      {/* Tables grid */}
+      {tables.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[rgba(107,80,64,0.06)]">
+            <QrCode size={36} className="text-[rgba(107,80,64,0.3)]" />
           </div>
-        ))}
-      </div>
+          <p className="text-base font-semibold text-[rgba(26,14,7,0.5)]">Chưa có bàn nào</p>
+          <p className="mt-1 text-sm text-[rgba(26,14,7,0.35)]">Nhấn "Thêm bàn" để bắt đầu</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {tables.map(t => (
+            <div
+              key={t.id}
+              className={`group relative overflow-hidden rounded-2xl border bg-white shadow-[0_2px_12px_-4px_rgba(26,14,7,0.08)] transition-all hover:shadow-[0_8px_28px_-8px_rgba(26,14,7,0.14)] hover:-translate-y-0.5 ${
+                t.active
+                  ? 'border-[rgba(107,80,64,0.12)]'
+                  : 'border-[rgba(107,80,64,0.08)] opacity-60'
+              }`}
+            >
+              {/* Top accent */}
 
-      {tables.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <QrCode className="mx-auto h-16 w-16 mb-4" />
-          <p className="text-lg">Chưa có bàn nào</p>
-          <p className="text-sm mt-1">Nhấn "Thêm bàn" để bắt đầu</p>
+
+              <div className="p-4">
+                {/* Table name + status */}
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-bold text-[#1a0e07]">{t.name}</h3>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    t.active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {t.active ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                    {t.active ? 'Hoạt động' : 'Tắt'}
+                  </span>
+                </div>
+
+                {/* QR Preview — click to expand */}
+                <div
+                  className="flex cursor-pointer justify-center rounded-xl bg-[rgba(253,247,240,0.8)] p-3 mb-3 transition hover:bg-[rgba(201,162,122,0.08)]"
+                  onClick={() => setShowQr(t)}
+                  title="Nhấn để xem QR lớn"
+                >
+                  <QRCodeSVG value={getQrUrl(t)} size={110} level="M" />
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => setShowQr(t)}
+                    title="Xem QR"
+                    className="rounded-lg p-2 text-[rgba(107,80,64,0.6)] hover:bg-[rgba(201,162,122,0.12)] hover:text-[#6b5040] transition-colors"
+                  >
+                    <QrCode size={15} />
+                  </button>
+                  <button
+                    onClick={() => copyQrUrl(t)}
+                    title="Sao chép link"
+                    className="rounded-lg p-2 text-[rgba(107,80,64,0.6)] hover:bg-[rgba(201,162,122,0.12)] hover:text-[#6b5040] transition-colors"
+                  >
+                    <Copy size={15} />
+                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => openEdit(t)}
+                        title="Sửa"
+                        className="rounded-lg p-2 text-[rgba(107,80,64,0.6)] hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        onClick={() => regenerateQr(t.id)}
+                        title="Tạo QR mới"
+                        className="rounded-lg p-2 text-[rgba(107,80,64,0.6)] hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                      >
+                        <RefreshCw size={15} />
+                      </button>
+                      <button
+                        onClick={() => deleteTable(t.id)}
+                        title="Xóa"
+                        className="rounded-lg p-2 text-[rgba(239,68,68,0.5)] hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {pageData && pageData.totalPages > 1 && (
-        <div className="py-4 flex justify-end">
+        <div className="pt-2 flex justify-end">
           <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Create / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">{editing ? 'Sửa bàn' : 'Thêm bàn mới'}</h2>
-              <button onClick={() => setShowModal(false)}><X className="h-5 w-5 text-gray-400" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên bàn</label>
-                <input
-                  value={form.name}
-                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="VD: Bàn 1, Bàn VIP..."
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(26,14,7,0.55)] backdrop-blur-[2px]">
+          <div className="w-full max-w-md mx-4 overflow-hidden rounded-2xl bg-white shadow-[0_24px_64px_-16px_rgba(26,14,7,0.35)]">
+
+            <div className="p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-[#1a0e07]">{editing ? 'Sửa bàn' : 'Thêm bàn mới'}</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="rounded-lg p-1.5 text-[rgba(26,14,7,0.4)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.active}
-                  onChange={e => setForm(p => ({ ...p, active: e.target.checked }))}
-                  className="rounded border-gray-300" />
-                <span className="text-sm text-gray-700">Hoạt động</span>
-              </label>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg">Hủy</button>
-              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Lưu</button>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#1a0e07] mb-1.5">Tên bàn</label>
+                  <input
+                    value={form.name}
+                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="VD: Bàn 1, Bàn VIP..."
+                    className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.15)]"
+                  />
+                </div>
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={e => setForm(p => ({ ...p, active: e.target.checked }))}
+                    className="h-4 w-4 rounded border-[rgba(107,80,64,0.3)] accent-[#6b5040]"
+                  />
+                  <span className="text-sm font-medium text-[#1a0e07]">Hoạt động</span>
+                </label>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="rounded-xl border border-[rgba(107,80,64,0.18)] px-4 py-2.5 text-sm font-medium text-[#6b5040] transition hover:bg-[rgba(107,80,64,0.05)]"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={save}
+                  className="rounded-xl bg-[#6b5040] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+                >
+                  Lưu
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -229,25 +282,37 @@ export default function TablesPage() {
 
       {/* QR Detail Modal */}
       {showQr && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Mã QR - {showQr.name}</h2>
-              <button onClick={() => setShowQr(null)}><X className="h-5 w-5 text-gray-400" /></button>
-            </div>
-            <div ref={qrRef} className="flex justify-center mb-4">
-              <QRCodeSVG value={getQrUrl(showQr)} size={250} level="H" includeMargin />
-            </div>
-            <p className="text-xs text-gray-400 break-all mb-4">{getQrUrl(showQr)}</p>
-            <div className="flex gap-2 justify-center">
-              <button onClick={() => copyQrUrl(showQr)}
-                className="flex items-center gap-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                <Copy className="h-4 w-4" /> Sao chép link
-              </button>
-              <button onClick={downloadQr}
-                className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <Download className="h-4 w-4" /> Tải QR
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(26,14,7,0.55)] backdrop-blur-[2px]">
+          <div className="w-full max-w-sm mx-4 overflow-hidden rounded-2xl bg-white shadow-[0_24px_64px_-16px_rgba(26,14,7,0.35)] text-center">
+
+            <div className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-base font-bold text-[#1a0e07]">Mã QR — {showQr.name}</h2>
+                <button
+                  onClick={() => setShowQr(null)}
+                  className="rounded-lg p-1.5 text-[rgba(26,14,7,0.4)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div ref={qrRef} className="flex justify-center rounded-xl bg-[rgba(253,247,240,0.8)] p-4 mb-4">
+                <QRCodeSVG value={getQrUrl(showQr)} size={220} level="H" includeMargin />
+              </div>
+              <p className="text-[11px] text-[rgba(26,14,7,0.35)] break-all mb-5 px-2">{getQrUrl(showQr)}</p>
+              <div className="flex gap-2.5 justify-center">
+                <button
+                  onClick={() => copyQrUrl(showQr)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(107,80,64,0.18)] px-4 py-2.5 text-sm font-medium text-[#6b5040] transition hover:bg-[rgba(107,80,64,0.05)]"
+                >
+                  <Copy size={14} /> Sao chép link
+                </button>
+                <button
+                  onClick={downloadQr}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#6b5040] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  <Download size={14} /> Tải QR
+                </button>
+              </div>
             </div>
           </div>
         </div>

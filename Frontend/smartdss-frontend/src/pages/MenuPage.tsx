@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useState, useCallback } from 'react';
 import { menuService, categoryService, recipeService } from '@/services/menuService';
 import { resolveBackendUrl } from '@/services/settingsService';
@@ -153,9 +154,9 @@ export default function MenuPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Quản lý Menu</h1>
+        <h1 className="text-2xl font-bold text-[#1a0e07]">Quản lý Menu</h1>
         {canManageMenu && (
-          <button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          <button onClick={openCreate} className="flex items-center gap-2 bg-[#6b5040] text-white px-4 py-2 rounded-xl hover:brightness-110 transition-all shadow-sm">
             <Plus size={18} /> Thêm món
           </button>
         )}
@@ -164,19 +165,19 @@ export default function MenuPage() {
       {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-50">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.4)]" />
           <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
             placeholder="Tìm kiếm theo tên..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            className="w-full pl-10 pr-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none text-sm transition" />
         </div>
         <select value={filterCategoryId ?? ''} onChange={(e) => { setFilterCategoryId(e.target.value ? Number(e.target.value) : undefined); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          className="px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] outline-none text-sm transition">
           <option value="">Tất cả danh mục</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <select value={filterAvailable === undefined ? '' : filterAvailable ? 'true' : 'false'}
           onChange={(e) => { setFilterAvailable(e.target.value === '' ? undefined : e.target.value === 'true'); setPage(0); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          className="px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] outline-none text-sm transition">
           <option value="">Tất cả trạng thái</option>
           <option value="true">Còn bán</option>
           <option value="false">Hết hàng</option>
@@ -184,7 +185,7 @@ export default function MenuPage() {
       </div>
 
       {/* Cards grid */}
-      {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
+      {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(201,162,122,0.2)] border-t-[#c9a27a]" /></div> :
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((item) => (
             <div
@@ -193,18 +194,16 @@ export default function MenuPage() {
               tabIndex={0}
               onClick={() => openRecipe(item)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRecipe(item); } }}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white rounded-xl border border-[rgba(107,80,64,0.12)] overflow-hidden hover:shadow-[0_4px_20px_-4px_rgba(26,14,7,0.12)] hover:border-[rgba(201,162,122,0.4)] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[rgba(201,162,122,0.4)]"
               title="Bấm để xem công thức pha chế"
             >
-              <div className="h-40 bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center relative overflow-hidden">
+              <div className="h-40 bg-gradient-to-br from-[rgba(253,247,240,0.8)] to-[rgba(201,162,122,0.15)] flex items-center justify-center relative overflow-hidden">
                 {item.imageUrl && (
                   <img
                     src={resolveBackendUrl(item.imageUrl) ?? item.imageUrl}
                     alt={item.name}
                     className="absolute inset-0 h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 )}
                 <span className="text-4xl">☕</span>
@@ -212,35 +211,29 @@ export default function MenuPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <h3 className="font-semibold text-[#1a0e07]">{item.name}</h3>
+                    <p className="text-xs text-[rgba(26,14,7,0.45)] mt-0.5">
                       {item.categoryName}
-                      {item.drink && (
-                        <span className="ml-2 text-amber-700 font-medium">· Đồ uống (size/topping)</span>
-                      )}
+                      {item.drink && <span className="ml-2 text-amber-700 font-medium">· Đồ uống</span>}
                       {item.badgeNew && <span className="ml-2 text-rose-600 font-medium">· Món mới</span>}
                       {item.badgeBestSeller && <span className="ml-2 text-amber-600 font-medium">· Best seller</span>}
                     </p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.available ? 'bg-emerald-100 text-emerald-700' : 'bg-[rgba(107,80,64,0.08)] text-[rgba(26,14,7,0.45)]'}`}>
                     {item.available ? 'Còn bán' : 'Hết hàng'}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2 line-clamp-2">{item.description}</p>
+                <p className="text-sm text-[rgba(26,14,7,0.5)] mt-2 line-clamp-2">{item.description}</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-blue-600">{formatCurrency(item.price)}</span>
+                  <span className="text-lg font-bold text-[#6b5040]">{formatCurrency(item.price)}</span>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openRecipe(item); }}
-                      className="p-1.5 rounded hover:bg-blue-50 text-blue-600"
-                      title="Xem công thức"
-                    >
+                    <button onClick={(e) => { e.stopPropagation(); openRecipe(item); }} className="p-1.5 rounded-lg hover:bg-[rgba(107,80,64,0.07)] text-[#6b5040] transition-colors" title="Xem công thức">
                       <BookOpen size={16} />
                     </button>
                     {canManageMenu && (
                       <>
-                        <button onClick={(e) => { e.stopPropagation(); openEdit(item); }} className="p-1.5 rounded hover:bg-gray-100 text-gray-500"><Pencil size={16} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); openEdit(item); }} className="p-1.5 rounded-lg hover:bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.5)] transition-colors"><Pencil size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"><Trash2 size={16} /></button>
                       </>
                     )}
                   </div>
@@ -248,7 +241,7 @@ export default function MenuPage() {
               </div>
             </div>
           ))}
-          {items.length === 0 && <p className="col-span-full text-center text-gray-400 py-12">Chưa có món nào</p>}
+          {items.length === 0 && <p className="col-span-full text-center text-[rgba(26,14,7,0.35)] py-12">Chưa có món nào</p>}
         </div>}
 
       {pageData && (
@@ -258,91 +251,63 @@ export default function MenuPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Sửa món' : 'Thêm món mới'} maxWidth="max-w-lg">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên món <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Tên món <span className="text-red-500">*</span></label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none transition" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Mô tả</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows={2} />
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none transition" rows={2} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Giá (VND) <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Giá (VND) <span className="text-red-500">*</span></label>
               <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none transition" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Danh mục <span className="text-red-500">*</span></label>
               <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] outline-none transition">
                 <option value={0}>Chọn danh mục</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Đường dẫn hình ảnh (URL)</label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Đường dẫn hình ảnh (URL)</label>
             <input value={form.imageUrl ?? ''} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none transition"
               placeholder="https://example.com/image.jpg" />
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="available" checked={form.available} onChange={(e) => setForm({ ...form, available: e.target.checked })}
-              className="rounded border-gray-300" />
-            <label htmlFor="available" className="text-sm text-gray-700">Còn bán</label>
+              className="rounded border-[rgba(107,80,64,0.3)]" />
+            <label htmlFor="available" className="text-sm text-[rgba(26,14,7,0.7)]">Còn bán</label>
           </div>
-          <div className="flex flex-wrap gap-4 border-t pt-3">
+          <div className="flex flex-wrap gap-4 border-t border-[rgba(107,80,64,0.08)] pt-3">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!form.badgeNew}
-                onChange={(e) => setForm({ ...form, badgeNew: e.target.checked })}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-700">Món mới (⭐ menu QR)</span>
+              <input type="checkbox" checked={!!form.badgeNew} onChange={(e) => setForm({ ...form, badgeNew: e.target.checked })} className="rounded border-[rgba(107,80,64,0.3)]" />
+              <span className="text-sm text-[rgba(26,14,7,0.7)]">Món mới (⭐ menu QR)</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!form.badgeBestSeller}
-                onChange={(e) => setForm({ ...form, badgeBestSeller: e.target.checked })}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-700">Best seller (🏆 menu QR)</span>
+              <input type="checkbox" checked={!!form.badgeBestSeller} onChange={(e) => setForm({ ...form, badgeBestSeller: e.target.checked })} className="rounded border-[rgba(107,80,64,0.3)]" />
+              <span className="text-sm text-[rgba(26,14,7,0.7)]">Best seller (🏆 menu QR)</span>
             </label>
           </div>
-          <div className="flex items-center gap-2 border-t pt-3">
-            <input
-              type="checkbox"
-              id="drink"
-              checked={!!form.drink}
-              onChange={(e) => {
-                const drink = e.target.checked;
-                setForm((f) => ({
-                  ...f,
-                  drink,
-                  drinkSizes:
-                    drink && (!f.drinkSizes || f.drinkSizes.length === 0)
-                      ? [{ code: 'M', label: 'Vừa', priceExtra: 0 }]
-                      : drink
-                        ? f.drinkSizes
-                        : [],
-                  drinkToppings: drink ? f.drinkToppings : [],
-                }));
-              }}
-              className="rounded border-gray-300"
-            />
-            <label htmlFor="drink" className="text-sm text-gray-700">
-              Đồ uống — khách chọn size (bắt buộc) và topping (tuỳ chọn)
-            </label>
+          <div className="flex items-center gap-2 border-t border-[rgba(107,80,64,0.08)] pt-3">
+            <input type="checkbox" id="drink" checked={!!form.drink} onChange={(e) => {
+              const drink = e.target.checked;
+              setForm((f) => ({ ...f, drink, drinkSizes: drink && (!f.drinkSizes || f.drinkSizes.length === 0) ? [{ code: 'M', label: 'Vừa', priceExtra: 0 }] : drink ? f.drinkSizes : [], drinkToppings: drink ? f.drinkToppings : [] }));
+            }} className="rounded border-[rgba(107,80,64,0.3)]" />
+            <label htmlFor="drink" className="text-sm text-[rgba(26,14,7,0.7)]">Đồ uống — khách chọn size (bắt buộc) và topping (tuỳ chọn)</label>
           </div>
           {form.drink && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-4">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-4">
               <div>
-                <div className="text-sm font-medium text-gray-800 mb-2">Danh sách size</div>
-                <p className="text-xs text-gray-500 mb-2">Mã (vd: S, M, L) dùng khi đặt hàng; phụ phí cộng vào giá gốc món.</p>
+                <div className="text-sm font-medium text-[#1a0e07] mb-2">Danh sách size</div>
+                <p className="text-xs text-[rgba(26,14,7,0.45)] mb-2">Mã (vd: S, M, L) dùng khi đặt hàng; phụ phí cộng vào giá gốc món.</p>
                 {(form.drinkSizes || []).map((row, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
                     <input
@@ -390,21 +355,12 @@ export default function MenuPage() {
                     </button>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      drinkSizes: [...(form.drinkSizes || []), { code: '', label: '', priceExtra: 0 }],
-                    })
-                  }
-                  className="text-sm text-blue-600 hover:underline"
-                >
+                <button type="button" onClick={() => setForm({ ...form, drinkSizes: [...(form.drinkSizes || []), { code: '', label: '', priceExtra: 0 }] })} className="text-sm text-[#6b5040] hover:underline font-medium">
                   + Thêm size
                 </button>
               </div>
               <div>
-                <div className="text-sm font-medium text-gray-800 mb-2">Topping (tuỳ chọn)</div>
+                <div className="text-sm font-medium text-[#1a0e07] mb-2">Topping (tuỳ chọn)</div>
                 {(form.drinkToppings || []).map((row, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center">
                     <input
@@ -452,24 +408,15 @@ export default function MenuPage() {
                     </button>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      drinkToppings: [...(form.drinkToppings || []), { code: '', label: '', price: 0 }],
-                    })
-                  }
-                  className="text-sm text-blue-600 hover:underline"
-                >
+                <button type="button" onClick={() => setForm({ ...form, drinkToppings: [...(form.drinkToppings || []), { code: '', label: '', price: 0 }] })} className="text-sm text-[#6b5040] hover:underline font-medium">
                   + Thêm topping
                 </button>
               </div>
             </div>
           )}
           <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[rgba(107,80,64,0.2)] rounded-xl text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">Hủy</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-[#6b5040] text-white rounded-xl hover:brightness-110 disabled:opacity-50 transition-all">
               {saving ? 'Đang lưu...' : 'Lưu'}
             </button>
           </div>
@@ -484,24 +431,24 @@ export default function MenuPage() {
       >
         {recipeLoading ? (
           <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(201,162,122,0.2)] border-t-[#c9a27a]" />
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-              <div className="text-sm font-medium text-blue-900">Hỗ trợ pha chế</div>
-              <div className="text-sm text-blue-700 mt-0.5">Danh sách nguyên liệu và định lượng theo công thức đã khai báo.</div>
+            <div className="rounded-xl border border-[rgba(201,162,122,0.25)] bg-[rgba(201,162,122,0.07)] p-3">
+              <div className="text-sm font-medium text-[#6b5040]">Hỗ trợ pha chế</div>
+              <div className="text-sm text-[rgba(26,14,7,0.55)] mt-0.5">Danh sách nguyên liệu và định lượng theo công thức đã khai báo.</div>
             </div>
 
             {recipeItem && recipeLines.length > 0 ? (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-700">Nguyên liệu</div>
-                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                <div className="text-sm font-medium text-[rgba(26,14,7,0.6)]">Nguyên liệu</div>
+                <div className="divide-y divide-[rgba(107,80,64,0.06)] rounded-xl border border-[rgba(107,80,64,0.12)] bg-white">
                   {recipeLines.map((r) => (
                     <div key={r.id} className="flex items-center justify-between px-3 py-2">
-                      <div className="text-sm font-medium text-gray-800">{r.ingredientName}</div>
-                      <div className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">{r.quantity}</span>
+                      <div className="text-sm font-medium text-[#1a0e07]">{r.ingredientName}</div>
+                      <div className="text-sm text-[rgba(26,14,7,0.55)]">
+                        <span className="font-semibold text-[rgba(26,14,7,0.75)]">{r.quantity}</span>
                         {r.ingredientUnit ? ` ${r.ingredientUnit}` : ''}
                       </div>
                     </div>
@@ -515,7 +462,7 @@ export default function MenuPage() {
             )}
 
             <div className="flex justify-end">
-              <button onClick={closeRecipe} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Đóng</button>
+              <button onClick={closeRecipe} className="px-4 py-2 border border-[rgba(107,80,64,0.2)] rounded-xl text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">Đóng</button>
             </div>
           </div>
         )}

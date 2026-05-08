@@ -27,6 +27,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findAll(Pageable pageable);
 
         @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("""
+                        SELECT o FROM Order o
+                        WHERE (:source = 'ALL'
+                                OR (:source = 'ONLINE' AND UPPER(COALESCE(o.tableNumber, '')) = 'ONLINE')
+                                OR (:source = 'INSTORE' AND COALESCE(UPPER(TRIM(o.tableNumber)), '') <> 'ONLINE'))
+                        """)
+        Page<Order> findBySource(@Param("source") String source, Pageable pageable);
+
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
         @Query("SELECT o FROM Order o WHERE o.id = :id")
         Page<Order> searchById(@Param("id") Long id, Pageable pageable);
 
@@ -38,6 +47,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     Optional<Order> findById(Long id);
+
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("""
+                        SELECT o FROM Order o
+                        WHERE (:source = 'ALL'
+                                OR (:source = 'ONLINE' AND UPPER(COALESCE(o.tableNumber, '')) = 'ONLINE')
+                                OR (:source = 'INSTORE' AND COALESCE(UPPER(TRIM(o.tableNumber)), '') <> 'ONLINE'))
+                        AND o.id = :id
+                        """)
+        Page<Order> searchByIdAndSource(@Param("id") Long id, @Param("source") String source, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")
@@ -57,6 +76,32 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("""
+                        SELECT o FROM Order o
+                        WHERE o.status = :status
+                        AND (:source = 'ALL'
+                                OR (:source = 'ONLINE' AND UPPER(COALESCE(o.tableNumber, '')) = 'ONLINE')
+                                OR (:source = 'INSTORE' AND COALESCE(UPPER(TRIM(o.tableNumber)), '') <> 'ONLINE'))
+                        """)
+        Page<Order> findByStatusAndSource(@Param("status") OrderStatus status,
+                                                                          @Param("source") String source,
+                                                                          Pageable pageable);
+
+        @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
+        @Query("""
+                        SELECT o FROM Order o
+                        WHERE o.status = :status
+                        AND (:source = 'ALL'
+                                OR (:source = 'ONLINE' AND UPPER(COALESCE(o.tableNumber, '')) = 'ONLINE')
+                                OR (:source = 'INSTORE' AND COALESCE(UPPER(TRIM(o.tableNumber)), '') <> 'ONLINE'))
+                        AND o.id = :id
+                        """)
+        Page<Order> searchByStatusAndIdAndSource(@Param("status") OrderStatus status,
+                                                                                         @Param("id") Long id,
+                                                                                         @Param("source") String source,
+                                                                                         Pageable pageable);
 
     @EntityGraph(attributePaths = {"orderItems", "orderItems.menuItem", "createdBy"})
     @Query("""

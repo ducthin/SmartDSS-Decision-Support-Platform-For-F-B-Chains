@@ -227,8 +227,8 @@ export default function MainLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf7f0]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(107,80,64,0.15)] border-t-[#c9a27a]" />
       </div>
     );
   }
@@ -236,54 +236,59 @@ export default function MainLayout() {
   if (!token) return <Navigate to="/login" replace />;
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:block">
+    <div className="min-h-screen flex bg-[#fdf7f0]">
+      <div className="hidden lg:block relative z-30">
         <Sidebar />
       </div>
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <MobileHeader />
         {shouldShowEnable && (
-          <div className="px-6 pt-4">
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
-              <div className="text-sm">
-                Bật thông báo để nhận yêu cầu “Gọi nhân viên” (có âm thanh).
+          <div className="px-5 pt-4">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(201,162,122,0.35)] bg-[rgba(201,162,122,0.08)] px-4 py-3">
+              <div className="text-sm text-[#6b5040]">
+                Bật thông báo để nhận yêu cầu "Gọi nhân viên" (có âm thanh).
               </div>
               <button
                 onClick={enableNotifications}
-                className="shrink-0 px-3 py-1.5 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition"
+                className="shrink-0 rounded-lg bg-[#6b5040] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#1a0e07]"
               >
                 Bật thông báo
               </button>
             </div>
           </div>
         )}
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 overflow-auto p-5 sm:p-6">
           <Outlet />
         </main>
         {canReceiveQrOrderAlerts && (
           <div className="fixed right-4 bottom-4 z-40">
             {showQrOrderFeed && (
-              <div className="mb-2 w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-lg">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-800">Đơn QR gần đây</p>
+              <div className="mb-2 w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[rgba(107,80,64,0.14)] bg-white shadow-[0_16px_48px_-12px_rgba(26,14,7,0.22)]">
+                {/* Panel header */}
+
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(107,80,64,0.08)]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">☕</span>
+                    <p className="text-sm font-semibold text-[#1a0e07]">Đơn QR gần đây</p>
+                  </div>
                   <button
                     onClick={() => setQrOrderFeed([])}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-[rgba(107,80,64,0.5)] hover:text-[#6b5040] transition-colors"
                   >
-                    Xóa
+                    Xóa tất cả
                   </button>
                 </div>
                 <div className="max-h-72 overflow-auto">
                   {qrOrderFeed.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-gray-500">Chưa có đơn QR mới.</p>
+                    <p className="px-4 py-5 text-sm text-[rgba(26,14,7,0.45)] text-center">Chưa có đơn QR mới.</p>
                   ) : (
                     qrOrderFeed.map((item) => (
-                      <div key={item.id} className="px-3 py-2 border-b border-gray-100 last:border-b-0">
+                      <div key={item.id} className="px-4 py-2.5 border-b border-[rgba(107,80,64,0.06)] last:border-b-0 hover:bg-[rgba(107,80,64,0.03)] transition-colors">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-800 truncate">{item.tableLabel} • Đơn #{item.id}</p>
-                          <span className="text-xs text-gray-400 shrink-0">{item.createdAt}</span>
+                          <p className="text-sm font-semibold text-[#1a0e07] truncate">Bàn {item.tableLabel} · Đơn #{item.id}</p>
+                          <span className="text-[11px] text-[rgba(107,80,64,0.5)] shrink-0">{item.createdAt}</span>
                         </div>
-                        <p className="text-xs text-gray-600 mt-0.5">{item.detail}</p>
+                        <p className="text-xs text-[rgba(26,14,7,0.55)] mt-0.5 leading-relaxed">{item.detail}</p>
                       </div>
                     ))
                   )}
@@ -292,12 +297,12 @@ export default function MainLayout() {
             )}
             <button
               onClick={() => setShowQrOrderFeed((v) => !v)}
-              className="relative inline-flex items-center justify-center w-11 h-11 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition"
+              className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#6b5040] text-white shadow-[0_8px_24px_-6px_rgba(107,80,64,0.6)] hover:brightness-110 transition"
               title="Đơn QR mới"
             >
               <Bell size={18} />
               {qrOrderFeed.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-[11px] leading-5 text-white font-semibold text-center">
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-[11px] leading-5 text-white font-bold text-center">
                   {qrOrderFeed.length}
                 </span>
               )}

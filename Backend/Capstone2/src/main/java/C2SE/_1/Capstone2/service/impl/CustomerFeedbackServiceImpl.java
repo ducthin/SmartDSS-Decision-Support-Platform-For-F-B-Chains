@@ -65,6 +65,8 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
     private int criticalLowRatingCount;
     @Value("${app.feedback.alert.window-minutes:30}")
     private int alertWindowMinutes;
+    @Value("${app.upload.dir:}")
+    private String configuredUploadDir;
 
     private final DiningTableRepository diningTableRepository;
     private final CustomerFeedbackRepository customerFeedbackRepository;
@@ -232,7 +234,13 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
             }
 
             try {
-                Path uploadDir = Paths.get("uploads", "feedbacks");
+                Path uploadDir;
+                if (configuredUploadDir != null && !configuredUploadDir.isBlank()) {
+                    uploadDir = Paths.get(configuredUploadDir, "feedbacks");
+                } else {
+                    // Auto-detect the actual uploads directory from known candidate locations
+                    uploadDir = resolveUploadsDir().resolve("feedbacks");
+                }
                 Files.createDirectories(uploadDir);
 
                 String filename = "feedback-" + UUID.randomUUID() + ext;
@@ -244,6 +252,28 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
             }
         }
         return urls;
+    }
+
+    /**
+     * Finds the uploads directory by checking candidate paths in order:
+     * 1. The JVM working directory (works when launched from Capstone2/)
+     * 2. SmartDSS/Backend/Capstone2/uploads (works when launched from Code/)
+     */
+    private Path resolveUploadsDir() {
+        Path cwd = Paths.get("").toAbsolutePath();
+        Path[] candidates = {
+                cwd.resolve("uploads"),
+                cwd.resolve("SmartDSS/Backend/Capstone2/uploads"),
+                cwd.resolve("Capstone2/uploads"),
+                cwd.resolve("Backend/Capstone2/uploads"),
+        };
+        for (Path candidate : candidates) {
+            if (candidate.toFile().exists()) {
+                return candidate;
+            }
+        }
+        // Fallback: create in working directory
+        return cwd.resolve("uploads");
     }
 
     private CustomerFeedbackDTO toDTO(CustomerFeedback item) {

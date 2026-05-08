@@ -70,16 +70,25 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getAllOrders(Pageable pageable, String keyword) {
+        return getAllOrders(pageable, keyword, "ALL");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getAllOrders(Pageable pageable, String keyword, String source) {
         Long orderId = parseOrderIdKeyword(keyword);
         if (Long.valueOf(Long.MIN_VALUE).equals(orderId)) {
             return PageResponse.of(Page.empty(pageable), List.of());
         }
+        String normalizedSource = normalizeSource(source);
         if (orderId != null) {
-            Page<Order> page = orderRepository.searchById(orderId, pageable);
+            Page<Order> page = orderRepository.searchByIdAndSource(orderId, normalizedSource, pageable);
             return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
         }
 
-        Page<Order> page = orderRepository.findAll(pageable);
+        Page<Order> page = "ALL".equals(normalizedSource)
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findBySource(normalizedSource, pageable);
         return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
     }
 
@@ -92,6 +101,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable, String keyword) {
+        return getOrdersByStatus(status, pageable, keyword, "ALL");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable, String keyword, String source) {
         OrderStatus orderStatus;
         try {
             orderStatus = OrderStatus.valueOf(status.toUpperCase());
@@ -103,10 +118,24 @@ public class OrderServiceImpl implements OrderService {
         if (Long.valueOf(Long.MIN_VALUE).equals(orderId)) {
             return PageResponse.of(Page.empty(pageable), List.of());
         }
+        String normalizedSource = normalizeSource(source);
         Page<Order> page = orderId != null
-                ? orderRepository.searchByStatusAndId(orderStatus, orderId, pageable)
-                : orderRepository.findByStatus(orderStatus, pageable);
+                ? orderRepository.searchByStatusAndIdAndSource(orderStatus, orderId, normalizedSource, pageable)
+                : ("ALL".equals(normalizedSource)
+                    ? orderRepository.findByStatus(orderStatus, pageable)
+                    : orderRepository.findByStatusAndSource(orderStatus, normalizedSource, pageable));
         return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
+    }
+
+    private String normalizeSource(String source) {
+        if (source == null || source.isBlank()) {
+            return "ALL";
+        }
+        String normalized = source.trim().toUpperCase();
+        return switch (normalized) {
+            case "ONLINE", "INSTORE" -> normalized;
+            default -> "ALL";
+        };
     }
 
     private Long parseOrderIdKeyword(String keyword) {

@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Calendar, Plus, Search, Trash2, PenSquare, Wallet } from 'lucide-react';
@@ -333,31 +334,43 @@ export default function FinancePage() {
   );
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tài chính</h1>
+    <div className="coffee-theme space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#c9a27a] to-[#6b5040] rounded-xl flex items-center justify-center text-white shadow-lg">
+          <Wallet size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a0e07]">Tài chính</h1>
+          <p className="text-sm text-[rgba(26,14,7,0.5)] mt-0.5">Quản lý thu chi & chốt quỹ</p>
+        </div>
+      </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-emerald-200 rounded-xl p-4">
+        <div className="bg-white border border-emerald-200 rounded-2xl p-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
           <p className="text-sm text-emerald-700">Tổng thu</p>
           <p className="text-2xl font-bold text-emerald-800 mt-1">{formatCurrency(summary.totalIncome || 0)}</p>
         </div>
-        <div className="bg-white border border-red-200 rounded-xl p-4">
+        <div className="bg-white border border-red-200 rounded-2xl p-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
           <p className="text-sm text-red-700">Tổng chi</p>
           <p className="text-2xl font-bold text-red-800 mt-1">{formatCurrency(summary.totalExpense || 0)}</p>
         </div>
-        <div className="bg-white border border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-700">Dòng tiền ròng</p>
-          <p className={`text-2xl font-bold mt-1 ${(summary.netCashflow || 0) >= 0 ? 'text-blue-800' : 'text-red-700'}`}>
+        <div className="bg-white border border-[rgba(107,80,64,0.15)] rounded-2xl p-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+          <p className="text-sm text-[rgba(26,14,7,0.5)]">Dòng tiền ròng</p>
+          <p className={`text-2xl font-bold mt-1 ${(summary.netCashflow || 0) >= 0 ? 'text-[#6b5040]' : 'text-red-700'}`}>
             {formatCurrency(summary.netCashflow || 0)}
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      {/* Gross Profit Section */}
+      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] p-4 space-y-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Báo cáo lãi gộp (Revenue - COGS)</h2>
-          <p className="text-sm text-gray-500">Theo khoảng ngày lọc hiện tại</p>
+          <h2 className="text-lg font-semibold text-[#1a0e07]">Báo cáo lãi gộp (Revenue - COGS)</h2>
+          <p className="text-sm text-[rgba(26,14,7,0.4)]">Theo khoảng ngày lọc hiện tại</p>
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
@@ -368,33 +381,33 @@ export default function FinancePage() {
             <p className="text-xs text-orange-700">Tổng COGS</p>
             <p className="text-lg font-semibold text-orange-800">{formatCurrency(grossTotalCogs)}</p>
           </div>
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <p className="text-xs text-blue-700">Tổng lãi gộp</p>
-            <p className={`text-lg font-semibold ${grossTotalProfit >= 0 ? 'text-blue-800' : 'text-red-700'}`}>
+          <div className="rounded-lg border border-[rgba(107,80,64,0.15)] bg-[rgba(201,162,122,0.08)] p-3">
+            <p className="text-xs text-[#7a5c3e]">Tổng lãi gộp</p>
+            <p className={`text-lg font-semibold ${grossTotalProfit >= 0 ? 'text-[#6b5040]' : 'text-red-700'}`}>
               {formatCurrency(grossTotalProfit)}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 font-medium text-sm">Theo ngày</div>
+          <div className="rounded-xl border border-[rgba(107,80,64,0.1)] overflow-hidden">
+            <div className="px-3 py-2 bg-[rgba(253,247,240,0.8)] border-b border-[rgba(107,80,64,0.08)] font-medium text-sm text-[#1a0e07]">Theo ngày</div>
             <div className="overflow-auto max-h-64">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-[rgba(253,247,240,0.6)] sticky top-0">
                   <tr>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Ngày</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Revenue</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">COGS</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Lãi gộp</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Ngày</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Revenue</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">COGS</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Lãi gộp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {grossProfitDailyDisplay.map((row) => (
-                    <tr key={row.period} className="border-t border-gray-100">
-                      <td className="py-2 px-3">{row.period}</td>
-                      <td className="py-2 px-3">{formatCurrency(row.revenue || 0)}</td>
-                      <td className="py-2 px-3">{formatCurrency(row.cogs || 0)}</td>
+                    <tr key={row.period} className="border-t border-[rgba(107,80,64,0.06)]">
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{row.period}</td>
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.revenue || 0)}</td>
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.cogs || 0)}</td>
                       <td className={`py-2 px-3 font-medium ${(row.grossProfit || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                         {formatCurrency(row.grossProfit || 0)}
                       </td>
@@ -402,7 +415,7 @@ export default function FinancePage() {
                   ))}
                   {grossProfitDailyDisplay.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-gray-400">Chưa có dữ liệu</td>
+                      <td colSpan={4} className="py-6 text-center text-[rgba(26,14,7,0.3)]">Chưa có dữ liệu</td>
                     </tr>
                   )}
                 </tbody>
@@ -410,24 +423,24 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 font-medium text-sm">Theo tháng</div>
+          <div className="rounded-xl border border-[rgba(107,80,64,0.1)] overflow-hidden">
+            <div className="px-3 py-2 bg-[rgba(253,247,240,0.8)] border-b border-[rgba(107,80,64,0.08)] font-medium text-sm text-[#1a0e07]">Theo tháng</div>
             <div className="overflow-auto max-h-64">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-[rgba(253,247,240,0.6)] sticky top-0">
                   <tr>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Tháng</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Revenue</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">COGS</th>
-                    <th className="text-left py-2 px-3 text-gray-500 font-medium">Lãi gộp</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tháng</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Revenue</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">COGS</th>
+                    <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Lãi gộp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {grossProfitMonthlyDisplay.map((row) => (
-                    <tr key={row.period} className="border-t border-gray-100">
-                      <td className="py-2 px-3">{row.period}</td>
-                      <td className="py-2 px-3">{formatCurrency(row.revenue || 0)}</td>
-                      <td className="py-2 px-3">{formatCurrency(row.cogs || 0)}</td>
+                    <tr key={row.period} className="border-t border-[rgba(107,80,64,0.06)]">
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{row.period}</td>
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.revenue || 0)}</td>
+                      <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.cogs || 0)}</td>
                       <td className={`py-2 px-3 font-medium ${(row.grossProfit || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                         {formatCurrency(row.grossProfit || 0)}
                       </td>
@@ -435,7 +448,7 @@ export default function FinancePage() {
                   ))}
                   {grossProfitMonthlyDisplay.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-gray-400">Chưa có dữ liệu</td>
+                      <td colSpan={4} className="py-6 text-center text-[rgba(26,14,7,0.3)]">Chưa có dữ liệu</td>
                     </tr>
                   )}
                 </tbody>
@@ -445,50 +458,50 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] p-4 space-y-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Chốt quỹ cuối ngày</h2>
-          <p className="text-sm text-gray-500">Tổng kỳ chốt: {cashClosingPageData?.totalElements ?? cashClosings.length}</p>
+          <h2 className="text-lg font-semibold text-[#1a0e07]">Chốt quỹ cuối ngày</h2>
+          <p className="text-sm text-[rgba(26,14,7,0.4)]">Tổng kỳ chốt: {cashClosingPageData?.totalElements ?? cashClosings.length}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Ngày chốt</label>
+            <label className="block text-xs text-[rgba(26,14,7,0.5)] mb-1">Ngày chốt</label>
             <input
               type="date"
               value={closingForm.businessDate}
               onChange={(e) => setClosingForm((prev) => ({ ...prev, businessDate: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Tồn đầu (tùy chọn)</label>
+            <label className="block text-xs text-[rgba(26,14,7,0.5)] mb-1">Tồn đầu (tùy chọn)</label>
             <input
               type="number"
               min={0}
               value={closingForm.openingBalance}
               onChange={(e) => setClosingForm((prev) => ({ ...prev, openingBalance: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               placeholder="Để trống = lấy tồn cuối kỳ trước"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Tồn thực tế</label>
+            <label className="block text-xs text-[rgba(26,14,7,0.5)] mb-1">Tồn thực tế</label>
             <input
               type="number"
               min={0}
               value={closingForm.actualBalance}
               onChange={(e) => setClosingForm((prev) => ({ ...prev, actualBalance: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               placeholder="Số tiền kiểm kê thực tế"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Ghi chú</label>
+            <label className="block text-xs text-[rgba(26,14,7,0.5)] mb-1">Ghi chú</label>
             <input
               value={closingForm.note}
               onChange={(e) => setClosingForm((prev) => ({ ...prev, note: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               placeholder="Ghi chú chốt quỹ"
             />
           </div>
@@ -498,14 +511,14 @@ export default function FinancePage() {
           <button
             onClick={handlePreviewClosing}
             disabled={previewingClosing}
-            className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="px-3 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] disabled:opacity-50 text-sm transition-colors"
           >
             {previewingClosing ? 'Đang tính...' : 'Tính tồn kỳ vọng'}
           </button>
           <button
             onClick={handleCloseCashDay}
             disabled={closingSaving}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-50 text-sm transition-all shadow-sm"
           >
             <Wallet size={16} /> {closingSaving ? 'Đang chốt...' : 'Chốt quỹ'}
           </button>
@@ -513,24 +526,24 @@ export default function FinancePage() {
 
         {closingPreview && (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs text-gray-500">Tồn đầu</p>
-              <p className="font-semibold">{formatCurrency(closingPreview.openingBalance || 0)}</p>
+            <div className="rounded-xl border border-[rgba(107,80,64,0.1)] p-3 bg-[rgba(253,247,240,0.5)]">
+              <p className="text-xs text-[rgba(26,14,7,0.5)]">Tồn đầu</p>
+              <p className="font-semibold text-[#1a0e07]">{formatCurrency(closingPreview.openingBalance || 0)}</p>
             </div>
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
               <p className="text-xs text-emerald-700">Tổng thu</p>
               <p className="font-semibold text-emerald-700">{formatCurrency(closingPreview.totalInflow || 0)}</p>
             </div>
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3">
               <p className="text-xs text-red-700">Tổng chi</p>
               <p className="font-semibold text-red-700">{formatCurrency(closingPreview.totalOutflow || 0)}</p>
             </div>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-              <p className="text-xs text-blue-700">Tồn kỳ vọng</p>
-              <p className="font-semibold text-blue-700">{formatCurrency(closingPreview.expectedBalance || 0)}</p>
+            <div className="rounded-xl border border-[rgba(107,80,64,0.15)] bg-[rgba(201,162,122,0.08)] p-3">
+              <p className="text-xs text-[#7a5c3e]">Tồn kỳ vọng</p>
+              <p className="font-semibold text-[#6b5040]">{formatCurrency(closingPreview.expectedBalance || 0)}</p>
             </div>
-            <div className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs text-gray-500">Chênh lệch</p>
+            <div className="rounded-xl border border-[rgba(107,80,64,0.1)] p-3">
+              <p className="text-xs text-[rgba(26,14,7,0.5)]">Chênh lệch</p>
               <p className={`font-semibold ${(closingPreview.variance || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                 {formatCurrency(closingPreview.variance || 0)}
               </p>
@@ -540,36 +553,36 @@ export default function FinancePage() {
 
         <div className="overflow-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-[rgba(253,247,240,0.8)]">
               <tr>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Ngày</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Tồn đầu</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Tổng thu</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Tổng chi</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Tồn kỳ vọng</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Tồn thực tế</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Chênh lệch</th>
-                <th className="text-left py-2 px-3 text-gray-500 font-medium">Người chốt</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Ngày</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tồn đầu</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tổng thu</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tổng chi</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tồn kỳ vọng</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Tồn thực tế</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Chênh lệch</th>
+                <th className="text-left py-2 px-3 text-[rgba(26,14,7,0.5)] font-medium">Người chốt</th>
               </tr>
             </thead>
             <tbody>
               {cashClosings.map((row) => (
-                <tr key={row.id ?? row.businessDate} className="border-t border-gray-100">
-                  <td className="py-2 px-3">{row.businessDate}</td>
-                  <td className="py-2 px-3">{formatCurrency(row.openingBalance || 0)}</td>
-                  <td className="py-2 px-3">{formatCurrency(row.totalInflow || 0)}</td>
-                  <td className="py-2 px-3">{formatCurrency(row.totalOutflow || 0)}</td>
-                  <td className="py-2 px-3">{formatCurrency(row.expectedBalance || 0)}</td>
-                  <td className="py-2 px-3">{formatCurrency(row.actualBalance || 0)}</td>
+                <tr key={row.id ?? row.businessDate} className="border-t border-[rgba(107,80,64,0.06)]">
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{row.businessDate}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.openingBalance || 0)}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.totalInflow || 0)}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.totalOutflow || 0)}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.expectedBalance || 0)}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.7)]">{formatCurrency(row.actualBalance || 0)}</td>
                   <td className={`py-2 px-3 font-medium ${(row.variance || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                     {formatCurrency(row.variance || 0)}
                   </td>
-                  <td className="py-2 px-3">{row.closedByName || '-'}</td>
+                  <td className="py-2 px-3 text-[rgba(26,14,7,0.6)]">{row.closedByName || '-'}</td>
                 </tr>
               ))}
               {cashClosings.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-gray-400">Chưa có kỳ chốt quỹ</td>
+                  <td colSpan={8} className="py-6 text-center text-[rgba(26,14,7,0.3)]">Chưa có kỳ chốt quỹ</td>
                 </tr>
               )}
             </tbody>
@@ -577,38 +590,29 @@ export default function FinancePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] p-4 space-y-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-gray-400" />
+            <Calendar size={16} className="text-[rgba(107,80,64,0.4)]" />
             <input
               type="date"
               value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(0);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
+              className="px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] outline-none focus:border-[#c9a27a] transition-colors"
             />
-            <span className="text-gray-400 text-sm">đến</span>
+            <span className="text-[rgba(26,14,7,0.4)] text-sm">đến</span>
             <input
               type="date"
               value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(0);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              onChange={(e) => { setToDate(e.target.value); setPage(0); }}
+              className="px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] outline-none focus:border-[#c9a27a] transition-colors"
             />
           </div>
 
           <select
             value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter((e.target.value as FinanceType) || '');
-              setPage(0);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            onChange={(e) => { setTypeFilter((e.target.value as FinanceType) || ''); setPage(0); }}
+            className="px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] outline-none focus:border-[#c9a27a] transition-colors"
           >
             <option value="">Tất cả loại</option>
             <option value="INCOME">Thu</option>
@@ -616,27 +620,24 @@ export default function FinancePage() {
           </select>
 
           <div className="relative flex-1 min-w-50">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.4)]" />
             <input
               value={keyword}
-              onChange={(e) => {
-                setKeyword(e.target.value);
-                setPage(0);
-              }}
+              onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
               placeholder="Tìm theo ghi chú hoặc danh mục..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full pl-9 pr-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-sm text-[#1a0e07] outline-none focus:border-[#c9a27a] transition-colors"
             />
           </div>
 
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 text-sm shadow-sm transition-all"
           >
             <Plus size={16} /> Ghi nhận thu/chi
           </button>
           <button
             onClick={() => setShowCategoryModal(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] text-sm transition-colors"
           >
             <Plus size={16} /> Danh mục
           </button>
@@ -644,47 +645,47 @@ export default function FinancePage() {
 
         {loading ? (
           <div className="py-16 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a27a]" />
           </div>
         ) : (
           <div className="overflow-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-[rgba(253,247,240,0.8)]">
                 <tr>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Thời gian</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Loại</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Danh mục</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Số tiền</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Ghi chú</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-500">Người tạo</th>
-                  <th className="text-right py-3 px-3 font-medium text-gray-500">Thao tác</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Thời gian</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Loại</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Danh mục</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Số tiền</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Ghi chú</th>
+                  <th className="text-left py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Người tạo</th>
+                  <th className="text-right py-3 px-3 font-medium text-[rgba(26,14,7,0.5)]">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedTransactions.map((tx) => (
-                  <tr key={tx.id} className="border-t border-gray-100">
-                    <td className="py-3 px-3 text-gray-600">{new Date(tx.occurredAt).toLocaleString('vi-VN')}</td>
+                  <tr key={tx.id} className="border-t border-[rgba(107,80,64,0.06)]">
+                    <td className="py-3 px-3 text-[rgba(26,14,7,0.6)]">{new Date(tx.occurredAt).toLocaleString('vi-VN')}</td>
                     <td className="py-3 px-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${tx.type === 'INCOME' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                         {tx.type === 'INCOME' ? 'Thu' : 'Chi'}
                       </span>
                     </td>
-                    <td className="py-3 px-3">{tx.categoryName}</td>
+                    <td className="py-3 px-3 text-[rgba(26,14,7,0.7)]">{tx.categoryName}</td>
                     <td className={`py-3 px-3 font-semibold ${tx.type === 'INCOME' ? 'text-emerald-700' : 'text-red-700'}`}>
                       {formatCurrency(tx.amount)}
                     </td>
-                    <td className="py-3 px-3 text-gray-600">{tx.note || '-'}</td>
-                    <td className="py-3 px-3 text-gray-600">{tx.createdByName || '-'}</td>
+                    <td className="py-3 px-3 text-[rgba(26,14,7,0.6)]">{tx.note || '-'}</td>
+                    <td className="py-3 px-3 text-[rgba(26,14,7,0.6)]">{tx.createdByName || '-'}</td>
                     <td className="py-3 px-3 text-right space-x-1">
                       <button
                         onClick={() => openEditModal(tx)}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-[rgba(201,162,122,0.15)] text-[#6b5040] rounded-lg text-xs hover:bg-[rgba(201,162,122,0.25)] transition-colors"
                       >
                         <PenSquare size={14} /> Sửa
                       </button>
                       <button
                         onClick={() => handleDelete(tx)}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs hover:bg-red-200 transition-colors"
                       >
                         <Trash2 size={14} /> Xóa
                       </button>
@@ -693,7 +694,7 @@ export default function FinancePage() {
                 ))}
                 {sortedTransactions.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-400">Chưa có giao dịch trong khoảng thời gian đã chọn</td>
+                    <td colSpan={7} className="py-8 text-center text-[rgba(26,14,7,0.3)]">Chưa có giao dịch trong khoảng thời gian đã chọn</td>
                   </tr>
                 )}
               </tbody>
@@ -718,11 +719,11 @@ export default function FinancePage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Danh mục <span className="text-red-500">*</span></label>
             <select
               value={form.categoryId || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, categoryId: Number(e.target.value) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
             >
               <option value="">Chọn danh mục</option>
               {categories.map((category) => (
@@ -735,29 +736,29 @@ export default function FinancePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Số tiền <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 min={1}
                 value={form.amount || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, amount: Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Thời gian phát sinh</label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Thời gian phát sinh</label>
               <input
                 type="datetime-local"
                 value={form.occurredAt || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, occurredAt: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nguồn</label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Nguồn</label>
               <input
                 value={form.sourceType || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, sourceType: e.target.value }))}
@@ -766,34 +767,34 @@ export default function FinancePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mã tham chiếu</label>
+              <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Mã tham chiếu</label>
               <input
                 value={form.sourceRefId || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, sourceRefId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
                 placeholder="Ví dụ: ORDER-123"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Ghi chú</label>
             <textarea
               value={form.note || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg min-h-24"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none min-h-24"
               placeholder="Nội dung thu/chi"
             />
           </div>
 
           <div className="flex justify-end gap-3">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">
               Hủy
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
             >
               <Wallet size={16} /> {saving ? 'Đang lưu...' : 'Lưu giao dịch'}
             </button>
@@ -808,33 +809,33 @@ export default function FinancePage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên danh mục <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Tên danh mục <span className="text-red-500">*</span></label>
             <input
               value={categoryForm.name}
               onChange={(e) => setCategoryForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
               placeholder="Ví dụ: Thu tiền mặt, Tiền điện"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Loại danh mục</label>
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.7)] mb-1">Loại danh mục</label>
             <select
               value={categoryForm.type}
               onChange={(e) => setCategoryForm((prev) => ({ ...prev, type: e.target.value as FinanceType }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl bg-[rgba(253,247,240,0.6)] text-[#1a0e07] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] outline-none"
             >
               <option value="INCOME">Thu</option>
               <option value="EXPENSE">Chi</option>
             </select>
           </div>
           <div className="flex justify-end gap-3">
-            <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 border border-[rgba(107,80,64,0.18)] rounded-xl text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">
               Hủy
             </button>
             <button
               onClick={handleCreateCategory}
               disabled={categorySaving}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
             >
               {categorySaving ? 'Đang lưu...' : 'Tạo danh mục'}
             </button>

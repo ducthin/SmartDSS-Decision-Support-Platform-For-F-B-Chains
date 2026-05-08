@@ -39,9 +39,9 @@ export default function MapPickerModal({
 
     const marker = L.circleMarker(startCenter, {
       radius: 10,
-      color: '#2563eb',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.7,
+      color: '#6b5040',
+      fillColor: '#c9a27a',
+      fillOpacity: 0.8,
     }).addTo(map);
 
     map.on('click', (event: L.LeafletMouseEvent) => {
@@ -69,26 +69,30 @@ export default function MapPickerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-[0_20px_60px_-10px_rgba(26,14,7,0.2)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[rgba(107,80,64,0.08)] flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Chọn vị trí quán trên bản đồ</h3>
-            <p className="text-xs text-gray-500 mt-1">Bấm trực tiếp lên bản đồ để lấy vĩ độ/kinh độ.</p>
+            <h3 className="font-semibold text-[#1a0e07]">Chọn vị trí quán trên bản đồ</h3>
+            <p className="text-xs text-[rgba(26,14,7,0.45)] mt-1">Bấm trực tiếp lên bản đồ để lấy vĩ độ/kinh độ.</p>
           </div>
-          <button onClick={onClose} className="text-sm px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50">
+          <button
+            onClick={onClose}
+            className="text-sm px-3 py-1.5 rounded-xl border border-[rgba(107,80,64,0.2)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
+          >
             Đóng
           </button>
         </div>
 
         <div ref={mapElRef} className="h-[420px] w-full" />
 
-        <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between gap-3">
-          <div className="text-sm text-gray-700">
-            <span className="font-medium">Đã chọn:</span> {selected.lat.toFixed(6)}, {selected.lng.toFixed(6)}
+        <div className="px-4 py-3 border-t border-[rgba(107,80,64,0.08)] flex items-center justify-between gap-3">
+          <div className="text-sm text-[rgba(26,14,7,0.65)]">
+            <span className="font-semibold text-[#1a0e07]">Đã chọn:</span>{' '}
+            {selected.lat.toFixed(6)}, {selected.lng.toFixed(6)}
           </div>
           <button
             onClick={() => onConfirm(selected.lat, selected.lng)}
-            className="text-sm px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            className="text-sm px-4 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 transition-all shadow-sm"
           >
             Dùng tọa độ này
           </button>

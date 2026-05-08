@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useState } from 'react';
 import {
   Brain, TrendingUp, ShoppingBag, Package, RefreshCw,
@@ -105,45 +106,45 @@ export default function AIPredictionPage() {
 
       {/* ── Page Header ─────────────────────────────────────── */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#c9a27a] to-[#6b5040] rounded-xl flex items-center justify-center text-white shadow-lg">
           <Brain size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            AI Phân tích & Dự báo
-            <span className="text-sm font-normal bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">
+          <h1 className="text-2xl font-bold text-[#1a0e07] flex items-center gap-2">
+            AI Phân tích &amp; Dự báo
+            <span className="text-sm font-normal bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] px-2 py-0.5 rounded-full">
               Powered by ML
             </span>
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-[rgba(26,14,7,0.5)] mt-0.5">
             Dự báo doanh thu • Số đơn hàng • Gợi ý nhập kho — cho bất kỳ ngày nào
           </p>
         </div>
       </div>
 
       {/* ── Control Panel ───────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4 flex items-center gap-2">
-          <Sparkles size={15} className="text-indigo-400" />
+      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)] p-5">
+        <h2 className="text-sm font-semibold text-[rgba(26,14,7,0.5)] uppercase tracking-wide mb-4 flex items-center gap-2">
+          <Sparkles size={15} className="text-[#c9a27a]" />
           Thiết lập Phân tích
         </h2>
 
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-end">
           {/* Date picker */}
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1.5">
               📅 Ngày cần dự báo
             </label>
-            <div className="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
-              <Calendar size={16} className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 border border-[rgba(107,80,64,0.18)] rounded-xl px-3 py-2.5 bg-[rgba(253,247,240,0.6)] focus-within:border-[#c9a27a] focus-within:ring-4 focus-within:ring-[rgba(201,162,122,0.12)] transition-all">
+              <Calendar size={16} className="text-[rgba(107,80,64,0.4)] flex-shrink-0" />
               <input
                 id="ai-prediction-date"
                 type="date"
                 value={selectedDate}
                 onChange={(e) => { setSelectedDate(e.target.value); setPrediction(null); }}
-                className="flex-1 bg-transparent text-sm text-gray-800 outline-none cursor-pointer"
+                className="flex-1 bg-transparent text-sm text-[#1a0e07] outline-none cursor-pointer"
               />
-              <span className="text-xs text-gray-400 flex-shrink-0">
+              <span className="text-xs text-[rgba(26,14,7,0.4)] flex-shrink-0">
                 {dayOfWeekVN(selectedDate)}
               </span>
             </div>
@@ -165,8 +166,8 @@ export default function AIPredictionPage() {
                   onClick={() => { setSelectedDate(iso); setPrediction(null); }}
                   className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
                     selectedDate === iso
-                      ? 'bg-indigo-600 text-white border-indigo-700'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                      ? 'bg-[#6b5040] text-white border-[#6b5040]'
+                      : 'bg-white text-[rgba(26,14,7,0.6)] border-[rgba(107,80,64,0.18)] hover:border-[#c9a27a] hover:text-[#6b5040]'
                   }`}
                 >
                   {label}
@@ -175,12 +176,12 @@ export default function AIPredictionPage() {
             })}
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none whitespace-nowrap">
+          <label className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.6)] cursor-pointer select-none whitespace-nowrap">
             <input
               type="checkbox"
               checked={compareLlm}
               onChange={(e) => { setCompareLlm(e.target.checked); setPrediction(null); }}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-[rgba(107,80,64,0.3)] accent-[#6b5040]"
             />
             So sánh LLM (Groq)
           </label>
@@ -192,8 +193,8 @@ export default function AIPredictionPage() {
             disabled={loading}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all ${
               loading
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
+                ? 'bg-[rgba(107,80,64,0.1)] text-[rgba(26,14,7,0.35)] cursor-not-allowed'
+                : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'
             }`}
           >
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
@@ -279,12 +280,12 @@ export default function AIPredictionPage() {
 
       {/* ── Empty ───────────────────────────────────────────── */}
       {!prediction && !loading && !error && (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center">
-          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Brain size={32} className="text-indigo-300" />
+        <div className="bg-white rounded-2xl border border-dashed border-[rgba(107,80,64,0.2)] p-16 text-center">
+          <div className="w-16 h-16 bg-[rgba(201,162,122,0.1)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Brain size={32} className="text-[rgba(107,80,64,0.3)]" />
           </div>
-          <h3 className="text-base font-semibold text-gray-500 mb-1">Chọn ngày và bấm "Phân tích ngay"</h3>
-          <p className="text-sm text-gray-400">
+          <h3 className="text-base font-semibold text-[rgba(26,14,7,0.4)] mb-1">Chọn ngày và bấm "Phân tích ngay"</h3>
+          <p className="text-sm text-[rgba(26,14,7,0.3)]">
             AI sẽ phân tích từ thời tiết, sự kiện, mật độ khu vực và thứ ngày trong tuần
           </p>
         </div>

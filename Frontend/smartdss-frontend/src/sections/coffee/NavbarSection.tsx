@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Coffee, Menu, X } from 'lucide-react';
-import { brandName, navItems } from '@/assets/coffee/content';
+import { Menu, X } from 'lucide-react';
+import logoImg from '@/assets/img/logo.png';
+import { navItems } from '@/assets/coffee/content';
 import Button from '@/components/coffee/Button';
 import Container from '@/components/coffee/Container';
 
@@ -68,12 +69,7 @@ export default function NavbarSection() {
             to="/"
             className="coffee-interactive inline-flex shrink-0 items-center gap-2 rounded-xl px-1.5 py-1 text-[var(--coffee-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--coffee-accent)]"
           >
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--coffee-primary)] to-[var(--coffee-dark)] text-white shadow-sm">
-              <Coffee className="h-4 w-4" />
-            </span>
-            <span className="text-base font-bold tracking-tight text-[var(--coffee-dark)]">
-              {brandName}
-            </span>
+            <img src={logoImg} alt="SmartDSS Logo" className="h-13 w-auto max-w-[140px] object-contain" />
           </Link>
 
           {/* ── Desktop nav (≥1280px) ── */}

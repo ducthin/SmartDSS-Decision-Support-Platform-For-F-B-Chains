@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useState, useCallback } from 'react';
 import { reportService } from '@/services/reportService';
 import type {

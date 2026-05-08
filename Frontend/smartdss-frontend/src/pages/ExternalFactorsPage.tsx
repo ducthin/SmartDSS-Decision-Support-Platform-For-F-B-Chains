@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
@@ -669,17 +670,26 @@ export default function ExternalFactorsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a27a]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Yếu tố bên ngoài</h1>
+    <div className="coffee-theme space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#c9a27a] to-[#6b5040] rounded-xl flex items-center justify-center text-white shadow-lg">
+          <Cloud size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a0e07]">Yếu tố bên ngoài</h1>
+          <p className="text-sm text-[rgba(26,14,7,0.5)] mt-0.5">Thời tiết • Sự kiện • Voucher • Tích điểm</p>
+        </div>
+      </div>
 
       {/* Tabs */}
-      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-xl bg-[rgba(107,80,64,0.06)] border border-[rgba(107,80,64,0.08)] p-1">
         {([
           { key: 'weather' as Tab, label: 'Thời tiết', icon: Cloud },
           { key: 'calendar' as Tab, label: 'Lịch sự kiện & ngày lễ', icon: Calendar },
@@ -689,8 +699,10 @@ export default function ExternalFactorsPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-              ${tab === t.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+              ${tab === t.key
+                ? 'bg-[#6b5040] text-white shadow-sm'
+                : 'text-[rgba(26,14,7,0.5)] hover:text-[#1a0e07] hover:bg-[rgba(107,80,64,0.08)]'}`}
           >
             <t.icon size={16} />
             {t.label}
@@ -716,21 +728,21 @@ export default function ExternalFactorsPage() {
         <div className="space-y-4">
           {/* Action bar */}
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center gap-3 text-xs text-[rgba(26,14,7,0.5)]">
               <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Ngày lễ</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Sự kiện</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-[#c9a27a] inline-block" /> Sự kiện</span>
             </div>
             {canEdit && (
               <div className="flex items-center gap-2">
                 <button onClick={syncHolidays} disabled={syncing}
-                  className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm hover:brightness-110 disabled:opacity-50 transition-all shadow-sm">
                   <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
                   {syncing ? 'Đang đồng bộ...' : 'Đồng bộ ngày lễ'}
                 </button>
-                <button onClick={openEventCreate} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                <button onClick={openEventCreate} className="flex items-center gap-2 bg-[#6b5040] text-white px-3 py-2 rounded-xl text-sm hover:brightness-110 transition-all shadow-sm">
                   <Plus size={16} /> Sự kiện
                 </button>
-                <button onClick={openHolidayCreate} className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700">
+                <button onClick={openHolidayCreate} className="flex items-center gap-2 bg-[#8b6855] text-white px-3 py-2 rounded-xl text-sm hover:brightness-110 transition-all shadow-sm">
                   <Plus size={16} /> Ngày lễ
                 </button>
               </div>
@@ -738,31 +750,31 @@ export default function ExternalFactorsPage() {
           </div>
 
           {/* Calendar grid */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] overflow-hidden shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(107,80,64,0.08)]">
               <div className="flex items-center gap-2">
-                <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                  <ChevronLeft size={20} />
+                <button onClick={prevMonth} className="p-1.5 hover:bg-[rgba(107,80,64,0.06)] rounded-lg transition-colors">
+                  <ChevronLeft size={20} className="text-[rgba(26,14,7,0.6)]" />
                 </button>
-                <h2 className="text-lg font-semibold min-w-45 text-center">
+                <h2 className="text-lg font-semibold min-w-45 text-center text-[#1a0e07]">
                   Tháng {calMonth + 1}, {calYear}
                 </h2>
-                <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                  <ChevronRight size={20} />
+                <button onClick={nextMonth} className="p-1.5 hover:bg-[rgba(107,80,64,0.06)] rounded-lg transition-colors">
+                  <ChevronRight size={20} className="text-[rgba(26,14,7,0.6)]" />
                 </button>
               </div>
-              <button onClick={goToday} className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+              <button onClick={goToday} className="text-sm text-[#6b5040] hover:bg-[rgba(107,80,64,0.08)] px-3 py-1.5 rounded-lg transition-colors font-medium">
                 Hôm nay
               </button>
             </div>
-            <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+            <div className="grid grid-cols-7 border-b border-[rgba(107,80,64,0.08)] bg-[rgba(253,247,240,0.6)]">
               {WEEKDAYS.map((d) => (
-                <div key={d} className="py-2 text-center text-xs font-medium text-gray-500">{d}</div>
+                <div key={d} className="py-2 text-center text-xs font-medium text-[rgba(26,14,7,0.5)]">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7">
               {calendarDays.map((day, i) => {
-                if (day === null) return <div key={i} className="min-h-22.5 bg-gray-50/50 border-b border-r border-gray-100" />;
+                if (day === null) return <div key={i} className="min-h-22.5 bg-[rgba(253,247,240,0.3)] border-b border-r border-[rgba(107,80,64,0.06)]" />;
                 const dateStr = getDateStr(day);
                 const isToday = dateStr === todayStr;
                 const isSelected = dateStr === selectedDate;
@@ -770,12 +782,12 @@ export default function ExternalFactorsPage() {
                 const dayHols = holidaysForDate(dateStr);
                 return (
                   <div key={i} onClick={() => setSelectedDate(dateStr)}
-                    className={`min-h-22.5 p-1.5 border-b border-r border-gray-100 cursor-pointer transition-colors
-                      ${isSelected ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : 'hover:bg-gray-50'}
-                      ${isToday && !isSelected ? 'bg-amber-50/50' : ''}`}>
+                    className={`min-h-22.5 p-1.5 border-b border-r border-[rgba(107,80,64,0.06)] cursor-pointer transition-colors
+                      ${isSelected ? 'bg-[rgba(201,162,122,0.15)] ring-2 ring-[#c9a27a] ring-inset' : 'hover:bg-[rgba(253,247,240,0.8)]'}
+                      ${isToday && !isSelected ? 'bg-[rgba(201,162,122,0.08)]' : ''}`}>
                     <div className="mb-1">
                       <span className={`text-sm leading-none ${isToday
-                        ? 'bg-blue-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center font-bold'
+                        ? 'bg-[#6b5040] text-white w-6 h-6 rounded-full inline-flex items-center justify-center font-bold'
                         : 'text-gray-700 font-medium'}`}>{day}</span>
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
@@ -824,8 +836,8 @@ export default function ExternalFactorsPage() {
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 ml-3 shrink-0">
-                            <button onClick={() => openHolidayEdit(h)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                            <button onClick={() => deleteHoliday(h.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                            <button onClick={() => openHolidayEdit(h)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-[#6b5040] hover:bg-[rgba(107,80,64,0.08)] rounded"><Edit2 size={16} /></button>
+                            <button onClick={() => deleteHoliday(h.id)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                           </div>
                         )}
                       </div>
@@ -857,8 +869,8 @@ export default function ExternalFactorsPage() {
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 ml-3 shrink-0">
-                            <button onClick={() => openEventEdit(e)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                            <button onClick={() => deleteEvent(e.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                            <button onClick={() => openEventEdit(e)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-[#6b5040] hover:bg-[rgba(107,80,64,0.08)] rounded"><Edit2 size={16} /></button>
+                            <button onClick={() => deleteEvent(e.id)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                           </div>
                         )}
                       </div>
@@ -914,7 +926,7 @@ export default function ExternalFactorsPage() {
                 </select>
               </label>
               {canEdit && (
-                <button onClick={openVoucherCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700">
+                <button onClick={openVoucherCreate} className="flex items-center gap-2 bg-[#6b5040] text-white px-3 py-2 rounded-xl text-sm hover:brightness-110 shadow-sm transition-colors">
                   <Plus size={16} /> Thêm voucher
                 </button>
               )}
@@ -981,8 +993,8 @@ export default function ExternalFactorsPage() {
                         {canEdit && (
                           <td className="px-2 py-2">
                             <div className="flex justify-end gap-1">
-                              <button onClick={() => openVoucherEdit(v)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded"><Edit2 size={16} /></button>
-                              <button onClick={() => deleteVoucher(v.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
+                              <button onClick={() => openVoucherEdit(v)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-[#6b5040] hover:bg-[rgba(107,80,64,0.08)] rounded"><Edit2 size={16} /></button>
+                              <button onClick={() => deleteVoucher(v.id)} className="p-1.5 text-[rgba(26,14,7,0.5)] hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                             </div>
                           </td>
                         )}
@@ -1034,7 +1046,7 @@ export default function ExternalFactorsPage() {
                   <button
                     onClick={saveLoyaltyPointsPolicy}
                     disabled={savingLoyaltyPoints}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-xl bg-[#6b5040] px-4 py-2 text-sm font-medium text-white hover:brightness-110 shadow-sm disabled:opacity-50 transition-colors"
                   >
                     {savingLoyaltyPoints ? 'Đang lưu...' : 'Lưu cấu hình'}
                   </button>
@@ -1051,10 +1063,10 @@ export default function ExternalFactorsPage() {
               </div>
               {canEdit && (
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={addLoyaltyTier} className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200">
+                  <button type="button" onClick={addLoyaltyTier} className="inline-flex items-center gap-2 rounded-xl bg-[rgba(107,80,64,0.06)] px-3 py-2 text-sm text-[#1a0e07] hover:bg-[rgba(107,80,64,0.1)] transition-colors">
                     <Plus size={16} /> Thêm hạng
                   </button>
-                  <button type="button" onClick={saveLoyaltyTiers} disabled={savingLoyaltyTiers} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+                  <button type="button" onClick={saveLoyaltyTiers} disabled={savingLoyaltyTiers} className="inline-flex items-center gap-2 rounded-xl bg-[#6b5040] px-4 py-2 text-sm font-medium text-white shadow-sm hover:brightness-110 disabled:opacity-60 transition-colors">
                     {savingLoyaltyTiers ? 'Đang lưu...' : 'Lưu cấp bậc'}
                   </button>
                 </div>
@@ -1074,8 +1086,8 @@ export default function ExternalFactorsPage() {
                     setDraggedTierIndex(null);
                   }}
                   onDragEnd={() => setDraggedTierIndex(null)}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-shadow
-                    ${draggedTierIndex === index ? 'opacity-50 border-indigo-400 shadow-lg' : 'border-gray-200 bg-white shadow-sm hover:shadow-md'}`}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all
+                    ${draggedTierIndex === index ? 'opacity-50 border-[#c9a27a] shadow-lg' : 'border-[rgba(107,80,64,0.1)] bg-white shadow-sm hover:shadow-md'}`}
                 >
                   {/* Drag handle */}
                   <button
@@ -1116,7 +1128,7 @@ export default function ExternalFactorsPage() {
                   )}
 
                   {/* Active badge */}
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${tier.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${tier.active ? 'bg-[rgba(201,162,122,0.15)] text-[#6b5040]' : 'bg-[rgba(107,80,64,0.06)] text-[rgba(26,14,7,0.5)]'
                     }`}>
                     {tier.active ? 'Đang dùng' : 'Tắt'}
                   </span>
@@ -1127,7 +1139,7 @@ export default function ExternalFactorsPage() {
                       <button
                         type="button"
                         onClick={() => setEditingTierIndex(index)}
-                        className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        className="rounded p-1.5 text-[rgba(26,14,7,0.5)] hover:bg-[rgba(107,80,64,0.08)] hover:text-[#6b5040] transition-colors"
                         title="Chỉnh sửa hạng"
                       >
                         <Edit2 size={15} />
@@ -1135,7 +1147,7 @@ export default function ExternalFactorsPage() {
                       <button
                         type="button"
                         onClick={() => deleteLoyaltyTier(index)}
-                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        className="rounded p-1.5 text-[rgba(26,14,7,0.5)] hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Xóa hạng"
                       >
                         <Trash2 size={15} />
@@ -1279,7 +1291,7 @@ export default function ExternalFactorsPage() {
                       <button
                         type="button"
                         onClick={() => setEditingTierIndex(null)}
-                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        className="rounded-xl border border-[rgba(107,80,64,0.1)] px-4 py-2 text-sm text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
                       >
                         Đóng
                       </button>
@@ -1287,7 +1299,7 @@ export default function ExternalFactorsPage() {
                         type="button"
                         onClick={() => { saveLoyaltyTiers(); setEditingTierIndex(null); }}
                         disabled={savingLoyaltyTiers}
-                        className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                        className="rounded-xl bg-[#6b5040] shadow-sm px-5 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60 transition-colors"
                       >
                         {savingLoyaltyTiers ? 'Đang lưu...' : 'Lưu thay đổi'}
                       </button>
@@ -1325,7 +1337,7 @@ export default function ExternalFactorsPage() {
                     }
                   }}
                   placeholder="Ví dụ: 09xxxxxxxx"
-                  className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[rgba(107,80,64,0.2)] py-2 pl-9 pr-3 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[#c9a27a]/20 transition-all"
                 />
                 {showPhoneSuggestions && loyaltyPhone.trim() && loyaltyAccounts.some(acc => acc.phone.includes(loyaltyPhone.trim()) && acc.phone !== loyaltyPhone.trim()) && (
                   <ul className="absolute z-10 w-full mt-1 top-full left-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -1346,12 +1358,12 @@ export default function ExternalFactorsPage() {
                               setShowPhoneSuggestions(false);
                             }}
                           >
-                            <span className="font-medium text-gray-800">
+                            <span className="font-medium text-[rgba(26,14,7,0.8)]">
                               {acc.phone.slice(0, matchIndex)}
-                              <span className="text-blue-600 bg-blue-50">{acc.phone.slice(matchIndex, matchIndex + matchLen)}</span>
+                              <span className="text-[#6b5040] bg-[rgba(201,162,122,0.2)]">{acc.phone.slice(matchIndex, matchIndex + matchLen)}</span>
                               {acc.phone.slice(matchIndex + matchLen)}
                             </span>
-                            <span className="text-xs text-amber-600 font-medium">{acc.pointsBalance.toLocaleString('vi-VN')} đ</span>
+                            <span className="text-xs text-[#6b5040] font-medium">{acc.pointsBalance.toLocaleString('vi-VN')} đ</span>
                           </li>
                         );
                       })}
@@ -1362,7 +1374,7 @@ export default function ExternalFactorsPage() {
                 type="button"
                 onClick={lookupLoyaltyAccount}
                 disabled={loadingLoyalty}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#6b5040] shadow-sm px-4 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-60 transition-colors"
               >
                 <Search size={16} /> {loadingLoyalty ? 'Đang tra...' : 'Tra cứu'}
               </button>
@@ -1411,10 +1423,10 @@ export default function ExternalFactorsPage() {
                           setLoyaltyAccount(account);
                           setLoyaltyError('');
                         }}
-                        className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                        className="cursor-pointer border-b border-[rgba(107,80,64,0.06)] hover:bg-[rgba(201,162,122,0.08)] transition-colors"
                       >
-                        <td className="px-2 py-2 font-semibold text-blue-700">{account.phone}</td>
-                        <td className="px-2 py-2 font-medium text-amber-700">{account.pointsBalance.toLocaleString('vi-VN')}</td>
+                        <td className="px-2 py-2 font-semibold text-[#6b5040]">{account.phone}</td>
+                        <td className="px-2 py-2 font-medium text-[#c9a27a]">{account.pointsBalance.toLocaleString('vi-VN')}</td>
                         <td className="px-2 py-2">{account.totalOrders.toLocaleString('vi-VN')}</td>
                         <td className="px-2 py-2">{formatCurrency(account.totalSpent)}</td>
                         <td className="px-2 py-2 text-gray-500">{formatDateTime(account.lastOrderAt)}</td>
@@ -1428,29 +1440,29 @@ export default function ExternalFactorsPage() {
 
           {loyaltyAccount ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">SĐT</p>
-                <p className="mt-2 text-lg font-semibold text-gray-900">{loyaltyAccount.phone}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-[rgba(26,14,7,0.5)]">SĐT</p>
+                <p className="mt-2 text-lg font-semibold text-[#1a0e07]">{loyaltyAccount.phone}</p>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Điểm hiện có</p>
-                <p className="mt-2 text-2xl font-bold text-amber-800">{loyaltyAccount.pointsBalance.toLocaleString('vi-VN')}</p>
+              <div className="rounded-xl border border-[#c9a27a] bg-[rgba(201,162,122,0.1)] p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-[#6b5040]">Điểm hiện có</p>
+                <p className="mt-2 text-2xl font-bold text-[#6b5040]">{loyaltyAccount.pointsBalance.toLocaleString('vi-VN')}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng đơn</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">{loyaltyAccount.totalOrders.toLocaleString('vi-VN')}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-[rgba(26,14,7,0.5)]">Tổng đơn</p>
+                <p className="mt-2 text-2xl font-bold text-[#1a0e07]">{loyaltyAccount.totalOrders.toLocaleString('vi-VN')}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng chi tiêu</p>
-                <p className="mt-2 text-lg font-semibold text-gray-900">{formatCurrency(loyaltyAccount.totalSpent)}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-white p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-[rgba(26,14,7,0.5)]">Tổng chi tiêu</p>
+                <p className="mt-2 text-lg font-semibold text-[#1a0e07]">{formatCurrency(loyaltyAccount.totalSpent)}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tổng điểm đã tích</p>
-                <p className="mt-2 text-xl font-semibold text-gray-900">{loyaltyAccount.totalPointsEarned.toLocaleString('vi-VN')} điểm</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-white p-4 md:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-[rgba(26,14,7,0.5)]">Tổng điểm đã tích</p>
+                <p className="mt-2 text-xl font-semibold text-[#1a0e07]">{loyaltyAccount.totalPointsEarned.toLocaleString('vi-VN')} điểm</p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Lần mua gần nhất</p>
-                <p className="mt-2 text-sm font-medium text-gray-900">{formatDateTime(loyaltyAccount.lastOrderAt)}</p>
+              <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-white p-4 md:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-[rgba(26,14,7,0.5)]">Lần mua gần nhất</p>
+                <p className="mt-2 text-sm font-medium text-[#1a0e07]">{formatDateTime(loyaltyAccount.lastOrderAt)}</p>
               </div>
             </div>
           ) : (

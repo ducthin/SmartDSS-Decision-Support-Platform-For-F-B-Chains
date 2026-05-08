@@ -1,7 +1,9 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useState, useCallback } from 'react';
 import { inventoryService } from '@/services/inventoryService';
 import type { Inventory, InventoryItemForm, InventoryTransactionForm, InventoryTransactionHistory, PageResponse } from '@/types';
-import { Plus, Minus, AlertTriangle, Search, PenSquare, History } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Search, PenSquare, History, Package } from 'lucide-react';
+
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import { formatCurrency, getApiErrorMessage } from '@/utils/helpers';
@@ -190,281 +192,278 @@ export default function InventoryPage() {
     loadHistory();
   }, [loadHistory]);
 
+  const inputCls = 'w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3.5 py-2.5 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.15)] bg-white';
+  const labelCls = 'block text-sm font-semibold text-[#1a0e07] mb-1.5';
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Quản lý kho</h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a0e07]">Quản lý kho</h1>
+          <p className="mt-0.5 text-sm text-[rgba(26,14,7,0.5)]">Theo dõi tồn kho và lịch sử nhập xuất nguyên liệu</p>
+        </div>
+        <button
+          onClick={openCreateItemModal}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#6b5040] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 transition active:scale-95"
+        >
+          <Plus size={16} /> Thêm nguyên liệu
+        </button>
+      </div>
 
       {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.4)]" />
+          <input
+            value={keyword}
+            onChange={(e) => { setKeyword(e.target.value); setPage(0); }}
             placeholder="Tìm kiếm nguyên liệu..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+            className="w-full pl-10 pr-3 py-2.5 border border-[rgba(107,80,64,0.18)] rounded-xl text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.12)] bg-white"
+          />
         </div>
-        <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
-          <input type="checkbox" checked={lowStockFilter === true}
+        <label className="flex items-center gap-2 px-3 py-2.5 border border-[rgba(107,80,64,0.18)] rounded-xl cursor-pointer hover:bg-[rgba(107,80,64,0.04)] text-sm text-[rgba(26,14,7,0.7)] transition">
+          <input
+            type="checkbox"
+            checked={lowStockFilter === true}
             onChange={(e) => { setLowStockFilter(e.target.checked ? true : undefined); setPage(0); }}
-            className="rounded border-gray-300" />
-          <AlertTriangle size={16} className="text-orange-500" />
+            className="rounded accent-[#6b5040]"
+          />
+          <AlertTriangle size={15} className="text-amber-500" />
           Chỉ hiện sắp hết
         </label>
-        <button
-          onClick={openCreateItemModal}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm"
-        >
-          <Plus size={16} />
-          Thêm nguyên liệu
-        </button>
       </div>
 
-      {loading ? <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div> :
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Nguyên liệu</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Tồn kho</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Đơn vị</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Mức tối thiểu</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Trạng thái</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventory.map((inv) => {
-              const isLow = inv.quantity <= inv.minimumStock;
-              return (
-                <tr key={inv.id} className={`border-t border-gray-100 ${isLow ? 'bg-red-50' : ''}`}>
-                  <td className="py-3 px-4 font-medium">{inv.ingredientName}</td>
-                  <td className="py-3 px-4">{inv.quantity}</td>
-                  <td className="py-3 px-4 text-gray-500">{inv.unit}</td>
-                  <td className="py-3 px-4 text-gray-500">{inv.minimumStock}</td>
-                  <td className="py-3 px-4">
-                    {isLow ? (
-                      <span className="flex items-center gap-1 text-red-600 text-xs font-medium">
-                        <AlertTriangle size={14} /> Sắp hết
-                      </span>
-                    ) : (
-                      <span className="text-green-600 text-xs font-medium">Đủ hàng</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right space-x-1">
-                    <button onClick={() => openHistoryModal(inv)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                      <History size={14} /> Lịch sử
-                    </button>
-                    <button onClick={() => openEditItemModal(inv)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">
-                      <PenSquare size={14} /> Sửa
-                    </button>
-                    <button onClick={() => openModal('add', inv)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">
-                      <Plus size={14} /> Nhập
-                    </button>
-                    <button onClick={() => openModal('deduct', inv)}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs hover:bg-orange-200">
-                      <Minus size={14} /> Xuất
-                    </button>
-                  </td>
+      {/* Table */}
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(107,80,64,0.15)] border-t-[#c9a27a]" />
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-[rgba(107,80,64,0.1)] bg-white shadow-[0_2px_12px_-4px_rgba(26,14,7,0.07)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(107,80,64,0.07)] bg-[rgba(253,247,240,0.6)]">
+                  {['Nguyên liệu', 'Tồn kho', 'Đơn vị', 'Mức tối thiểu', 'Trạng thái', 'Thao tác'].map((h, i) => (
+                    <th key={h} className={`py-3.5 px-4 text-xs font-semibold uppercase tracking-wide text-[rgba(26,14,7,0.45)] ${i === 5 ? 'text-right pr-5' : 'text-left'} ${i === 0 ? 'pl-5' : ''}`}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              );
-            })}
-            {inventory.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-gray-400">Chưa có nguyên liệu</td></tr>}
-          </tbody>
-        </table>
-        {pageData && (
-          <div className="px-4 pb-4">
-            <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
+              </thead>
+              <tbody className="divide-y divide-[rgba(107,80,64,0.05)]">
+                {inventory.map((inv) => {
+                  const isLow = inv.quantity <= inv.minimumStock;
+                  return (
+                    <tr key={inv.id} className={`transition-colors ${isLow ? 'bg-rose-50/60' : 'hover:bg-[rgba(253,247,240,0.5)]'}`}>
+                      <td className="pl-5 px-4 py-3.5 font-medium text-[#1a0e07]">{inv.ingredientName}</td>
+                      <td className="px-4 py-3.5 font-semibold text-[#1a0e07]">{inv.quantity}</td>
+                      <td className="px-4 py-3.5 text-[rgba(26,14,7,0.5)]">{inv.unit}</td>
+                      <td className="px-4 py-3.5 text-[rgba(26,14,7,0.5)]">{inv.minimumStock}</td>
+                      <td className="px-4 py-3.5">
+                        {isLow ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-xs font-semibold text-rose-600">
+                            <AlertTriangle size={11} /> Sắp hết
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Đủ hàng</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 pr-5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button onClick={() => openHistoryModal(inv)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[rgba(107,80,64,0.08)] text-[rgba(107,80,64,0.7)] rounded-lg text-xs hover:bg-[rgba(107,80,64,0.14)] transition">
+                            <History size={13} /> Lịch sử
+                          </button>
+                          <button onClick={() => openEditItemModal(inv)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[rgba(201,162,122,0.12)] text-[#7a5c3e] rounded-lg text-xs hover:bg-[rgba(201,162,122,0.22)] transition">
+                            <PenSquare size={13} /> Sửa
+                          </button>
+                          <button onClick={() => openMarketPriceModal(inv)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[rgba(107,80,64,0.06)] text-[rgba(107,80,64,0.65)] rounded-lg text-xs hover:bg-[rgba(107,80,64,0.12)] transition">
+                            Giá
+                          </button>
+                          <button onClick={() => openModal('add', inv)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs hover:bg-emerald-100 border border-emerald-200 transition">
+                            <Plus size={13} /> Nhập
+                          </button>
+                          <button onClick={() => openModal('deduct', inv)}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs hover:bg-amber-100 border border-amber-200 transition">
+                            <Minus size={13} /> Xuất
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {inventory.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-14 text-center">
+                      <div className="flex flex-col items-center gap-2 text-[rgba(26,14,7,0.35)]">
+                        <Package size={36} className="text-[rgba(107,80,64,0.2)]" />
+                        <span className="text-sm">Chưa có nguyên liệu</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>}
+          {pageData && (
+            <div className="border-t border-[rgba(107,80,64,0.07)] px-5 py-3">
+              <Pagination page={page} totalPages={pageData.totalPages} totalElements={pageData.totalElements} onPageChange={setPage} />
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Nhập / Xuất kho modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title={modalType === 'add' ? 'Nhập kho' : 'Xuất kho'}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Số lượng <span className="text-red-500">*</span></label>
-            <input type="number" value={form.quantity || ''} onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? 0 : Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" min={1} />
+            <label className={labelCls}>Số lượng <span className="text-rose-500">*</span></label>
+            <input type="number" value={form.quantity || ''}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? 0 : Number(e.target.value) })}
+              className={inputCls} min={1} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-            <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <label className={labelCls}>Ghi chú</label>
+            <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className={inputCls} />
           </div>
-          <div className="flex gap-3 justify-end">
-            <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
+          <div className="flex gap-3 justify-end pt-1">
+            <button onClick={() => setShowModal(false)}
+              className="rounded-xl border border-[rgba(107,80,64,0.18)] px-4 py-2.5 text-sm font-medium text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition">
+              Hủy
+            </button>
             <button onClick={handleSubmit} disabled={saving}
-              className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 ${modalType === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-              {saving ? 'Đang xử lý...' : modalType === 'add' ? 'Nhập' : 'Xuất'}
+              className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 active:scale-95 transition ${modalType === 'add' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+              {saving ? 'Đang xử lý...' : modalType === 'add' ? 'Nhập kho' : 'Xuất kho'}
             </button>
           </div>
         </div>
       </Modal>
 
-      <Modal
-        open={showItemModal}
-        onClose={() => setShowItemModal(false)}
-        title={itemMode === 'create' ? 'Thêm nguyên liệu mới' : 'Chỉnh sửa nguyên liệu'}
-      >
+      {/* Thêm / Sửa nguyên liệu modal */}
+      <Modal open={showItemModal} onClose={() => setShowItemModal(false)}
+        title={itemMode === 'create' ? 'Thêm nguyên liệu mới' : 'Chỉnh sửa nguyên liệu'}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tên nguyên liệu <span className="text-red-500">*</span></label>
-            <input
-              value={itemForm.ingredientName}
+            <label className={labelCls}>Tên nguyên liệu <span className="text-rose-500">*</span></label>
+            <input value={itemForm.ingredientName}
               onChange={(e) => setItemForm({ ...itemForm, ingredientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+              className={inputCls} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Đơn vị <span className="text-red-500">*</span></label>
-              <input
-                value={itemForm.unit}
+              <label className={labelCls}>Đơn vị <span className="text-rose-500">*</span></label>
+              <input value={itemForm.unit}
                 onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
-                placeholder="ví dụ: ml, g, chai..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+                placeholder="ml, g, chai..."
+                className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mức tối thiểu <span className="text-red-500">*</span></label>
-              <input
-                type="number"
-                min={0}
-                value={itemForm.minimumStock}
+              <label className={labelCls}>Mức tối thiểu <span className="text-rose-500">*</span></label>
+              <input type="number" min={0} value={itemForm.minimumStock}
                 onChange={(e) => setItemForm({ ...itemForm, minimumStock: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+                className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {itemMode === 'create' ? 'Tồn kho ban đầu' : 'Điều chỉnh tồn kho hiện tại'} <span className="text-red-500">*</span>
+            <label className={labelCls}>
+              {itemMode === 'create' ? 'Tồn kho ban đầu' : 'Điều chỉnh tồn kho hiện tại'} <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="number"
-              min={0}
-              value={itemForm.quantity}
+            <input type="number" min={0} value={itemForm.quantity}
               onChange={(e) => setItemForm({ ...itemForm, quantity: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+              className={inputCls} />
           </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setShowItemModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <div className="flex justify-end gap-3 pt-1">
+            <button onClick={() => setShowItemModal(false)}
+              className="rounded-xl border border-[rgba(107,80,64,0.18)] px-4 py-2.5 text-sm font-medium text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition">
               Hủy
             </button>
-            <button
-              onClick={handleItemSubmit}
-              disabled={itemSaving}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button onClick={handleItemSubmit} disabled={itemSaving}
+              className="rounded-xl bg-[#6b5040] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 active:scale-95 transition">
               {itemSaving ? 'Đang lưu...' : itemMode === 'create' ? 'Thêm nguyên liệu' : 'Lưu thay đổi'}
             </button>
           </div>
         </div>
       </Modal>
 
-      <Modal
-        open={showMarketPriceModal}
-        onClose={() => setShowMarketPriceModal(false)}
-        title={`Cập nhật giá thị trường - ${marketPriceForm.ingredientName}`}
-      >
+      {/* Cập nhật giá modal */}
+      <Modal open={showMarketPriceModal} onClose={() => setShowMarketPriceModal(false)}
+        title={`Cập nhật giá - ${marketPriceForm.ingredientName}`}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giá vốn nội bộ <span className="text-red-500">*</span></label>
-            <input
-              type="number"
-              min={0}
-              value={marketPriceForm.unitCost}
+            <label className={labelCls}>Giá vốn nội bộ <span className="text-rose-500">*</span></label>
+            <input type="number" min={0} value={marketPriceForm.unitCost}
               onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, unitCost: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
-              placeholder="Ví dụ: 38000"
-            />
+              className={inputCls} placeholder="Ví dụ: 38000" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giá thị trường tham khảo <span className="text-red-500">*</span></label>
-            <input
-              type="number"
-              min={0}
-              value={marketPriceForm.marketUnitPrice}
+            <label className={labelCls}>Giá thị trường tham khảo <span className="text-rose-500">*</span></label>
+            <input type="number" min={0} value={marketPriceForm.marketUnitPrice}
               onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, marketUnitPrice: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
-              placeholder="Ví dụ: 42000"
-            />
+              className={inputCls} placeholder="Ví dụ: 42000" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nguồn giá</label>
-            <input
-              value={marketPriceForm.source}
+            <label className={labelCls}>Nguồn giá</label>
+            <input value={marketPriceForm.source}
               onChange={(e) => setMarketPriceForm((prev) => ({ ...prev, source: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
-              placeholder="Ví dụ: Chợ đầu mối Hòa Cường"
-            />
+              className={inputCls} placeholder="Ví dụ: Chợ đầu mối Hòa Cường" />
           </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setShowMarketPriceModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <div className="flex justify-end gap-3 pt-1">
+            <button onClick={() => setShowMarketPriceModal(false)}
+              className="rounded-xl border border-[rgba(107,80,64,0.18)] px-4 py-2.5 text-sm font-medium text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition">
               Hủy
             </button>
-            <button
-              onClick={handleMarketPriceSubmit}
-              disabled={marketPriceSaving}
-              className="px-4 py-2 rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
-            >
-              {marketPriceSaving ? 'Đang lưu...' : 'Lưu giá nguyên liệu'}
+            <button onClick={handleMarketPriceSubmit} disabled={marketPriceSaving}
+              className="rounded-xl bg-[#6b5040] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 active:scale-95 transition">
+              {marketPriceSaving ? 'Đang lưu...' : 'Lưu giá'}
             </button>
           </div>
         </div>
       </Modal>
 
-      <Modal
-        open={showHistoryModal}
-        onClose={() => setShowHistoryModal(false)}
-        title={`Lịch sử nhập xuất - ${selectedInventory?.ingredientName ?? ''}`}
-      >
+      {/* Lịch sử modal */}
+      <Modal open={showHistoryModal} onClose={() => setShowHistoryModal(false)}
+        title={`Lịch sử nhập xuất — ${selectedInventory?.ingredientName ?? ''}`}>
         {historyLoading ? (
           <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-7 w-7 border-2 border-[rgba(107,80,64,0.15)] border-t-[#c9a27a]" />
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="max-h-[360px] overflow-auto border border-gray-200 rounded-lg">
+            <div className="max-h-[360px] overflow-auto rounded-xl border border-[rgba(107,80,64,0.1)]">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-[rgba(253,247,240,0.8)] sticky top-0">
                   <tr>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Thời gian</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Loại</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Số lượng</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Ghi chú</th>
+                    {['Thời gian', 'Loại', 'Số lượng', 'Ghi chú'].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-[rgba(26,14,7,0.4)]">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-[rgba(107,80,64,0.05)]">
                   {historyData?.content?.map((tx) => (
-                    <tr key={tx.id} className="border-t border-gray-100">
-                      <td className="py-2 px-3 text-gray-600">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
-                      <td className="py-2 px-3">
-                        <span className={`text-xs font-medium ${tx.type === 'ADD' ? 'text-green-700' : 'text-orange-700'}`}>
+                    <tr key={tx.id} className="hover:bg-[rgba(253,247,240,0.4)] transition-colors">
+                      <td className="py-2.5 px-3 text-[rgba(26,14,7,0.6)] text-xs">{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`text-xs font-semibold ${tx.type === 'ADD' ? 'text-emerald-700' : 'text-amber-700'}`}>
                           {tx.type === 'ADD' ? 'Nhập' : 'Xuất'}
                         </span>
                       </td>
-                      <td className="py-2 px-3">{tx.quantity}</td>
-                      <td className="py-2 px-3 text-gray-700">{tx.reason || '-'}</td>
+                      <td className="py-2.5 px-3 font-medium text-[#1a0e07]">{tx.quantity}</td>
+                      <td className="py-2.5 px-3 text-[rgba(26,14,7,0.65)]">{tx.reason || '—'}</td>
                     </tr>
                   ))}
                   {(!historyData || historyData.content.length === 0) && (
-                    <tr>
-                      <td colSpan={4} className="py-6 px-3 text-center text-gray-400">Chưa có giao dịch nhập/xuất</td>
-                    </tr>
+                    <tr><td colSpan={4} className="py-8 px-3 text-center text-sm text-[rgba(26,14,7,0.35)]">Chưa có giao dịch nhập/xuất</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
             {historyData && (
-              <Pagination
-                page={historyPage}
-                totalPages={historyData.totalPages}
-                totalElements={historyData.totalElements}
-                onPageChange={setHistoryPage}
-              />
+              <Pagination page={historyPage} totalPages={historyData.totalPages} totalElements={historyData.totalElements} onPageChange={setHistoryPage} />
             )}
           </div>
         )}
@@ -472,3 +471,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+

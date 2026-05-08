@@ -1,7 +1,15 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.configuration.updateBuildConfiguration": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
     "java.compile.nullAnalysis.mode": "automatic",
+    "java.jdt.ls.java.home": "C:\\Program Files\\Java\\jdk-24",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-24",
+            "path": "C:\\Program Files\\Java\\jdk-24",
+            "default": true
+        }
+    ],
     "python.defaultInterpreterPath": "${workspaceFolder}/ml-service/venv/Scripts/python.exe",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/ml-service"

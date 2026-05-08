@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { menuService, categoryService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
@@ -132,22 +133,33 @@ type CurrentPaymentData = {
 };
 
 export default function OrdersPage() {
+  return (
+    <div className="coffee-theme min-h-screen text-[var(--coffee-dark)]">
+      {/* Ambient decorative blobs */}
+      <div className="pointer-events-none fixed -left-32 top-1/4 h-96 w-96 rounded-full bg-[rgba(201,162,122,0.08)] blur-3xl" />
+      <div className="pointer-events-none fixed -right-32 top-2/3 h-96 w-96 rounded-full bg-[rgba(107,80,64,0.07)] blur-3xl" />
+      <OrdersContent />
+    </div>
+  );
+}
+
+function OrdersContent() {
   const [tab, setTab] = useState<'pos' | 'list'>('pos');
   const { user } = useAuth();
   const userRole = getRoleKey(user?.roleName);
 
   const canUsePOS = ['ADMIN', 'MANAGER', 'STAFF'].includes(userRole);
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Đơn hàng</h1>
+          <h1 className="text-2xl font-bold text-[var(--coffee-text-primary)]">Đơn hàng</h1>
         </div>
-        <div className="flex shrink-0 bg-gray-100 rounded-lg p-1">
+        <div className="flex shrink-0 bg-[rgba(107,80,64,0.06)] border border-[rgba(107,80,64,0.22)] rounded-xl p-1 gap-0.5">
           {canUsePOS && (
-            <button onClick={() => setTab('pos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pos' ? 'bg-white shadow' : ''}`}>POS</button>
+            <button onClick={() => setTab('pos')} className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'pos' ? 'bg-[#6b5040] text-white shadow-sm' : 'text-[rgba(26,14,7,0.55)] hover:text-[#1a0e07] hover:bg-[rgba(107,80,64,0.08)]'}`}>POS</button>
           )}
-          <button onClick={() => setTab('list')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'list' ? 'bg-white shadow' : ''}`}>Danh sách</button>
+          <button onClick={() => setTab('list')} className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'list' ? 'bg-[#6b5040] text-white shadow-sm' : 'text-[rgba(26,14,7,0.55)] hover:text-[#1a0e07] hover:bg-[rgba(107,80,64,0.08)]'}`}>Danh sách</button>
         </div>
       </div>
       {tab === 'pos' && canUsePOS ? <POSView /> : <OrderListView />}
@@ -381,7 +393,7 @@ function POSView() {
       const available = new Set(manualVoucherCodes);
       const kept = prev.filter((code) => available.has(code));
       const next = [...kept];
-      manualVoucherCodes.forEach((code) => {
+      manualVoucherCodes.forEach((code: string) => {
         if (!next.includes(code)) next.push(code);
       });
       return next;
@@ -593,7 +605,7 @@ function POSView() {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a27a]" /></div>;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -608,12 +620,12 @@ function POSView() {
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">
           <button onClick={() => setSelectedCat(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === null ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === null ? 'bg-[#6b5040] text-white' : 'bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.12)]'}`}>
             Tất cả
           </button>
           {categories.map((cat) => (
             <button key={cat.id} onClick={() => setSelectedCat(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === cat.id ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${selectedCat === cat.id ? 'bg-[#6b5040] text-white' : 'bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.12)]'}`}>
               {CATEGORY_ICONS[cat.name] || '🍽️'} {cat.name}
             </button>
           ))}
@@ -622,138 +634,30 @@ function POSView() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {filteredItems.map((item) => (
             <button key={item.id} onClick={() => addToCart(item)}
-              className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md hover:border-blue-300 transition">
+              className="bg-white rounded-xl border border-[rgba(107,80,64,0.1)] p-4 text-left hover:shadow-md hover:border-[#c9a27a] transition group">
               <div className="text-2xl mb-2">{CATEGORY_ICONS[item.categoryName] || '🍽️'}</div>
-              <h3 className="font-medium text-sm truncate">{item.name}</h3>
-              <p className="text-xs text-gray-400 truncate">{item.categoryName}</p>
-              <p className="text-blue-600 font-bold text-sm mt-1">{formatCurrency(item.price)}</p>
+              <h3 className="font-medium text-sm truncate text-[#1a0e07]">{item.name}</h3>
+              <p className="text-xs text-[rgba(26,14,7,0.4)] truncate">{item.categoryName}</p>
+              <p className="text-[#6b5040] font-bold text-sm mt-1">{formatCurrency(item.price)}</p>
             </button>
           ))}
           {filteredItems.length === 0 && (
-            <p className="col-span-full text-center text-gray-400 py-8">Không có món nào</p>
+            <p className="col-span-full text-center text-[rgba(26,14,7,0.3)] py-8">Không có món nào</p>
           )}
         </div>
       </div>
 
       {/* Cart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 h-fit sticky top-6">
-        <div className="flex items-center gap-2 mb-4">
-          <ShoppingCart size={20} className="text-blue-600" />
-          <h2 className="font-semibold">Giỏ hàng ({cart.length})</h2>
+      <div className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] p-4 h-fit sticky top-6">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-3">
+          <ShoppingCart size={20} className="text-[#6b5040]" />
+          <h2 className="font-semibold text-[#1a0e07] flex-1">Giỏ hàng ({cart.length})</h2>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="pos-customer-phone" className="mb-1 block text-xs font-medium text-gray-600">SĐT khách hàng (tùy chọn)</label>
-          <input
-            id="pos-customer-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="Ví dụ: 09xxxxxxxx"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            {loadingLoyalty
-              ? 'Đang kiểm tra điểm tích lũy...'
-              : loyaltyAccount
-                ? `Hạng ${loyaltyAccount.tier === 'VANG' ? 'Vàng' : loyaltyAccount.tier === 'BAC' ? 'Bạc' : 'Đồng'} • ${loyaltyAccount.pointsBalance.toLocaleString('vi-VN')} điểm • ${loyaltyAccount.monthlyOrderCount || 0} đơn/30 ngày`
-                : loyaltyError || 'Nhập SĐT để tra điểm khách hàng'}
-          </p>
-        </div>
-
-        <div className="mb-3">
-          <label htmlFor="pos-voucher-code" className="mb-1 block text-xs font-medium text-gray-600">Mã voucher (tùy chọn, nhập nhiều mã cách nhau bởi dấu phẩy)</label>
-          <input
-            id="pos-voucher-code"
-            type="text"
-            value={voucherCode}
-            onChange={(e) => setVoucherCode(e.target.value)}
-            placeholder="Ví dụ: KHAITRUONG10"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-          {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && voucherDiscountAmount > 0 && (
-            <p className="mt-1 text-xs text-emerald-700">
-              Đã áp dụng voucher{' '}
-              <span className="font-semibold">
-                {(discountPreview?.voucherCodes && discountPreview.voucherCodes.length > 0
-                  ? discountPreview.voucherCodes
-                  : [discountPreview?.voucherCode, ...buildAppliedVoucherCodes()].filter(Boolean)
-                ).join(', ')}
-              </span>{' '}
-              · giảm {formatCurrency(voucherDiscountAmount)}
-            </p>
-          )}
-          {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && discountPreview?.voucherError && (
-            <p className="mt-1 text-xs text-amber-700">{discountPreview.voucherError}</p>
-          )}
-          {manualVoucherCodes.length > 0 && (
-            <div className="mt-2 space-y-1.5">
-              <p className="text-xs font-medium text-slate-700">Mã đã nhập</p>
-              <div className="flex flex-wrap gap-2">
-                {manualVoucherCodes.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => {
-                      setSelectedManualVoucherCodes((prev) => (
-                        prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-                      ));
-                    }}
-                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
-                      selectedManualVoucherCodes.includes(code)
-                        ? 'border-blue-300 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span className="font-semibold">{code}</span>
-                    <span className="ml-1 font-medium">
-                      {selectedManualVoucherCodes.includes(code) ? '(Đang sử dụng)' : '(Chưa dùng)'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {availableVouchers.length > 0 && (
-            <div className="mt-2 space-y-1.5">
-              <p className="text-xs font-medium text-emerald-700">Voucher riêng cho khách</p>
-              <div className="flex flex-wrap gap-2">
-                {availableVouchers.map((voucher) => (
-                  <button
-                    key={voucher.id}
-                    type="button"
-                    onClick={() => {
-                      const code = voucher.code.toUpperCase();
-                      setSelectedPersonalVoucherCodes((prev) => (
-                        prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-                      ));
-                    }}
-                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
-                      selectedPersonalVoucherCodes.includes(voucher.code.toUpperCase())
-                        ? 'border-blue-300 bg-blue-50 text-blue-700'
-                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    }`}
-                  >
-                    <span className="font-semibold">{voucher.code}</span>
-                    <span className="ml-1">
-                      {voucher.discountType === 'PERCENT'
-                        ? `-${voucher.discountValue}%`
-                        : `-${formatCurrency(voucher.discountValue)}`}
-                    </span>
-                    <span className="ml-1 font-medium">
-                      {selectedPersonalVoucherCodes.includes(voucher.code.toUpperCase()) ? '(Đang sử dụng)' : '(Chưa dùng)'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
+        {/* Danh sách món trong giỏ */}
         {cart.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">Chọn món để thêm vào giỏ</p>
+          <p className="text-sm text-[rgba(26,14,7,0.3)] text-center py-6">Chọn món để thêm vào giỏ</p>
         ) : (
           <div className="space-y-3">
             {cart.map((c) => {
@@ -762,34 +666,34 @@ function POSView() {
               const extras =
                 c.menuItem.drink && (sizeLabel || (c.selectedToppingCodes?.length ?? 0) > 0)
                   ? formatOrderItemExtras({
-                      selectedSizeLabel: sizeLabel,
-                      selectedToppings: (c.selectedToppingCodes || [])
-                        .map((code) => {
-                          const t = c.menuItem.drinkToppings?.find((x) => x.code === code);
-                          return t ? { label: t.label } : null;
-                        })
-                        .filter(Boolean) as { label: string }[],
-                    })
+                    selectedSizeLabel: sizeLabel,
+                    selectedToppings: (c.selectedToppingCodes || [])
+                      .map((code) => {
+                        const t = c.menuItem.drinkToppings?.find((x) => x.code === code);
+                        return t ? { label: t.label } : null;
+                      })
+                      .filter(Boolean) as { label: string }[],
+                  })
                   : '';
               return (
-                <div key={c.key} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <div key={c.key} className="flex items-center gap-2 p-2 bg-[rgba(253,247,240,0.7)] rounded-xl border border-[rgba(107,80,64,0.06)]">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium truncate text-[#1a0e07]">
                       {c.menuItem.name}
-                      {extras && <span className="text-gray-500 font-normal">{extras}</span>}
+                      {extras && <span className="text-[rgba(26,14,7,0.45)] font-normal">{extras}</span>}
                     </p>
-                    <p className="text-xs text-gray-500">{formatCurrency(lineUnit)}</p>
+                    <p className="text-xs text-[rgba(26,14,7,0.45)]">{formatCurrency(lineUnit)}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => updateQty(c.key, -1)} className="p-1 rounded hover:bg-gray-200">
+                    <button type="button" onClick={() => updateQty(c.key, -1)} className="p-1 rounded-lg hover:bg-[rgba(107,80,64,0.1)] transition-colors">
                       <Minus size={14} />
                     </button>
-                    <span className="w-8 text-center text-sm font-medium">{c.quantity}</span>
-                    <button type="button" onClick={() => updateQty(c.key, 1)} className="p-1 rounded hover:bg-gray-200">
+                    <span className="w-8 text-center text-sm font-medium text-[#1a0e07]">{c.quantity}</span>
+                    <button type="button" onClick={() => updateQty(c.key, 1)} className="p-1 rounded-lg hover:bg-[rgba(107,80,64,0.1)] transition-colors">
                       <Plus size={14} />
                     </button>
                   </div>
-                  <button type="button" onClick={() => removeFromCart(c.key)} className="p-1 rounded hover:bg-red-50 text-red-500">
+                  <button type="button" onClick={() => removeFromCart(c.key)} className="p-1 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -798,49 +702,106 @@ function POSView() {
           </div>
         )}
 
-        <div className="border-t border-gray-200 mt-4 pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-medium">Tạm tính</span>
-            <span className="text-lg font-semibold text-gray-700">{formatCurrency(vat.netAmount)}</span>
+        {/* Ưu đãi – SĐT & Voucher */}
+        <div className="mt-4 space-y-3">
+          <div>
+            <label htmlFor="pos-customer-phone" className="mb-1 block text-xs font-medium text-[rgba(26,14,7,0.6)]">SĐT khách hàng (tùy chọn)</label>
+            <input id="pos-customer-phone" type="tel" inputMode="tel" autoComplete="tel"
+              value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="Ví dụ: 09xxxxxxxx"
+              className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3 py-2 text-sm outline-none transition focus:border-[#c9a27a]"
+            />
+            <p className="mt-1 text-xs text-[rgba(26,14,7,0.5)]">
+              {loadingLoyalty ? 'Đang kiểm tra điểm tích lũy...'
+                : loyaltyAccount
+                  ? `Hạng ${loyaltyAccount.tier === 'VANG' ? 'Vàng' : loyaltyAccount.tier === 'BAC' ? 'Bạc' : 'Đồng'} • ${loyaltyAccount.pointsBalance.toLocaleString('vi-VN')} điểm • ${loyaltyAccount.monthlyOrderCount || 0} đơn/30 ngày`
+                  : loyaltyError || 'Nhập SĐT để tra điểm khách hàng'}
+            </p>
           </div>
-          <div className="flex items-center justify-between mb-4 text-sm">
-            <span className="text-gray-500">VAT ({taxPolicy.vatRatePercent}%)</span>
-            <span className="font-medium text-gray-700">{formatCurrency(vat.vatAmount)}</span>
-          </div>
-          {loadingDiscountPreview && (
-            <div className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
-              Đang tính ưu đãi...
-            </div>
-          )}
-          {totalDiscountAmount > 0 && (
-            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              <div className="flex items-center justify-between">
-                <span>Ưu đãi áp dụng</span>
-                <span className="font-semibold">-{formatCurrency(totalDiscountAmount)}</span>
+          <div>
+            <label htmlFor="pos-voucher-code" className="mb-1 block text-xs font-medium text-[rgba(26,14,7,0.6)]">Mã voucher (có thể nhập nhiều, cách nhau dấu phẩy)</label>
+            <input id="pos-voucher-code" type="text" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value)}
+              placeholder="Ví dụ: KHAITRUONG10"
+              className="w-full rounded-xl border border-[rgba(107,80,64,0.18)] px-3 py-2 text-sm uppercase outline-none transition focus:border-[#c9a27a]"
+            />
+            {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && voucherDiscountAmount > 0 && (
+              <p className="mt-1 text-xs text-[#c9a27a]">
+                Đã áp dụng: <span className="font-semibold">{(discountPreview?.voucherCodes?.length ? discountPreview.voucherCodes : [discountPreview?.voucherCode, ...buildAppliedVoucherCodes()].filter(Boolean)).join(', ')}</span> · giảm {formatCurrency(voucherDiscountAmount)}
+              </p>
+            )}
+            {(voucherCode.trim() || selectedPersonalVoucherCodes.length > 0) && discountPreview?.voucherError && (
+              <p className="mt-1 text-xs text-[#d97706]">{discountPreview.voucherError}</p>
+            )}
+            {manualVoucherCodes.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-xs font-medium text-[rgba(26,14,7,0.55)]">Mã đã nhập</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {manualVoucherCodes.map((code) => (
+                    <button key={code} type="button"
+                      onClick={() => setSelectedManualVoucherCodes((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code])}
+                      className={`rounded-xl border px-2.5 py-1.5 text-xs transition ${selectedManualVoucherCodes.includes(code)
+                          ? 'border-[#c9a27a] bg-[rgba(201,162,122,0.1)] text-[#6b5040]'
+                          : 'border-[rgba(107,80,64,0.15)] bg-[rgba(107,80,64,0.04)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.08)]'
+                        }`}>
+                      <span className="font-semibold">{code}</span>
+                      <span className="ml-1">{selectedManualVoucherCodes.includes(code) ? '✓' : '○'}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              {calendarDiscountAmount > 0 && (
-                <p className="mt-1 text-xs text-emerald-700">
-                  {discountPreview?.calendarDiscountLabel || 'Sự kiện/ngày lễ'}: -{formatCurrency(calendarDiscountAmount)}
-                </p>
-              )}
-              {voucherDiscountAmount > 0 && (
-                <p className="mt-1 text-xs text-emerald-700">
-                  Voucher{' '}
-                  {(discountPreview?.voucherCodes && discountPreview.voucherCodes.length > 0
-                    ? discountPreview.voucherCodes.join(', ')
-                    : [discountPreview?.voucherCode, ...buildAppliedVoucherCodes()].filter(Boolean).join(', ')
-                  )}
-                  : -{formatCurrency(voucherDiscountAmount)}
-                </p>
-              )}
+            )}
+            {availableVouchers.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-xs font-medium text-[#c9a27a]">Voucher riêng cho khách</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableVouchers.map((voucher) => (
+                    <button key={voucher.id} type="button"
+                      onClick={() => { const code = voucher.code.toUpperCase(); setSelectedPersonalVoucherCodes((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]); }}
+                      className={`rounded-xl border px-2.5 py-1.5 text-xs transition ${selectedPersonalVoucherCodes.includes(voucher.code.toUpperCase())
+                          ? 'border-[#c9a27a] bg-[rgba(201,162,122,0.1)] text-[#6b5040]'
+                          : 'border-[rgba(107,80,64,0.15)] bg-[rgba(107,80,64,0.04)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.08)]'
+                        }`}>
+                      <span className="font-semibold">{voucher.code}</span>
+                      <span className="ml-1">{voucher.discountType === 'PERCENT' ? `-${voucher.discountValue}%` : `-${formatCurrency(voucher.discountValue)}`}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {totalDiscountAmount > 0 && (
+            <div className="rounded-xl border border-[#c9a27a] bg-[rgba(201,162,122,0.1)] px-3 py-2.5 text-sm text-[#6b5040]">
+              <div className="flex justify-between font-semibold"><span>Tổng ưu đãi</span><span>-{formatCurrency(totalDiscountAmount)}</span></div>
+              {calendarDiscountAmount > 0 && <p className="mt-1 text-xs text-[#c9a27a]">{discountPreview?.calendarDiscountLabel || 'Sự kiện'}: -{formatCurrency(calendarDiscountAmount)}</p>}
             </div>
           )}
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-medium">Tổng thanh toán</span>
-            <span className="text-xl font-bold text-blue-600">{formatCurrency(finalAmount)}</span>
+        </div>
+
+        {/* Tổng tiền & Đặt hàng */}
+        <div className="border-t border-[rgba(107,80,64,0.08)] mt-4 pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-[rgba(26,14,7,0.5)]">Tạm tính</span>
+            <span className="font-medium text-[rgba(26,14,7,0.7)]">{formatCurrency(vat.netAmount)}</span>
+          </div>
+          <div className="flex items-center justify-between mb-2 text-sm">
+            <span className="text-[rgba(26,14,7,0.4)]">VAT ({taxPolicy.vatRatePercent}%)</span>
+            <span className="text-[rgba(26,14,7,0.5)]">{formatCurrency(vat.vatAmount)}</span>
+          </div>
+          {totalDiscountAmount > 0 && (
+            <div className="flex items-center justify-between mb-2 text-sm">
+              <span className="text-[#c9a27a] text-xs">🎁 Ưu đãi đã áp</span>
+              <span className="font-semibold text-[#6b5040]">-{formatCurrency(totalDiscountAmount)}</span>
+            </div>
+          )}
+          {loadingDiscountPreview && (
+            <div className="mb-2 rounded-xl bg-[rgba(107,80,64,0.05)] px-3 py-1.5 text-xs text-[rgba(26,14,7,0.4)]">Đang tính ưu đãi...</div>
+          )}
+          <div className="flex items-center justify-between mb-4 mt-2">
+            <span className="font-semibold text-[#1a0e07]">Tổng thanh toán</span>
+            <span className="text-xl font-bold text-[#6b5040]">{formatCurrency(finalAmount)}</span>
           </div>
           <button onClick={placeOrder} disabled={cart.length === 0 || submitting}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+            className="w-full flex items-center justify-center gap-2 bg-[#6b5040] text-white py-2.5 rounded-xl font-medium hover:brightness-110 disabled:opacity-50 transition">
             <Send size={18} /> {submitting ? 'Đang xử lý...' : 'Đặt hàng'}
           </button>
         </div>
@@ -857,30 +818,22 @@ function POSView() {
       >
         {paymentOrder && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+            <div className="grid grid-cols-2 gap-2 text-sm text-[rgba(26,14,7,0.7)]">
               <p>Bàn: <span className="font-medium">{paymentOrder.tableNumber || 'POS'}</span></p>
               <p>Giờ tạo: <span className="font-medium">{new Date(paymentOrder.createdAt).toLocaleString('vi-VN')}</span></p>
-              <p className="col-span-2 font-semibold">Tổng thanh toán: {formatCurrency(paymentOrder.totalAmount)}</p>
+              <p className="col-span-2 font-semibold text-[#1a0e07]">Tổng thanh toán: {formatCurrency(paymentOrder.totalAmount)}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => {
-                  selectPaymentMethod('CASH').catch(() => {
-                    // no-op
-                  });
-                }}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                onClick={() => { selectPaymentMethod('CASH').catch(() => { }); }}
+                className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'CASH' ? 'bg-[#6b5040] text-white border-[#6b5040]' : 'bg-white text-[rgba(26,14,7,0.7)] border-[rgba(107,80,64,0.18)] hover:bg-[rgba(107,80,64,0.06)]'}`}
               >
                 <span className="inline-flex items-center gap-1"><Wallet size={16} /> COD (tiền mặt)</span>
               </button>
               <button
-                onClick={() => {
-                  selectPaymentMethod('QR').catch(() => {
-                    // errors are handled in initQrPayment
-                  });
-                }}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                onClick={() => { selectPaymentMethod('QR').catch(() => { }); }}
+                className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${paymentMethod === 'QR' ? 'bg-[#6b5040] text-white border-[#6b5040]' : 'bg-white text-[rgba(26,14,7,0.7)] border-[rgba(107,80,64,0.18)] hover:bg-[rgba(107,80,64,0.06)]'}`}
               >
                 <span className="inline-flex items-center gap-1"><QrCode size={16} /> Chuyển khoản (QR)</span>
               </button>
@@ -902,7 +855,7 @@ function POSView() {
                   ) : paymentData?.qrImageUrl ? (
                     <img src={paymentData.qrImageUrl} alt={`QR thanh toán đơn ${paymentOrder.id}`} className="w-full h-auto object-contain" />
                   ) : (
-                    <div className="h-56 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+                    <div className="h-56 rounded-xl bg-[rgba(253,247,240,0.6)] border border-[rgba(107,80,64,0.1)] flex items-center justify-center text-sm text-[rgba(26,14,7,0.4)]">
                       Đang tải mã QR...
                     </div>
                   )}
@@ -919,23 +872,19 @@ function POSView() {
                     </a>
                   </div>
                 )}
-                <p className="text-xs text-gray-500 text-center mt-2">
+                <p className="text-xs text-[rgba(26,14,7,0.45)] text-center mt-2">
                   Khách quét QR để chuyển khoản đúng số tiền của đơn.
                 </p>
-                <p className="text-xs text-gray-500 text-center mt-1">
-                  Nội dung CK: <span className="font-medium">{paymentData?.transferContent || `BILL-${paymentOrder.id}`}</span>
+                <p className="text-xs text-[rgba(26,14,7,0.45)] text-center mt-1">
+                  Nội dung CK: <span className="font-medium text-[#6b5040]">{paymentData?.transferContent || `BILL-${paymentOrder.id}`}</span>
                 </p>
               </div>
             )}
 
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => {
-                  setShowCashConfirm(false);
-                  setPaymentOrder(null);
-                  setPaymentData(null);
-                }}
-                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                onClick={() => { setShowCashConfirm(false); setPaymentOrder(null); setPaymentData(null); }}
+                className="px-3 py-2 rounded-xl bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.12)] transition-colors"
               >
                 Đóng
               </button>
@@ -943,7 +892,7 @@ function POSView() {
                 <button
                   onClick={() => setShowCashConfirm(true)}
                   disabled={refreshingPayment}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white hover:brightness-110 disabled:opacity-60 transition-all"
                 >
                   <CheckCircle2 size={16} /> {refreshingPayment ? 'Đang xử lý...' : 'Xác nhận đã thu tiền mặt'}
                 </button>
@@ -951,7 +900,7 @@ function POSView() {
                 <button
                   onClick={() => refreshPaymentStatus(paymentOrder.id).catch(() => toast.error('Không thể kiểm tra trạng thái'))}
                   disabled={refreshingPayment}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-60 transition-all"
                 >
                   <CheckCircle2 size={16} /> {refreshingPayment ? 'Đang kiểm tra...' : 'Kiểm tra trạng thái'}
                 </button>
@@ -969,10 +918,10 @@ function POSView() {
       >
         {paymentOrder && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-[rgba(26,14,7,0.7)]">
               Xác nhận đã thu tiền mặt cho đơn <span className="font-semibold">#{paymentOrder.id}</span>?
             </p>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <div className="rounded-xl border border-[rgba(201,162,122,0.3)] bg-[rgba(201,162,122,0.08)] px-3 py-2 text-sm text-[#7a5c3e]">
               <p>Bàn: <span className="font-semibold">{paymentOrder.tableNumber || 'POS'}</span></p>
               <p>Số tiền: <span className="font-semibold">{formatCurrency(paymentOrder.totalAmount)}</span></p>
             </div>
@@ -980,19 +929,15 @@ function POSView() {
               <button
                 type="button"
                 onClick={() => setShowCashConfirm(false)}
-                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                className="px-3 py-2 rounded-xl bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.12)] transition-colors"
               >
                 Hủy
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  confirmCashPayment().catch(() => {
-                    // no-op
-                  });
-                }}
+                onClick={() => { confirmCashPayment().catch(() => { }); }}
                 disabled={refreshingPayment}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white hover:brightness-110 disabled:opacity-60 transition-all"
               >
                 <Wallet size={16} /> {refreshingPayment ? 'Đang xử lý...' : 'Xác nhận thu tiền'}
               </button>
@@ -1030,7 +975,7 @@ function OrderListView() {
 
   const loadOrders = useCallback(() => {
     const keyword = orderSearch.trim() || undefined;
-    orderService.getAll(page, 10, statusFilter || undefined, keyword)
+    orderService.getAll(page, 10, statusFilter || undefined, keyword, sourceFilter)
       .then((res) => {
         const data = res.data.data;
         setOrders(data.content);
@@ -1054,7 +999,7 @@ function OrderListView() {
       })
       .catch(() => toast.error('Lỗi tải đơn hàng'))
       .finally(() => setLoading(false));
-  }, [page, statusFilter, orderSearch]);
+  }, [page, statusFilter, orderSearch, sourceFilter]);
 
   const handleSocketUpdate = useCallback((data?: Order) => {
     if (data && data.id) {
@@ -1273,35 +1218,30 @@ function OrderListView() {
     URL.revokeObjectURL(url);
   };
 
-  const filteredOrders = useMemo(() => {
-    if (sourceFilter === 'ALL') return orders;
-    if (sourceFilter === 'ONLINE') return orders.filter((o) => (o.tableNumber || '').toUpperCase() === 'ONLINE');
-    return orders.filter((o) => (o.tableNumber || '').toUpperCase() !== 'ONLINE');
-  }, [orders, sourceFilter]);
-  const visibleOrders = filteredOrders;
+  const visibleOrders = orders;
   const paidOrderCountFiltered = visibleOrders.filter((order) => paymentStatusByOrder[order.id]?.status === 'PAID').length;
   const completedOrderCountFiltered = visibleOrders.filter((order) => order.status === ORDER_STATUS.COMPLETED).length;
   const pendingOrderCountFiltered = visibleOrders.filter((order) => order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.PREPARING).length;
 
   useEffect(() => {
     setPage(0);
-  }, [orderSearch, statusFilter]);
+  }, [orderSearch, statusFilter, sourceFilter]);
 
   const renderOrderActions = (order: Order) => (
     <div className="flex flex-wrap gap-2">
       {order.status === ORDER_STATUS.PENDING && (
         <>
           {canPrepareOrComplete && (
-            <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">Pha chế</button>
+            <button onClick={() => updateStatus(order.id, ORDER_STATUS.PREPARING)} className="rounded-xl bg-[rgba(201,162,122,0.12)] px-3 py-2 text-xs font-semibold text-[#6b5040] transition hover:bg-[rgba(201,162,122,0.2)]">Pha chế</button>
           )}
           {canCancel && (
-            <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">Hủy</button>
+            <button onClick={() => updateStatus(order.id, ORDER_STATUS.CANCELLED)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">Hủy</button>
           )}
         </>
       )}
       {order.status === ORDER_STATUS.PREPARING && (
         canPrepareOrComplete ? (
-          <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Hoàn thành</button>
+          <button onClick={() => updateStatus(order.id, ORDER_STATUS.COMPLETED)} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">Hoàn thành</button>
         ) : null
       )}
       {order.status === ORDER_STATUS.COMPLETED && (
@@ -1309,7 +1249,7 @@ function OrderListView() {
           {paymentStatusByOrder[order.id]?.status !== 'PAID' ? (
             <button
               onClick={() => openPaymentModal(order)}
-              className="inline-flex items-center gap-1 rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+              className="inline-flex items-center gap-1 rounded-xl bg-[rgba(201,162,122,0.12)] px-3 py-2 text-xs font-semibold text-[#6b5040] transition hover:bg-[rgba(201,162,122,0.2)]"
             >
               <QrCode size={13} /> Thanh toán
             </button>
@@ -1318,19 +1258,19 @@ function OrderListView() {
               <button
                 onClick={() => openBill(order.id)}
                 disabled={loadingBillId === order.id}
-                className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200 disabled:opacity-60"
+                className="rounded-xl bg-[rgba(107,80,64,0.07)] px-3 py-2 text-xs font-semibold text-[rgba(26,14,7,0.6)] transition hover:bg-[rgba(107,80,64,0.12)] disabled:opacity-60"
               >
                 {loadingBillId === order.id ? 'Đang tải...' : 'Xem bill'}
               </button>
               <button
                 onClick={() => printBill(order)}
-                className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                className="inline-flex items-center gap-1 rounded-xl bg-[rgba(201,162,122,0.12)] px-3 py-2 text-xs font-semibold text-[#6b5040] transition hover:bg-[rgba(201,162,122,0.2)]"
               >
                 <Printer size={13} /> In bill
               </button>
               <button
                 onClick={() => exportBill(order)}
-                className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
               >
                 <Download size={13} /> Xuất bill
               </button>
@@ -1343,28 +1283,28 @@ function OrderListView() {
 
 
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a27a]" /></div>;
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-[rgba(107,80,64,0.1)] bg-white p-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(201,162,122,0.12)] px-3 py-1 text-xs font-semibold text-[#6b5040]">
               <ReceiptText size={14} /> Danh sách đơn
             </div>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-[rgba(26,14,7,0.45)]">
               Theo dõi trạng thái món, thanh toán và thao tác bill trong cùng một thẻ.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:min-w-105">
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-              <p className="text-xs text-gray-500">Đang xử lý</p>
-              <p className="text-lg font-bold text-gray-900">{pendingOrderCountFiltered}</p>
+            <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-[rgba(253,247,240,0.5)] px-3 py-2">
+              <p className="text-xs text-[rgba(26,14,7,0.45)]">Đang xử lý</p>
+              <p className="text-lg font-bold text-[#1a0e07]">{pendingOrderCountFiltered}</p>
             </div>
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-              <p className="text-xs text-gray-500">Hoàn thành</p>
-              <p className="text-lg font-bold text-gray-900">{completedOrderCountFiltered}</p>
+            <div className="rounded-xl border border-[rgba(107,80,64,0.1)] bg-[rgba(253,247,240,0.5)] px-3 py-2">
+              <p className="text-xs text-[rgba(26,14,7,0.45)]">Hoàn thành</p>
+              <p className="text-lg font-bold text-[#1a0e07]">{completedOrderCountFiltered}</p>
             </div>
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
               <p className="text-xs text-emerald-700">Đã thu tiền</p>
@@ -1374,25 +1314,25 @@ function OrderListView() {
         </div>
 
         <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.45)]">
             <Filter size={16} />
             <span>{pageData ? `${pageData.totalElements} đơn hàng` : `${orders.length} đơn hàng`}</span>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto xl:flex-1 xl:justify-end">
             <label className="relative w-full sm:w-80 xl:w-96">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.35)]" />
               <input
                 type="text"
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
                 placeholder="Tìm theo ID hóa đơn"
-                className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-9 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] bg-white py-2 pl-9 pr-9 text-sm outline-none transition placeholder:text-[rgba(26,14,7,0.3)] focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)]"
               />
               {orderSearch && (
                 <button
                   type="button"
                   onClick={() => setOrderSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[rgba(26,14,7,0.35)] hover:bg-[rgba(107,80,64,0.08)] hover:text-[rgba(26,14,7,0.7)]"
                   aria-label="Xóa tìm kiếm đơn hàng"
                 >
                   ×
@@ -1406,7 +1346,7 @@ function OrderListView() {
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-                className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-3 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="w-full appearance-none rounded-xl border border-[rgba(107,80,64,0.15)] bg-white py-2 pl-3 pr-3 text-sm outline-none transition focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)]"
               >
                 <option value="">Tất cả trạng thái</option>
                 <option value="PENDING">Chờ xử lý</option>
@@ -1421,21 +1361,21 @@ function OrderListView() {
           <button
             type="button"
             onClick={() => setSourceFilter('ALL')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${sourceFilter === 'ALL' ? 'bg-[#6b5040] text-white' : 'bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.12)]'}`}
           >
             Tất cả nguồn
           </button>
           <button
             type="button"
             onClick={() => setSourceFilter('ONLINE')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'ONLINE' ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${sourceFilter === 'ONLINE' ? 'bg-[#6b5040] text-white' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'}`}
           >
             ONLINE
           </button>
           <button
             type="button"
             onClick={() => setSourceFilter('INSTORE')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${sourceFilter === 'INSTORE' ? 'bg-slate-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${sourceFilter === 'INSTORE' ? 'bg-[#6b5040] text-white' : 'bg-[rgba(107,80,64,0.07)] text-[rgba(26,14,7,0.6)] hover:bg-[rgba(107,80,64,0.12)]'}`}
           >
             Tại quầy/Bàn
           </button>
@@ -1454,11 +1394,10 @@ function OrderListView() {
           return (
             <article
               key={order.id}
-              className={`overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md ${
-                isOnlineOrder
-                  ? 'border-sky-200 bg-sky-50'
-                  : 'border-gray-200 bg-white hover:border-blue-200'
-              }`}
+              className={`overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md ${isOnlineOrder
+                ? 'border-sky-200 bg-sky-50'
+                : 'border-gray-200 bg-white hover:border-blue-200'
+                }`}
             >
               <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/80 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1911,7 +1850,7 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
   const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);
   const originalAmount = order.subtotalAmount ?? ((order.totalAmount ?? 0) + (order.discountAmount ?? 0));
   const discountAmount = order.discountAmount ?? 0;
-    const discountRow = discountAmount > 0
+  const discountRow = discountAmount > 0
     ? `<div class="discount"><div><span>${escapeHtml(order.voucherCode ? `Voucher ${order.voucherCode}` : 'Khuyến mãi')}</span><span>-${formatCurrency(discountAmount)}</span></div>${order.promotionNote ? `<p>${escapeHtml(order.promotionNote)}</p>` : ''}</div>`
     : '';
   const rows = order.orderItems.map((item) => {

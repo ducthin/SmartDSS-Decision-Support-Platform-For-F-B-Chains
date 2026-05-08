@@ -1,5 +1,6 @@
+import '@/styles/coffee-theme.css';
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarCheck2, Search } from 'lucide-react';
+import { CalendarCheck2, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Pagination from '@/components/ui/Pagination';
 import { bookingService } from '@/services/bookingService';
@@ -14,11 +15,21 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
 };
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  NEW: 'bg-blue-100 text-blue-700',
-  CONFIRMED: 'bg-amber-100 text-amber-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-rose-100 text-rose-700',
+  NEW:       'bg-blue-50 text-blue-700 border border-blue-200',
+  CONFIRMED: 'bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] border border-[rgba(201,162,122,0.35)]',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  CANCELLED: 'bg-rose-50 text-rose-600 border border-rose-200',
 };
+
+const STATUS_BTN_ACTIVE: Record<BookingStatus, string> = {
+  NEW:       'border-blue-300 bg-blue-50 text-blue-700',
+  CONFIRMED: 'border-[#c9a27a] bg-[rgba(201,162,122,0.12)] text-[#7a5c3e]',
+  COMPLETED: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+  CANCELLED: 'border-rose-300 bg-rose-50 text-rose-600',
+};
+
+const inputCls =
+  'px-3 py-2 border border-[rgba(107,80,64,0.2)] rounded-lg text-sm outline-none transition focus:border-[#c9a27a] focus:ring-4 focus:ring-[rgba(201,162,122,0.12)] bg-white';
 
 export default function BookingsPage() {
   const [items, setItems] = useState<TableBooking[]>([]);
@@ -50,9 +61,7 @@ export default function BookingsPage() {
     }
   }, [page, keyword, statusFilter, fromDate, toDate]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (id: number, status: BookingStatus) => {
     setSavingId(id);
@@ -76,103 +85,128 @@ export default function BookingsPage() {
     setPage(0);
   };
 
+  const hasFilters = keyword || statusFilter || fromDate || toDate;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Đặt bàn</h1>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-        <div className="md:col-span-2 relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Tìm theo tên hoặc số điện thoại..."
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          />
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a0e07]">Đặt bàn</h1>
+          <p className="mt-0.5 text-sm text-[rgba(26,14,7,0.5)]">Quản lý yêu cầu đặt bàn của khách hàng</p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter((e.target.value as BookingStatus | '') || '')}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="NEW">Mới</option>
-          <option value="CONFIRMED">Đã xác nhận</option>
-          <option value="COMPLETED">Hoàn tất</option>
-          <option value="CANCELLED">Đã hủy</option>
-        </select>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        />
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-        />
-        <button
-          onClick={() => {
-            setPage(0);
-            load();
-          }}
-          className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-        >
-          Lọc
-        </button>
-        <button
-          onClick={clearFilters}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-        >
-          Xóa lọc
-        </button>
+        <div className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.45)]">
+          <CalendarCheck2 size={16} className="text-[#c9a27a]" />
+          {pageData ? `${pageData.totalElements} yêu cầu` : ''}
+        </div>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white border border-[rgba(107,80,64,0.1)] rounded-2xl p-4 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Search */}
+          <div className="lg:col-span-2 relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.4)]" />
+            <input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Tìm theo tên hoặc số điện thoại..."
+              className={`w-full pl-9 pr-8 ${inputCls}`}
+            />
+            {keyword && (
+              <button onClick={() => setKeyword('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[rgba(107,80,64,0.4)] hover:text-[#6b5040]">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter((e.target.value as BookingStatus | '') || '')}
+            className={inputCls}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="NEW">Mới</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="COMPLETED">Hoàn tất</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+
+          {/* Date range */}
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={inputCls} />
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={inputCls} />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-3">
+          <button
+            onClick={() => { setPage(0); load(); }}
+            className="px-4 py-2 rounded-lg bg-[#6b5040] text-white text-sm font-medium shadow-sm hover:brightness-110 transition active:scale-95"
+          >
+            Áp dụng lọc
+          </button>
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 rounded-lg border border-[rgba(107,80,64,0.18)] text-sm text-[#6b5040] hover:bg-[rgba(107,80,64,0.05)] transition"
+            >
+              Xóa lọc
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[rgba(107,80,64,0.15)] border-t-[#c9a27a]" />
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">
-          <CalendarCheck2 className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-          <p>Chưa có yêu cầu đặt bàn nào.</p>
+        <div className="flex flex-col items-center gap-3 py-20 text-[rgba(26,14,7,0.35)]">
+          <CalendarCheck2 size={44} className="text-[rgba(107,80,64,0.2)]" />
+          <p className="text-sm">Chưa có yêu cầu đặt bàn nào.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div
+              key={item.id}
+              className="bg-white rounded-2xl border border-[rgba(107,80,64,0.1)] p-4 shadow-[0_2px_8px_-4px_rgba(26,14,7,0.06)] hover:shadow-[0_4px_16px_-4px_rgba(26,14,7,0.1)] transition-shadow"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="font-semibold text-gray-900">{item.customerName}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {item.customerPhone} - {item.guestCount} khách
+                  <div className="font-semibold text-[#1a0e07]">{item.customerName}</div>
+                  <div className="text-xs text-[rgba(26,14,7,0.5)] mt-0.5">
+                    {item.customerPhone} · {item.guestCount} khách
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-[rgba(26,14,7,0.35)] mt-1">
                     {item.bookingDate} {String(item.bookingTime).slice(0, 5)}
                   </div>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${STATUS_COLORS[item.status]}`}>
+                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${STATUS_COLORS[item.status]}`}>
                   {STATUS_LABELS[item.status]}
                 </span>
               </div>
-              {item.note ? (
-                <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{item.note}</p>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-2">
+
+              {item.note && (
+                <p className="mt-3 text-sm text-[rgba(26,14,7,0.65)] bg-[rgba(253,247,240,0.8)] rounded-lg px-3 py-2 whitespace-pre-wrap">
+                  {item.note}
+                </p>
+              )}
+
+              {/* Status action buttons */}
+              <div className="mt-3 pt-3 border-t border-[rgba(107,80,64,0.07)] flex flex-wrap gap-2">
                 {(['NEW', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as BookingStatus[]).map((status) => (
                   <button
                     key={status}
                     disabled={savingId === item.id || item.status === status}
                     onClick={() => updateStatus(item.id, status)}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition ${
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition font-medium ${
                       item.status === status
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                    } disabled:opacity-60`}
+                        ? STATUS_BTN_ACTIVE[status]
+                        : 'border-[rgba(107,80,64,0.15)] text-[rgba(26,14,7,0.55)] hover:bg-[rgba(107,80,64,0.05)] hover:border-[rgba(107,80,64,0.3)]'
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {STATUS_LABELS[status]}
                   </button>

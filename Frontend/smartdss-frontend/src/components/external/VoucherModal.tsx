@@ -6,161 +6,67 @@ const DISCOUNT_TYPE_LABELS: Record<VoucherDiscountType, string> = {
   FIXED: 'Số tiền cố định',
 };
 
-interface Props {
-  isEditing: boolean;
-  form: VoucherForm;
-  onChange: (form: VoucherForm) => void;
-  onSave: () => void;
-  onClose: () => void;
+const CLS = 'w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] outline-none transition';
+const LBL = 'mb-1 block text-sm font-medium text-[rgba(26,14,7,0.6)]';
+
+function toOptionalNumber(v: string) {
+  if (!v.trim()) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
 }
 
-function toOptionalNumber(value: string): number | undefined {
-  if (!value.trim()) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+interface Props {
+  isEditing: boolean; form: VoucherForm;
+  onChange: (f: VoucherForm) => void; onSave: () => void; onClose: () => void;
 }
 
 export default function VoucherModal({ isEditing, form, onChange, onSave, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-gray-200 p-5">
-          <h3 className="text-lg font-semibold">{isEditing ? 'Sửa voucher' : 'Thêm voucher'}</h3>
-          <button onClick={onClose} className="rounded p-1 hover:bg-gray-100"><X size={20} /></button>
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-[0_20px_60px_-10px_rgba(26,14,7,0.2)]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[rgba(107,80,64,0.08)] p-5">
+          <h3 className="text-lg font-semibold text-[#1a0e07]">{isEditing ? 'Sửa voucher' : 'Thêm voucher'}</h3>
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-[rgba(107,80,64,0.07)] transition-colors"><X size={20} /></button>
         </div>
-
         <div className="space-y-4 p-5">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Mã voucher *</label>
-              <input
-                type="text"
-                value={form.code}
-                onChange={(e) => onChange({ ...form, code: e.target.value.toUpperCase() })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Loại giảm *</label>
-              <select
-                value={form.discountType}
-                onChange={(e) => onChange({ ...form, discountType: e.target.value as VoucherDiscountType })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-              >
-                {(Object.keys(DISCOUNT_TYPE_LABELS) as VoucherDiscountType[]).map((key) => (
-                  <option key={key} value={key}>{DISCOUNT_TYPE_LABELS[key]}</option>
-                ))}
-              </select>
-            </div>
+            <div><label className={LBL}>Mã voucher *</label>
+              <input type="text" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value.toUpperCase() })} className={CLS + ' uppercase'} /></div>
+            <div><label className={LBL}>Loại giảm *</label>
+              <select value={form.discountType} onChange={(e) => onChange({ ...form, discountType: e.target.value as VoucherDiscountType })} className={CLS}>
+                {(Object.keys(DISCOUNT_TYPE_LABELS) as VoucherDiscountType[]).map((k) => <option key={k} value={k}>{DISCOUNT_TYPE_LABELS[k]}</option>)}
+              </select></div>
           </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Tên voucher *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => onChange({ ...form, name: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Mô tả</label>
-            <textarea
-              rows={2}
-              value={form.description || ''}
-              onChange={(e) => onChange({ ...form, description: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
+          <div><label className={LBL}>Tên voucher *</label>
+            <input type="text" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} className={CLS} /></div>
+          <div><label className={LBL}>Mô tả</label>
+            <textarea rows={2} value={form.description || ''} onChange={(e) => onChange({ ...form, description: e.target.value })} className={CLS} /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Giá trị giảm *</label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.discountValue}
-                onChange={(e) => onChange({ ...form, discountValue: Number(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Đơn tối thiểu</label>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={form.minOrderAmount ?? ''}
-                onChange={(e) => onChange({ ...form, minOrderAmount: toOptionalNumber(e.target.value) })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <div><label className={LBL}>Giá trị giảm *</label>
+              <input type="number" min={0} step={0.01} value={form.discountValue} onChange={(e) => onChange({ ...form, discountValue: Number(e.target.value) || 0 })} className={CLS} /></div>
+            <div><label className={LBL}>Đơn tối thiểu</label>
+              <input type="number" min={0} step={1000} value={form.minOrderAmount ?? ''} onChange={(e) => onChange({ ...form, minOrderAmount: toOptionalNumber(e.target.value) })} className={CLS} /></div>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Giảm tối đa</label>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                value={form.maxDiscountAmount ?? ''}
-                onChange={(e) => onChange({ ...form, maxDiscountAmount: toOptionalNumber(e.target.value) })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Giới hạn lượt dùng</label>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={form.usageLimit ?? ''}
-                onChange={(e) => onChange({ ...form, usageLimit: toOptionalNumber(e.target.value) })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <div><label className={LBL}>Giảm tối đa</label>
+              <input type="number" min={0} step={1000} value={form.maxDiscountAmount ?? ''} onChange={(e) => onChange({ ...form, maxDiscountAmount: toOptionalNumber(e.target.value) })} className={CLS} /></div>
+            <div><label className={LBL}>Giới hạn lượt dùng</label>
+              <input type="number" min={1} step={1} value={form.usageLimit ?? ''} onChange={(e) => onChange({ ...form, usageLimit: toOptionalNumber(e.target.value) })} className={CLS} /></div>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Hiệu lực từ</label>
-              <input
-                type="datetime-local"
-                value={form.validFrom || ''}
-                onChange={(e) => onChange({ ...form, validFrom: e.target.value || undefined })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Hiệu lực đến</label>
-              <input
-                type="datetime-local"
-                value={form.validTo || ''}
-                onChange={(e) => onChange({ ...form, validTo: e.target.value || undefined })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <div><label className={LBL}>Hiệu lực từ</label>
+              <input type="datetime-local" value={form.validFrom || ''} onChange={(e) => onChange({ ...form, validFrom: e.target.value || undefined })} className={CLS} /></div>
+            <div><label className={LBL}>Hiệu lực đến</label>
+              <input type="datetime-local" value={form.validTo || ''} onChange={(e) => onChange({ ...form, validTo: e.target.value || undefined })} className={CLS} /></div>
           </div>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) => onChange({ ...form, active: e.target.checked })}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
+          <label className="flex items-center gap-2 text-sm text-[rgba(26,14,7,0.7)]">
+            <input type="checkbox" checked={form.active} onChange={(e) => onChange({ ...form, active: e.target.checked })} className="rounded border-[rgba(107,80,64,0.3)]" />
             Đang hoạt động
           </label>
         </div>
-
-        <div className="flex justify-end gap-3 border-t border-gray-200 p-5">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Hủy</button>
-          <button onClick={onSave} className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">
+        <div className="flex justify-end gap-3 border-t border-[rgba(107,80,64,0.08)] p-5">
+          <button onClick={onClose} className="rounded-xl px-4 py-2 text-sm border border-[rgba(107,80,64,0.2)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors">Hủy</button>
+          <button onClick={onSave} className="rounded-xl bg-[#6b5040] px-4 py-2 text-sm text-white hover:brightness-110 transition-all shadow-sm">
             {isEditing ? 'Cập nhật' : 'Tạo mới'}
           </button>
         </div>

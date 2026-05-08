@@ -15,9 +15,13 @@ public interface OrderService {
 
     PageResponse<OrderDTO> getAllOrders(Pageable pageable, String keyword);
 
+    PageResponse<OrderDTO> getAllOrders(Pageable pageable, String keyword, String source);
+
     PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable);
 
     PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable, String keyword);
+
+    PageResponse<OrderDTO> getOrdersByStatus(String status, Pageable pageable, String keyword, String source);
 
     OrderDTO getOrderById(Long id);
 

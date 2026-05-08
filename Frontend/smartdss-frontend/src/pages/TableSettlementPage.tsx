@@ -1,3 +1,4 @@
+import '@/styles/coffee-theme.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { RefreshCw, Wallet, QrCode, CheckCircle2, ChevronRight, Printer } from 'lucide-react';
@@ -212,17 +213,17 @@ export default function TableSettlementPage() {
     const orderRows = detailOrders.length === 0
       ? '<tr><td colspan="4" style="padding:8px 0;color:#6b7280">Khong co don de in.</td></tr>'
       : detailOrders.map((order) => {
-          const itemNames = order.orderItems
-            .map((item) => `${item.quantity}x ${item.menuItemName || `Mon #${item.menuItemId}`}`)
-            .join(', ');
+        const itemNames = order.orderItems
+          .map((item) => `${item.quantity}x ${item.menuItemName || `Mon #${item.menuItemId}`}`)
+          .join(', ');
 
-          return `<tr>
+        return `<tr>
             <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb">#${order.id}</td>
             <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb">${new Date(order.createdAt).toLocaleTimeString('vi-VN')}</td>
             <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb">${itemNames || '-'}</td>
             <td style="padding:8px 0;border-bottom:1px dashed #e5e7eb;text-align:right">${formatCurrency(order.totalAmount)}</td>
           </tr>`;
-        }).join('');
+      }).join('');
 
     const html = `<!doctype html>
 <html>

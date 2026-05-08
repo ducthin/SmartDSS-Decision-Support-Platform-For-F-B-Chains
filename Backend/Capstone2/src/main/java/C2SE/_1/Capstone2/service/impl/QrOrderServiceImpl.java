@@ -65,6 +65,12 @@ public class QrOrderServiceImpl implements QrOrderService {
     @Value("${app.notification.store-name:SmartDSS Coffee}")
     private String storeName;
 
+    @Value("${app.tax.vat.rate-percent:8}")
+    private BigDecimal vatRatePercent;
+
+    @Value("${app.tax.vat.price-includes-vat:true}")
+    private boolean priceIncludesVat;
+
     private DiningTable validateAndGetTable(String qrToken) {
         DiningTable table = diningTableRepository.findByQrToken(qrToken)
                 .orElseThrow(() -> new ResourceNotFoundException("DiningTable", "qrToken", qrToken));
@@ -521,6 +527,23 @@ public class QrOrderServiceImpl implements QrOrderService {
         String createdAt = order.getCreatedAt() == null
                 ? ""
                 : order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
+        BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+        BigDecimal netAmount = grossAmount;
+        BigDecimal vatAmount = BigDecimal.ZERO;
+        BigDecimal safeVatRate = vatRatePercent != null ? vatRatePercent : new BigDecimal("8");
+        
+        if (priceIncludesVat) {
+            BigDecimal divisor = BigDecimal.ONE.add(safeVatRate.divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP));
+            netAmount = grossAmount.divide(divisor, 0, java.math.RoundingMode.HALF_UP);
+            vatAmount = grossAmount.subtract(netAmount);
+        } else {
+            BigDecimal multiplier = safeVatRate.divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
+            vatAmount = grossAmount.multiply(multiplier).setScale(0, java.math.RoundingMode.HALF_UP);
+            grossAmount = grossAmount.add(vatAmount);
+            netAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+        }
+
         return """
                 <!DOCTYPE html>
                 <html lang="vi" xmlns="http://www.w3.org/1999/xhtml">
@@ -574,9 +597,11 @@ public class QrOrderServiceImpl implements QrOrderService {
                       <tbody>%s</tbody>
                     </table>
                     <table class="totals">
-                      <tr><td>Tạm tính (đã bao gồm thuế)</td><td class="right">%s</td></tr>
+                      <tr><td>Tạm tính</td><td class="right">%s</td></tr>
                       <tr><td>%s</td><td class="right">-%s</td></tr>
                       %s
+                      <tr><td style="color:#6b7280;font-size:12px;">Giá trị trước thuế</td><td class="right" style="color:#6b7280;font-size:12px;">%s</td></tr>
+                      <tr><td style="color:#6b7280;font-size:12px;padding-bottom:10px;">Thuế GTGT (%s%%)</td><td class="right" style="color:#6b7280;font-size:12px;padding-bottom:10px;">%s</td></tr>
                       <tr class="grand"><td>Tổng thanh toán</td><td class="right">%s</td></tr>
                     </table>
                     <div class="footer">Cảm ơn quý khách. Vui lòng lưu file PDF này để đối chiếu khi cần.</div>
@@ -599,7 +624,10 @@ public class QrOrderServiceImpl implements QrOrderService {
                 escapeHtml(discountLabel),
                 discountDisplay,
                 promotionNote,
-                money(order.getTotalAmount())
+                money(netAmount),
+                safeVatRate.setScale(0, java.math.RoundingMode.HALF_UP).toString(),
+                money(vatAmount),
+                money(grossAmount)
         );
     }
 
