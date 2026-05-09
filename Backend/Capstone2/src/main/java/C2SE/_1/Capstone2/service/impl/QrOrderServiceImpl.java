@@ -348,6 +348,7 @@ public class QrOrderServiceImpl implements QrOrderService {
         DiningTable table = validateAndGetTable(qrToken);
         String tableName = table.getName();
 
+        // Validate rate limiting: check if last call was made within 20 seconds
         staffCallRepository.findTopByTableNameOrderByCreatedAtDesc(tableName).ifPresent(last -> {
             if (last.getCreatedAt() != null) {
                 Duration since = Duration.between(last.getCreatedAt(), java.time.LocalDateTime.now());
@@ -357,12 +358,21 @@ public class QrOrderServiceImpl implements QrOrderService {
             }
         });
 
-        String priorityStr = (callDTO != null && callDTO.getPriority() != null) ? callDTO.getPriority() : "NORMAL";
-        StaffCall.StaffCallPriority priority = StaffCall.StaffCallPriority.valueOf(priorityStr.toUpperCase());
+        // Parse and validate priority
+        StaffCall.StaffCallPriority priority = parsePriority(
+                callDTO != null ? callDTO.getPriority() : null
+        );
+
+        // Trim message to ensure no extra whitespace
+        String message = null;
+        if (callDTO != null && callDTO.getMessage() != null) {
+            String trimmed = callDTO.getMessage().trim();
+            message = trimmed.isEmpty() ? null : trimmed;
+        }
 
         StaffCall call = StaffCall.builder()
                 .tableName(tableName)
-                .message(callDTO != null ? callDTO.getMessage() : null)
+                .message(message)
                 .priority(priority)
                 .status(StaffCall.StaffCallStatus.PENDING)
                 .build();
@@ -379,6 +389,24 @@ public class QrOrderServiceImpl implements QrOrderService {
 
         messagingTemplate.convertAndSend("/topic/staff-calls", dto);
         return dto;
+    }
+
+    /**
+     * Parse priority from string with validation.
+     * Valid values: NORMAL, URGENT (case-insensitive)
+     * Defaults to NORMAL if null or invalid.
+     */
+    private StaffCall.StaffCallPriority parsePriority(String priorityStr) {
+        if (priorityStr == null || priorityStr.isBlank()) {
+            return StaffCall.StaffCallPriority.NORMAL;
+        }
+
+        try {
+            return StaffCall.StaffCallPriority.valueOf(priorityStr.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // Invalid priority value, default to NORMAL silently
+            return StaffCall.StaffCallPriority.NORMAL;
+        }
     }
 
     private void validateInventoryAvailability(List<OrderItem> orderItems) {

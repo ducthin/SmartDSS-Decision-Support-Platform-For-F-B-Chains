@@ -117,12 +117,16 @@ export default function MainLayout() {
     if (lastCallIdRef.current === data.id) return;
     lastCallIdRef.current = data.id;
     const msg = data.message?.trim();
-    toast(msg ? `[${data.tableName}] ${msg}` : `${data.tableName} đang gọi nhân viên`);
+    const priorityBadge = data.priority === 'URGENT' ? ' 🔴 [KHẨN CẤP]' : '';
+    toast(msg ? `[${data.tableName}] ${msg}${priorityBadge}` : `${data.tableName} đang gọi nhân viên${priorityBadge}`);
 
     if (notiEnabled && notificationSupported && Notification.permission === 'granted') {
       try {
-        new Notification('Gọi nhân viên', {
+        const notificationTitle = data.priority === 'URGENT' ? 'Gọi nhân viên (KHẨN CẤP)' : 'Gọi nhân viên';
+        new Notification(notificationTitle, {
           body: msg ? `${data.tableName}: ${msg}` : `${data.tableName} đang gọi nhân viên`,
+          tag: `staff-call-${data.id}`,
+          requireInteraction: data.priority === 'URGENT',
         });
         if (audioRef.current) {
           audioRef.current.currentTime = 0;

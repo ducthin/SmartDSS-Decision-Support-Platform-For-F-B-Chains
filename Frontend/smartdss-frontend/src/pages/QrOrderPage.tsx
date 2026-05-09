@@ -445,10 +445,12 @@ export default function QrOrderPage() {
     setCallingStaff(true);
     try {
       await qrService.callStaff(token, data);
-      toast.success('Đã gọi nhân viên. Vui lòng chờ một chút.');
+      const priorityLabel = data.priority === 'URGENT' ? ' (Khẩn cấp)' : '';
+      toast.success(`Đã gọi nhân viên${priorityLabel}. Vui lòng chờ.`);
       setStaffCallModalOpen(false);
-    } catch {
-      toast.error('Không thể gọi nhân viên, vui lòng thử lại');
+    } catch (error) {
+      const errorMessage = (error as any)?.response?.data?.message || 'Không thể gọi nhân viên, vui lòng thử lại';
+      toast.error(errorMessage);
     } finally {
       setCallingStaff(false);
     }

@@ -15,10 +15,12 @@ export default function StaffCallModal({ open, loading, onClose, onConfirm }: St
   const [message, setMessage] = useState('');
 
   const handleConfirm = () => {
+    const trimmedMessage = message.trim();
     onConfirm({
       priority,
-      message: message.trim() || undefined,
+      message: trimmedMessage ? trimmedMessage : undefined,
     });
+    // Reset modal state
     setMessage('');
     setPriority('NORMAL');
   };
