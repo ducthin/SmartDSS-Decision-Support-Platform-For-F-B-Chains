@@ -67,6 +67,27 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<HolidayCalendarDTO> getHolidaysByType(String holidayType) {
+        return holidayCalendarMapper.toDTOList(
+                holidayCalendarRepository.findByHolidayTypeOrderByHolidayDateAsc(holidayType));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HolidayCalendarDTO> getHolidaysByYear(int year) {
+        return holidayCalendarMapper.toDTOList(holidayCalendarRepository.findByYear(year));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HolidayCalendarDTO getHolidayByDate(LocalDate date) {
+        return holidayCalendarRepository.findByHolidayDate(date)
+                .map(holidayCalendarMapper::toDTO)
+                .orElse(null);
+    }
+
+    @Override
     public HolidayCalendarDTO createHoliday(HolidayCalendarDTO dto) {
         HolidayCalendar holiday = holidayCalendarMapper.toEntity(dto);
         if (holiday.getRecurring() == null) holiday.setRecurring(false);

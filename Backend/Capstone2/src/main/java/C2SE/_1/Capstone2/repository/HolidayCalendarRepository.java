@@ -8,19 +8,25 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface HolidayCalendarRepository extends JpaRepository<HolidayCalendar, Long> {
 
     List<HolidayCalendar> findByHolidayDateBetweenOrderByHolidayDateAsc(LocalDate from, LocalDate to);
 
-    List<HolidayCalendar> findByHolidayDate(LocalDate date);
+    Optional<HolidayCalendar> findByHolidayDate(LocalDate date);
 
     @Query("SELECT h FROM HolidayCalendar h WHERE h.holidayDate >= :today ORDER BY h.holidayDate ASC")
     List<HolidayCalendar> findUpcoming(@Param("today") LocalDate today);
 
     @Query("SELECT h FROM HolidayCalendar h WHERE MONTH(h.holidayDate) = :month AND YEAR(h.holidayDate) = :year ORDER BY h.holidayDate ASC")
     List<HolidayCalendar> findByMonth(@Param("month") int month, @Param("year") int year);
+
+    @Query("SELECT h FROM HolidayCalendar h WHERE YEAR(h.holidayDate) = :year ORDER BY h.holidayDate ASC")
+    List<HolidayCalendar> findByYear(@Param("year") int year);
+
+    List<HolidayCalendar> findByHolidayTypeOrderByHolidayDateAsc(String holidayType);
 
     boolean existsByHolidayDateAndName(LocalDate holidayDate, String name);
 

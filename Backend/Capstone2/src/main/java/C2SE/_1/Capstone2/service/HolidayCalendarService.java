@@ -17,6 +17,23 @@ public interface HolidayCalendarService {
 
     List<HolidayCalendarDTO> getUpcomingHolidays();
 
+    /**
+     * Get holidays by specific type
+     * @param holidayType one of: PUBLIC_HOLIDAY, CULTURAL, RELIGIOUS, SCHOOL, COMPANY, OTHER
+     */
+    List<HolidayCalendarDTO> getHolidaysByType(String holidayType);
+
+    /**
+     * Get all holidays in a specific year
+     */
+    List<HolidayCalendarDTO> getHolidaysByYear(int year);
+
+    /**
+     * Get holiday information for a specific date
+     * @return HolidayCalendarDTO if date is a holiday, null otherwise
+     */
+    HolidayCalendarDTO getHolidayByDate(LocalDate date);
+
     HolidayCalendarDTO createHoliday(HolidayCalendarDTO dto);
 
     HolidayCalendarDTO updateHoliday(Long id, HolidayCalendarDTO dto);
