@@ -124,4 +124,56 @@ public class HolidayCalendarController {
         data.put("holiday", holiday);
         return ResponseEntity.ok(ApiResponse.success(data));
     }
+
+    @PostMapping("/generate-recurring")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> generateRecurringHolidays(
+            @RequestParam(defaultValue = "5") int years) {
+        if (years <= 0 || years > 10) {
+            years = 5; // Safety limit: 5-10 years max
+        }
+        int count = holidayCalendarService.generateRecurringHolidays(years);
+        Map<String, Object> data = new HashMap<>();
+        data.put("years", years);
+        data.put("generated", count);
+        return ResponseEntity.ok(ApiResponse.success(
+                data,
+                "Đã tạo " + count + " ngày lễ tái diễn cho " + years + " năm tới"
+        ));
+    }
+
+    @PutMapping("/{id}/business-hours")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<HolidayCalendarDTO>> updateBusinessHours(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> businessHoursData) {
+        // Note: Validation handled via DTO fields openOnHoliday, overrideStartTime, overrideEndTime, specialNotes
+        HolidayCalendarDTO dto = new HolidayCalendarDTO();
+        if (businessHoursData.containsKey("openOnHoliday")) {
+            dto.setOpenOnHoliday((Boolean) businessHoursData.get("openOnHoliday"));
+        }
+        if (businessHoursData.containsKey("overrideStartTime")) {
+            // Parse time string (HH:mm format)
+            Object startTime = businessHoursData.get("overrideStartTime");
+            if (startTime != null) {
+                dto.setOverrideStartTime(java.time.LocalTime.parse(startTime.toString()));
+            }
+        }
+        if (businessHoursData.containsKey("overrideEndTime")) {
+            Object endTime = businessHoursData.get("overrideEndTime");
+            if (endTime != null) {
+                dto.setOverrideEndTime(java.time.LocalTime.parse(endTime.toString()));
+            }
+        }
+        if (businessHoursData.containsKey("specialNotes")) {
+            dto.setSpecialNotes((String) businessHoursData.get("specialNotes"));
+        }
+        
+        HolidayCalendarDTO updated = holidayCalendarService.updateHoliday(id, dto);
+        return ResponseEntity.ok(ApiResponse.success(
+                updated,
+                "Giờ làm việc cho ngày lễ '" + updated.getName() + "' đã được cập nhật"
+        ));
+    }
 }
+

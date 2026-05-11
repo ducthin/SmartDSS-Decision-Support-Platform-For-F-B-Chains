@@ -41,4 +41,11 @@ public interface HolidayCalendarService {
     void deleteHoliday(Long id);
 
     int syncFromCalendarific(int year);
+
+    /**
+     * Generate recurring holidays for the next N years
+     * @param years number of years to generate (e.g., 5 means next 5 years)
+     * @return count of newly created recurring holiday entries
+     */
+    int generateRecurringHolidays(int years);
 }

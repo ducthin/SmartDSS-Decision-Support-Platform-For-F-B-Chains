@@ -184,4 +184,64 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
         }
         return HolidayCalendar.HolidayType.CULTURAL;
     }
+
+    @Override
+    public int generateRecurringHolidays(int years) {
+        int currentYear = LocalDate.now().getYear();
+        int count = 0;
+
+        // Get all recurring holidays with non-null dates
+        List<HolidayCalendar> recurringHolidays = holidayCalendarRepository.findByRecurringTrue();
+
+        for (HolidayCalendar original : recurringHolidays) {
+            if (original.getHolidayDate() == null) {
+                continue;
+            }
+
+            LocalDate originalDate = original.getHolidayDate();
+            int dayOfMonth = originalDate.getDayOfMonth();
+            int monthValue = originalDate.getMonthValue();
+
+            // Generate for the next N years
+            for (int year = currentYear + 1; year <= currentYear + years; year++) {
+                LocalDate newDate;
+                try {
+                    // Try to create date on same month/day
+                    newDate = LocalDate.of(year, monthValue, dayOfMonth);
+                } catch (Exception e) {
+                    // Handle edge cases (e.g., Feb 29 in non-leap years)
+                    log.warn("Cannot create recurring holiday {} for year {} on {}/{}", 
+                            original.getName(), year, monthValue, dayOfMonth);
+                    continue;
+                }
+
+                // Skip if this holiday already exists
+                if (holidayCalendarRepository.existsByHolidayDateAndName(newDate, original.getName())) {
+                    continue;
+                }
+
+                // Create new holiday instance from original
+                HolidayCalendar newHoliday = HolidayCalendar.builder()
+                        .name(original.getName())
+                        .holidayDate(newDate)
+                        .holidayType(original.getHolidayType())
+                        .recurring(true)
+                        .description(original.getDescription())
+                        .discountPercent(original.getDiscountPercent() != null ? original.getDiscountPercent() : BigDecimal.ZERO)
+                        .openOnHoliday(original.getOpenOnHoliday())
+                        .overrideStartTime(original.getOverrideStartTime())
+                        .overrideEndTime(original.getOverrideEndTime())
+                        .specialNotes(original.getSpecialNotes())
+                        .build();
+
+                holidayCalendarRepository.save(newHoliday);
+                count++;
+                log.debug("Generated recurring holiday: {} on {}", original.getName(), newDate);
+            }
+        }
+
+        log.info("Generated {} new recurring holiday instances for {} years", count, years);
+        return count;
+    }
 }
+

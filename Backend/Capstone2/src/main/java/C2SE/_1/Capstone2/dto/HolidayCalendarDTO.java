@@ -10,6 +10,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -37,6 +38,15 @@ public class HolidayCalendarDTO {
     @DecimalMin(value = "0.0", message = "Giảm giá phải >= 0%")
     @DecimalMax(value = "100.0", message = "Giảm giá tối đa 100%")
     private BigDecimal discountPercent;
+
+    private Boolean openOnHoliday;
+
+    private LocalTime overrideStartTime;
+
+    private LocalTime overrideEndTime;
+
+    @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
+    private String specialNotes;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

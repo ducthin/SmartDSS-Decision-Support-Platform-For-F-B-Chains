@@ -32,4 +32,9 @@ public interface HolidayCalendarRepository extends JpaRepository<HolidayCalendar
 
     /** Có ít nhất một ngày lễ trong lịch hệ thống trùng {@code date} (cho AI dự báo). */
     boolean existsByHolidayDate(LocalDate holidayDate);
+
+    /**
+     * Find all holidays marked as recurring (for auto-generation)
+     */
+    List<HolidayCalendar> findByRecurringTrue();
 }
