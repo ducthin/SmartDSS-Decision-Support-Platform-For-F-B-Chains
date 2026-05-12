@@ -47,4 +47,22 @@ public class WeatherData extends BaseEntity {
 
     @Column(length = 100)
     private String city;
+
+    @Column(name = "pressure")
+    private Integer pressure;
+
+    @Column(name = "visibility")
+    private Integer visibility;
+
+    @Column(name = "uv_index")
+    private Double uvIndex;
+
+    @Column(name = "weather_impact_score", precision = 5, scale = 2)
+    private Double weatherImpactScore;
+
+    @Column(name = "is_alert")
+    private Boolean isAlert;
+
+    @Column(name = "alert_message", length = 300)
+    private String alertMessage;
 }

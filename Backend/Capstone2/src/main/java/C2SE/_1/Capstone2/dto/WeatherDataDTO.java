@@ -22,5 +22,11 @@ public class WeatherDataDTO {
     private Double windSpeed;
     private Double rainfall;
     private String city;
+    private Integer pressure;
+    private Integer visibility;
+    private Double uvIndex;
+    private Double weatherImpactScore;
+    private Boolean isAlert;
+    private String alertMessage;
     private LocalDateTime createdAt;
 }
