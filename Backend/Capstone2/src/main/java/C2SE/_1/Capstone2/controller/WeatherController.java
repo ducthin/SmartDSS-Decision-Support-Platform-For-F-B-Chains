@@ -38,6 +38,36 @@ public class WeatherController {
 
     @PostMapping("/fetch")
     public ResponseEntity<ApiResponse<WeatherDataDTO>> fetchNow() {
-        return ResponseEntity.ok(ApiResponse.success(weatherService.fetchAndSaveCurrentWeather()));
+        return ResponseEntity.ok(ApiResponse.success(weatherService.fetchAndSaveCurrentWeather(),
+                "Dữ liệu thời tiết đã được cập nhật thành công"));
+    }
+
+    @GetMapping("/today/impact")
+    public ResponseEntity<ApiResponse<WeatherDataDTO>> getTodayWeatherWithImpact() {
+        return ResponseEntity.ok(ApiResponse.success(weatherService.getTodayWeatherWithImpact(),
+                "Dữ liệu thời tiết kèm điểm tác động"));
+    }
+
+    @GetMapping("/impact/{date}")
+    public ResponseEntity<ApiResponse<Object>> getWeatherImpactByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        WeatherDataDTO weather = weatherService.getWeatherByDate(date);
+        if (weather == null) {
+            return ResponseEntity.ok(ApiResponse.success(null, "Không có dữ liệu thời tiết cho ngày này"));
+        }
+        
+        Double impactScore = weatherService.calculateWeatherImpactScore(weather);
+        Boolean isAlert = weatherService.isWeatherAlert(weather);
+        
+        return ResponseEntity.ok(ApiResponse.success(new Object() {
+            public final LocalDate dateValue = date;
+            public final Double temperature = weather.getTemperature();
+            public final Integer humidity = weather.getHumidity();
+            public final Double windSpeed = weather.getWindSpeed();
+            public final Double rainfall = weather.getRainfall();
+            public final String condition = weather.getCondition();
+            public final Double weatherImpactScore = impactScore;
+            public final Boolean weatherAlert = isAlert;
+        }));
     }
 }

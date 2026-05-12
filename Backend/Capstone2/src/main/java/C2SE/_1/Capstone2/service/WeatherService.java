@@ -14,4 +14,21 @@ public interface WeatherService {
     List<WeatherDataDTO> getWeatherRange(LocalDate from, LocalDate to);
 
     WeatherDataDTO fetchAndSaveCurrentWeather();
+
+    /**
+     * Calculate weather impact score (0-100)
+     * Higher score = more negative impact on business
+     */
+    Double calculateWeatherImpactScore(WeatherDataDTO weather);
+
+    /**
+     * Check if weather conditions warrant an alert
+     * Returns true if extreme conditions detected
+     */
+    Boolean isWeatherAlert(WeatherDataDTO weather);
+
+    /**
+     * Get weather impact details for today
+     */
+    WeatherDataDTO getTodayWeatherWithImpact();
 }
