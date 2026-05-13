@@ -138,9 +138,9 @@ services:
     networks:
       - smartdss-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\":\"UP\"'"]
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       retries: 5
       start_period: 90s
 
