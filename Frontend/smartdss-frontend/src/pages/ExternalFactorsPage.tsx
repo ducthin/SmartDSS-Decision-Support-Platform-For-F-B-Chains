@@ -20,7 +20,7 @@ import { areaBusynessService } from '@/services/areaBusynessService';
 import type {
   WeatherData, Event, EventForm, EventType, ImpactLevel,
   HolidayCalendar, HolidayCalendarForm, HolidayType,
-  AreaBusyness, Voucher, VoucherForm, VoucherDiscountType, LoyaltyAccount, LoyaltyTier, LoyaltyTierPolicy,
+  AreaBusyness, Voucher, VoucherForm, VoucherDiscountType, LoyaltyAccount, LoyaltyTier,
 } from '@/types';
 import WeatherTab from '@/components/external/WeatherTab';
 import EventModal from '@/components/external/EventModal';
@@ -158,9 +158,7 @@ export default function ExternalFactorsPage() {
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
   const [loyaltyAccounts, setLoyaltyAccounts] = useState<LoyaltyAccount[]>([]);
   const [loyaltyTiers, setLoyaltyTiers] = useState<LoyaltyTier[]>(defaultLoyaltyTiers);
-  const [tierPolicy, setTierPolicy] = useState<LoyaltyTierPolicy>(emptyTierPolicy);
   const [savingLoyaltyTiers, setSavingLoyaltyTiers] = useState(false);
-  const [savingTierPolicy] = useState(false);
   const [draggedTierIndex, setDraggedTierIndex] = useState<number | null>(null);
   const [editingTierIndex, setEditingTierIndex] = useState<number | null>(null);
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
@@ -625,7 +623,7 @@ export default function ExternalFactorsPage() {
       setSavingLoyaltyTiers(false);
     }
   };
-  const saveTierPolicy = saveLoyaltyTiers;
+
 
   const fetchWeatherNow = async () => {
     try {

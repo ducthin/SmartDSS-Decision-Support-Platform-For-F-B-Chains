@@ -17,8 +17,6 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
   const [savingLocation, setSavingLocation] = useState(false);
-  const [loyaltyLoading, setLoyaltyLoading] = useState(true);
-  const [savingLoyalty, setSavingLoyalty] = useState(false);
   const [loyaltyPointsPerTenThousand, setLoyaltyPointsPerTenThousand] = useState('1');
   const [verifyingLocation, setVerifyingLocation] = useState(false);
   const [lastVerifiedAt, setLastVerifiedAt] = useState<string | null>(null);
@@ -55,8 +53,7 @@ export default function SettingsPage() {
       .then((res) => {
         setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd ?? 1));
       })
-      .catch(() => setLoyaltyPointsPerTenThousand('1'))
-      .finally(() => setLoyaltyLoading(false));
+      .catch(() => setLoyaltyPointsPerTenThousand('1'));
   }, []);
 
   const fetchStoreLocation = async (silent = false) => {
@@ -125,26 +122,7 @@ export default function SettingsPage() {
     }
   };
 
-  const saveLoyaltyPolicy = async () => {
-    if (!canManage) return toast.error('Không có quyền');
 
-    const points = Number(loyaltyPointsPerTenThousand.trim());
-    if (!Number.isInteger(points) || points < 0 || points > 100) {
-      toast.error('Điểm tích lũy phải là số nguyên từ 0 đến 100');
-      return;
-    }
-
-    setSavingLoyalty(true);
-    try {
-      const res = await settingsService.updateLoyaltyPolicy({ pointsPerTenThousandVnd: points });
-      setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd));
-      toast.success('Đã lưu cấu hình điểm tích lũy');
-    } catch (e) {
-      toast.error(getApiErrorMessage(e, 'Không thể lưu cấu hình điểm tích lũy'));
-    } finally {
-      setSavingLoyalty(false);
-    }
-  };
 
   const parseLatLng = () => {
     const lat = Number(locationForm.latitude.trim());

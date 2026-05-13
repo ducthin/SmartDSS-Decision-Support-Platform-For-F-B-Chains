@@ -6,7 +6,7 @@ import { Plus, Minus, AlertTriangle, Search, PenSquare, History, Package } from 
 
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
-import { formatCurrency, getApiErrorMessage } from '@/utils/helpers';
+import { getApiErrorMessage } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
