@@ -25,14 +25,24 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
     @Query("""
             SELECT v FROM Voucher v
-            WHERE v.customerPhone = :phone
+            WHERE v.customerPhone IN :phones
             AND v.active = true
             AND (v.validFrom IS NULL OR v.validFrom <= :now)
             AND (v.validTo IS NULL OR v.validTo >= :now)
             AND (v.usageLimit IS NULL OR v.usedCount < v.usageLimit)
             ORDER BY v.validTo ASC, v.createdAt DESC
             """)
-    List<Voucher> findAvailablePersonalVouchers(@Param("phone") String phone, @Param("now") LocalDateTime now);
+    List<Voucher> findAvailablePersonalVouchers(@Param("phones") List<String> phones, @Param("now") LocalDateTime now);
+
+    @Query("""
+            SELECT v FROM Voucher v
+            WHERE v.active = true
+            AND (v.validFrom IS NULL OR v.validFrom <= :now)
+            AND (v.validTo IS NULL OR v.validTo >= :now)
+            AND (v.usageLimit IS NULL OR v.usedCount < v.usageLimit)
+            ORDER BY v.createdAt DESC
+            """)
+    List<Voucher> findActiveAvailablePublicVouchers(@Param("now") LocalDateTime now);
 
     @Query("""
             SELECT v FROM Voucher v

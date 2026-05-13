@@ -5,7 +5,7 @@ import { getRoleKey, formatRoleName } from '@/utils/helpers';
 import {
   LayoutDashboard, Coffee, ShoppingCart, Package, BarChart3,
   Users, ChevronLeft, ChevronRight, LogOut, Menu as MenuIcon,
-  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet, CalendarClock, FileText, CalendarCheck2
+  FolderTree, BookOpen, CloudSun, QrCode, Settings, MessageSquareText, Brain, Wallet, CalendarClock, FileText, CalendarCheck2, Gift
 } from 'lucide-react';
 
 const navItems = [
@@ -28,6 +28,7 @@ const navItems = [
   { path: '/reports',        label: 'Báo cáo',     icon: BarChart3,          roles: ['ADMIN', 'MANAGER'] },
   { path: '/finance',        label: 'Tài chính',   icon: Wallet,             roles: ['ADMIN', 'MANAGER'] },
   { path: '/ai-prediction',  label: 'AI Dự báo',   icon: Brain,              roles: ['ADMIN', 'MANAGER'] },
+  { path: '/promotions', label: 'Ưu đãi', icon: Gift, roles: ['ADMIN', 'MANAGER'] },
   { path: '/external-factors', label: 'Yếu tố ngoài', icon: CloudSun, roles: ['ADMIN', 'MANAGER'] },
   { path: '/feedbacks',      label: 'Feedback KH', icon: MessageSquareText,  roles: ['ADMIN', 'MANAGER'] },
 

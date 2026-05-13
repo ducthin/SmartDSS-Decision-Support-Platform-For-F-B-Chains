@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Cloud, Plus, Edit2, Trash2,
   Calendar, MapPin, RefreshCw,
   ChevronLeft, ChevronRight,
-  Phone, Search, Tag, Trophy,
+  Phone, Search, Tag, Trophy, ArrowUpDown, GripVertical,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +18,7 @@ import { areaBusynessService } from '@/services/areaBusynessService';
 import type {
   WeatherData, Event, EventForm, EventType, ImpactLevel,
   HolidayCalendar, HolidayCalendarForm, HolidayType,
-  AreaBusyness, Voucher, VoucherForm, VoucherDiscountType, LoyaltyAccount,
+  AreaBusyness, Voucher, VoucherForm, VoucherDiscountType, LoyaltyAccount, LoyaltyTier, LoyaltyTierPolicy,
 } from '@/types';
 import WeatherTab from '@/components/external/WeatherTab';
 import EventModal from '@/components/external/EventModal';
@@ -60,6 +61,7 @@ const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const CUSTOMER_PHONE_REGEX = /^[+0-9][0-9]{8,19}$/;
 
 type Tab = 'weather' | 'calendar' | 'vouchers' | 'loyalty';
+type VoucherSort = 'newest' | 'usage';
 type VoucherState = {
   label: string;
   className: string;
@@ -87,12 +89,30 @@ const emptyVoucherForm: VoucherForm = {
   usageLimit: undefined,
 };
 
+const defaultLoyaltyTiers: LoyaltyTier[] = [
+  { code: 'DONG', name: 'Đồng', displayOrder: 1, minOrders: 0, minSpent: 0, voucherEnabled: false, discountPercent: 0, maxDiscountAmount: 0, active: true },
+  { code: 'BAC', name: 'Bạc', displayOrder: 2, minOrders: 5, minSpent: 500000, voucherEnabled: true, discountPercent: 5, maxDiscountAmount: 50000, active: true },
+  { code: 'VANG', name: 'Vàng', displayOrder: 3, minOrders: 10, minSpent: 1500000, voucherEnabled: true, discountPercent: 10, maxDiscountAmount: 100000, active: true },
+];
+
+const emptyTierPolicy: LoyaltyTierPolicy = {
+  bacMinOrders: 5,
+  bacMinSpent: 500000,
+  bacDiscountPercent: 5,
+  bacMaxDiscountAmount: 50000,
+  vangMinOrders: 10,
+  vangMinSpent: 1500000,
+  vangDiscountPercent: 10,
+  vangMaxDiscountAmount: 100000,
+};
+
 export default function ExternalFactorsPage() {
+  const location = useLocation();
   const { user } = useAuth();
   const role = getRoleKey(user?.roleName);
   const canEdit = role === 'ADMIN' || role === 'MANAGER';
 
-  const [tab, setTab] = useState<Tab>('calendar');
+  const [tab, setTab] = useState<Tab>(() => (location.pathname === '/promotions' ? 'vouchers' : 'calendar'));
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherRange, setWeatherRange] = useState<WeatherData[]>([]);
   const [areaBusyness, setAreaBusyness] = useState<AreaBusyness | null>(null);
@@ -127,11 +147,18 @@ export default function ExternalFactorsPage() {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [voucherForm, setVoucherForm] = useState<VoucherForm>(emptyVoucherForm);
+  const [voucherSort, setVoucherSort] = useState<VoucherSort>('newest');
 
   // Loyalty state
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
   const [loyaltyAccounts, setLoyaltyAccounts] = useState<LoyaltyAccount[]>([]);
+  const [loyaltyTiers, setLoyaltyTiers] = useState<LoyaltyTier[]>(defaultLoyaltyTiers);
+  const [tierPolicy, setTierPolicy] = useState<LoyaltyTierPolicy>(emptyTierPolicy);
+  const [savingLoyaltyTiers, setSavingLoyaltyTiers] = useState(false);
+  const [savingTierPolicy] = useState(false);
+  const [draggedTierIndex, setDraggedTierIndex] = useState<number | null>(null);
+  const [editingTierIndex, setEditingTierIndex] = useState<number | null>(null);
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
   const [loadingLoyaltyAccounts, setLoadingLoyaltyAccounts] = useState(false);
   const [loyaltyError, setLoyaltyError] = useState('');
@@ -277,16 +304,25 @@ export default function ExternalFactorsPage() {
 
   const loadVouchers = useCallback(() => {
     setLoadingVouchers(true);
-    voucherService.getAll(0, 100)
-      .then((res) => {
-        setVouchers(res.data.data.content || []);
-      })
-      .catch(() => {
-        setVouchers([]);
-      })
-      .finally(() => {
-        setLoadingVouchers(false);
-      });
+    const pageSize = 100;
+
+    const loadAllPages = async () => {
+      const first = await voucherService.getAll(0, pageSize);
+      const firstPage = first.data.data;
+      const all = [...(firstPage.content || [])];
+      const totalPages = firstPage.totalPages || 1;
+
+      for (let page = 1; page < totalPages; page += 1) {
+        const res = await voucherService.getAll(page, pageSize);
+        all.push(...(res.data.data.content || []));
+      }
+
+      setVouchers(all);
+    };
+
+    loadAllPages()
+      .catch(() => setVouchers([]))
+      .finally(() => setLoadingVouchers(false));
   }, []);
 
   useEffect(() => {
@@ -314,6 +350,12 @@ export default function ExternalFactorsPage() {
   useEffect(() => {
     loadLoyaltyAccounts();
   }, [loadLoyaltyAccounts]);
+
+  useEffect(() => {
+    loyaltyService.getTiers()
+      .then((res) => setLoyaltyTiers(res.data.data?.length ? res.data.data : defaultLoyaltyTiers))
+      .catch(() => setLoyaltyTiers(defaultLoyaltyTiers));
+  }, []);
 
   // Event CRUD
   const openEventCreate = () => {
@@ -485,6 +527,71 @@ export default function ExternalFactorsPage() {
     }
   };
 
+  const updateLoyaltyTier = (index: number, changes: Partial<LoyaltyTier>) => {
+    setLoyaltyTiers((current) => current.map((tier, i) => (i === index ? { ...tier, ...changes } : tier)));
+  };
+
+  const addLoyaltyTier = () => {
+    const nextOrder = loyaltyTiers.length + 1;
+    setLoyaltyTiers([
+      ...loyaltyTiers,
+      {
+        code: `HANG_${nextOrder}`,
+        name: `Hạng ${nextOrder}`,
+        displayOrder: nextOrder,
+        minOrders: 0,
+        minSpent: 0,
+        voucherEnabled: false,
+        discountPercent: 0,
+        maxDiscountAmount: 0,
+        active: true,
+      },
+    ]);
+  };
+
+  const deleteLoyaltyTier = (index: number) => {
+    if (loyaltyTiers.length <= 1) {
+      toast.error('Cần giữ ít nhất một cấp bậc');
+      return;
+    }
+    setLoyaltyTiers((current) => current.filter((_, i) => i !== index).map((tier, i) => ({ ...tier, displayOrder: i + 1 })));
+  };
+
+  const moveLoyaltyTier = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+    setLoyaltyTiers((current) => {
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next.map((tier, i) => ({ ...tier, displayOrder: i + 1 }));
+    });
+  };
+
+  const saveLoyaltyTiers = async () => {
+    setSavingLoyaltyTiers(true);
+    try {
+      const payload = loyaltyTiers.map((tier, index) => ({
+        ...tier,
+        code: tier.code.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_'),
+        name: tier.name.trim(),
+        displayOrder: index + 1,
+        minOrders: Math.max(0, Number(tier.minOrders) || 0),
+        minSpent: Math.max(0, Number(tier.minSpent) || 0),
+        discountPercent: Math.min(100, Math.max(0, Number(tier.discountPercent) || 0)),
+        maxDiscountAmount: Math.max(0, Number(tier.maxDiscountAmount) || 0),
+      }));
+      const res = await loyaltyService.updateTiers(payload);
+      setLoyaltyTiers(res.data.data);
+      loadLoyaltyAccounts();
+      toast.success('Đã cập nhật cấp bậc thành viên');
+    } catch {
+      toast.error('Lỗi lưu cấp bậc thành viên');
+    } finally {
+      setSavingLoyaltyTiers(false);
+    }
+  };
+  const saveTierPolicy = saveLoyaltyTiers;
+
   const fetchWeatherNow = async () => {
     try {
       const res = await weatherService.fetchNow();
@@ -508,6 +615,16 @@ export default function ExternalFactorsPage() {
 
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
   const selectedHolidays = selectedDate ? holidaysForDate(selectedDate) : [];
+  const sortedVouchers = useMemo(() => {
+    const next = [...vouchers];
+    if (voucherSort === 'newest') {
+      return next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    if (voucherSort === 'usage') {
+      return next.sort((a, b) => (b.usedCount || 0) - (a.usedCount || 0));
+    }
+    return next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [voucherSort, vouchers]);
 
   if (loading) {
     return (
@@ -724,11 +841,24 @@ export default function ExternalFactorsPage() {
               <h3 className="text-lg font-semibold">Voucher khuyến mãi</h3>
               <p className="text-xs text-gray-500">Quản lý mã giảm giá dùng cho POS và QR order</p>
             </div>
-            {canEdit && (
-              <button onClick={openVoucherCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700">
-                <Plus size={16} /> Thêm voucher
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+                <ArrowUpDown size={16} className="text-gray-400" />
+                <select
+                  value={voucherSort}
+                  onChange={(e) => setVoucherSort(e.target.value as VoucherSort)}
+                  className="bg-transparent text-sm outline-none"
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="usage">Lượt dùng nhiều</option>
+                </select>
+              </label>
+              {canEdit && (
+                <button onClick={openVoucherCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700">
+                  <Plus size={16} /> Thêm voucher
+                </button>
+              )}
+            </div>
           </div>
 
           {loadingVouchers ? (
@@ -750,7 +880,7 @@ export default function ExternalFactorsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {vouchers.map((v) => {
+                  {sortedVouchers.map((v) => {
                     const state = getVoucherState(v);
                     return (
                     <tr key={v.id} className="border-b border-gray-100 align-top">
@@ -841,6 +971,351 @@ export default function ExternalFactorsPage() {
             </div>
             {loyaltyError && <p className="mt-2 text-xs text-red-600">{loyaltyError}</p>}
           </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Cấp bậc thành viên</h3>
+                <p className="text-xs text-gray-500">Kéo thả để đổi thứ tự từ thấp đến cao. Hệ thống xét hạng cao nhất thỏa điều kiện trong 30 ngày gần nhất.</p>
+              </div>
+              {canEdit && (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={addLoyaltyTier} className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200">
+                    <Plus size={16} /> Thêm hạng
+                  </button>
+                  <button type="button" onClick={saveLoyaltyTiers} disabled={savingLoyaltyTiers} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+                    {savingLoyaltyTiers ? 'Đang lưu...' : 'Lưu cấp bậc'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Compact drag-and-drop tier list */}
+            <div className="space-y-2">
+              {loyaltyTiers.map((tier, index) => (
+                <div
+                  key={`${tier.code}-${index}`}
+                  draggable={canEdit}
+                  onDragStart={() => setDraggedTierIndex(index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (draggedTierIndex !== null) moveLoyaltyTier(draggedTierIndex, index);
+                    setDraggedTierIndex(null);
+                  }}
+                  onDragEnd={() => setDraggedTierIndex(null)}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-shadow
+                    ${draggedTierIndex === index ? 'opacity-50 border-indigo-400 shadow-lg' : 'border-gray-200 bg-white shadow-sm hover:shadow-md'}`}
+                >
+                  {/* Drag handle */}
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    className="shrink-0 cursor-grab rounded p-1 text-gray-300 hover:text-gray-500 disabled:opacity-30 active:cursor-grabbing"
+                    title="Kéo để đổi thứ tự"
+                  >
+                    <GripVertical size={18} />
+                  </button>
+
+                  {/* Order badge */}
+                  <span className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                    {index + 1}
+                  </span>
+
+                  {/* Tier name & code */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-gray-900 text-sm">{tier.name}</p>
+                    <p className="text-xs text-gray-400 font-mono">{tier.code}</p>
+                  </div>
+
+                  {/* Conditions summary */}
+                  <div className="hidden sm:flex flex-col items-end text-xs text-gray-500 gap-0.5">
+                    <span>≥ {tier.minOrders} đơn</span>
+                    <span>hoặc ≥ {Number(tier.minSpent).toLocaleString('vi-VN')}đ</span>
+                  </div>
+
+                  {/* Voucher badge */}
+                  {tier.voucherEnabled ? (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                      -{tier.discountPercent}%
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-400">
+                      Không voucher
+                    </span>
+                  )}
+
+                  {/* Active badge */}
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    tier.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {tier.active ? 'Đang dùng' : 'Tắt'}
+                  </span>
+
+                  {/* Edit & Delete actions */}
+                  {canEdit && (
+                    <div className="shrink-0 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingTierIndex(index)}
+                        className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        title="Chỉnh sửa hạng"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteLoyaltyTier(index)}
+                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Xóa hạng"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Tier Edit Modal */}
+            {editingTierIndex !== null && loyaltyTiers[editingTierIndex] && (() => {
+              const tier = loyaltyTiers[editingTierIndex];
+              return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditingTierIndex(null)}>
+                  <div
+                    className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl mx-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Chỉnh sửa hạng thành viên</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">Hạng #{editingTierIndex + 1}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingTierIndex(null)}
+                        className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Row 1: Name + Code */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="text-sm">
+                          <span className="mb-1 block font-medium text-gray-700">Tên hạng</span>
+                          <input
+                            type="text"
+                            value={tier.name}
+                            onChange={(e) => updateLoyaltyTier(editingTierIndex, { name: e.target.value })}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                          />
+                        </label>
+                        <label className="text-sm">
+                          <span className="mb-1 block font-medium text-gray-700">Mã hạng</span>
+                          <input
+                            type="text"
+                            value={tier.code}
+                            onChange={(e) => updateLoyaltyTier(editingTierIndex, { code: e.target.value.toUpperCase() })}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase font-mono focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Row 2: Conditions */}
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-gray-700">Điều kiện lên hạng (30 ngày gần nhất)</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Số đơn tối thiểu</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={tier.minOrders}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minOrders: Number(e.target.value) || 0 })}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                          </label>
+                          <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Hoặc chi tiêu từ (VNĐ)</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={10000}
+                              value={tier.minSpent}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minSpent: Number(e.target.value) || 0 })}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Row 3: Voucher settings */}
+                      <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                          <input
+                            type="checkbox"
+                            checked={tier.voucherEnabled}
+                            onChange={(e) => updateLoyaltyTier(editingTierIndex, { voucherEnabled: e.target.checked })}
+                            className="rounded border-gray-300 text-indigo-600"
+                          />
+                          Tự động tạo voucher cho hạng này
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Giảm giá (%)</span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.1}
+                              value={tier.discountPercent}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { discountPercent: Number(e.target.value) || 0 })}
+                              disabled={!tier.voucherEnabled}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                          </label>
+                          <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Giảm tối đa (VNĐ)</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={10000}
+                              value={tier.maxDiscountAmount}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { maxDiscountAmount: Number(e.target.value) || 0 })}
+                              disabled={!tier.voucherEnabled}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Row 4: Active toggle */}
+                      <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={tier.active}
+                          onChange={(e) => updateLoyaltyTier(editingTierIndex, { active: e.target.checked })}
+                          className="rounded border-gray-300 text-indigo-600 w-4 h-4"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Đang hoạt động</p>
+                          <p className="text-xs text-gray-400">Hạng này sẽ được hệ thống xét khi xếp hạng khách</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingTierIndex(null)}
+                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Đóng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { saveLoyaltyTiers(); setEditingTierIndex(null); }}
+                        disabled={savingLoyaltyTiers}
+                        className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                      >
+                        {savingLoyaltyTiers ? 'Đang lưu...' : 'Lưu thay đổi'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {false && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Cấp bậc thành viên</h3>
+                <p className="text-xs text-gray-500">Cấu hình điều kiện lên hạng và voucher tự động cho hạng Bạc/Vàng trong 30 ngày gần nhất</p>
+              </div>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={saveTierPolicy}
+                  disabled={savingTierPolicy}
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  {savingTierPolicy ? 'Đang lưu...' : 'Lưu cấp bậc'}
+                </button>
+              )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {([
+                { key: 'bac' as const, label: 'Hạng Bạc', tone: 'border-slate-200 bg-slate-50', prefix: 'bac' as const },
+                { key: 'vang' as const, label: 'Hạng Vàng', tone: 'border-amber-200 bg-amber-50', prefix: 'vang' as const },
+              ]).map((tier) => {
+                const ordersKey = `${tier.prefix}MinOrders` as keyof LoyaltyTierPolicy;
+                const spentKey = `${tier.prefix}MinSpent` as keyof LoyaltyTierPolicy;
+                const discountKey = `${tier.prefix}DiscountPercent` as keyof LoyaltyTierPolicy;
+                const maxDiscountKey = `${tier.prefix}MaxDiscountAmount` as keyof LoyaltyTierPolicy;
+                return (
+                  <div key={tier.key} className={`rounded-xl border p-4 ${tier.tone}`}>
+                    <h4 className="mb-3 font-semibold text-gray-900">{tier.label}</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Tối thiểu số đơn</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={tierPolicy[ordersKey]}
+                          onChange={(e) => setTierPolicy({ ...tierPolicy, [ordersKey]: Number(e.target.value) || 1 })}
+                          disabled={!canEdit}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
+                        />
+                      </label>
+                      <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Hoặc chi tiêu từ</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={10000}
+                          value={tierPolicy[spentKey]}
+                          onChange={(e) => setTierPolicy({ ...tierPolicy, [spentKey]: Number(e.target.value) || 0 })}
+                          disabled={!canEdit}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
+                        />
+                      </label>
+                      <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Voucher giảm (%)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={tierPolicy[discountKey]}
+                          onChange={(e) => setTierPolicy({ ...tierPolicy, [discountKey]: Number(e.target.value) || 0 })}
+                          disabled={!canEdit}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
+                        />
+                      </label>
+                      <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Giảm tối đa</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={10000}
+                          value={tierPolicy[maxDiscountKey]}
+                          onChange={(e) => setTierPolicy({ ...tierPolicy, [maxDiscountKey]: Number(e.target.value) || 0 })}
+                          disabled={!canEdit}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          )}
 
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

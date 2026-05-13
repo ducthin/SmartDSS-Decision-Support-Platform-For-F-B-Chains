@@ -624,6 +624,16 @@ export interface PaymentInit {
   paymentStatus: PaymentStatus;
 }
 
+// Public order tracking (by customer phone)
+export interface OrderTrackingDTO {
+  orderId: number;
+  orderStatus: string; // PENDING | PREPARING | COMPLETED | CANCELLED
+  totalAmount: number;
+  createdAt: string;
+  paymentStatus: string; // PENDING | PAID
+  paymentMethod: string; // CASH | QR | PENDING
+}
+
 export interface TableSettlementSummary {
   tableNumber: string;
   pendingCount: number;
@@ -938,6 +948,29 @@ export interface LoyaltyAccount {
   lastOrderAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LoyaltyTierPolicy {
+  bacMinOrders: number;
+  bacMinSpent: number;
+  bacDiscountPercent: number;
+  bacMaxDiscountAmount: number;
+  vangMinOrders: number;
+  vangMinSpent: number;
+  vangDiscountPercent: number;
+  vangMaxDiscountAmount: number;
+}
+
+export interface LoyaltyTier {
+  code: string;
+  name: string;
+  displayOrder: number;
+  minOrders: number;
+  minSpent: number;
+  voucherEnabled: boolean;
+  discountPercent: number;
+  maxDiscountAmount: number;
+  active: boolean;
 }
 
 export type AreaBusynessLevel = 'IT_DONG' | 'TRUNG_BINH' | 'DONG_DUC';

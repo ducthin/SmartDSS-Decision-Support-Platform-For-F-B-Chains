@@ -9,4 +9,5 @@ const publicApi = axios.create({
 
 export const publicConfigService = {
   getTaxPolicy: () => publicApi.get<ApiResponse<TaxPolicy>>('/tax'),
+  getPaymentBankConfig: () => publicApi.get<ApiResponse<{ bankBin: string; bankAccount: string; bankAccountName: string }>>('/payments/bank'),
 };

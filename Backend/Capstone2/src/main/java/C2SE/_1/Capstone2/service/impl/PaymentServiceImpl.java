@@ -10,6 +10,8 @@ import C2SE._1.Capstone2.dto.TableSettlementSummaryDTO;
 import C2SE._1.Capstone2.dto.PaymentWebhookDTO;
 import C2SE._1.Capstone2.entity.Order;
 import C2SE._1.Capstone2.entity.OrderStatus;
+import C2SE._1.Capstone2.entity.OrderItem;
+import C2SE._1.Capstone2.entity.SalesItem;
 import C2SE._1.Capstone2.entity.SalesTransaction;
 import C2SE._1.Capstone2.entity.TablePaymentSession;
 import C2SE._1.Capstone2.exception.BadRequestException;
@@ -88,14 +90,25 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${app.timezone:Asia/Ho_Chi_Minh}")
     private String appTimezone;
 
+    @Value("${app.tax.vat.rate-percent:8}")
+    private BigDecimal vatRatePercent;
+
+    @Value("${app.tax.vat.price-includes-vat:true}")
+    private boolean priceIncludesVat;
+
     @Override
     public PaymentInitDTO initQrPayment(Long orderId) {
         log.info("Init payment requested for order {}", orderId);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
-        if (order.getStatus() != OrderStatus.COMPLETED) {
-            log.warn("Reject init payment for order {} because status is {}", orderId, order.getStatus());
-            throw new BadRequestException("Chỉ được thanh toán cho đơn đã COMPLETED");
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.warn("Reject init payment for cancelled order {}", orderId);
+            throw new BadRequestException("Không thể thanh toán cho đơn đã hủy");
+        }
+
+        // Online order thường mới ở PENDING. Tạo trước SalesTransaction để webhook có nơi cập nhật payment.
+        if (salesTransactionRepository.findByOrderId(orderId).isEmpty()) {
+            createSalesTransactionForOrder(order);
         }
 
         SalesTransaction tx = getTransactionForUpdate(orderId);
@@ -125,6 +138,59 @@ public class PaymentServiceImpl implements PaymentService {
         String qrImageUrl = buildVietQrImageUrl(amount, transferContent);
         log.info("Init payment fallback to provider VIETQR for order {}", orderId);
         return buildInitResponse(orderId, amount, transferContent, qrImageUrl, null, null, "VIETQR", expiresAt, statusDTO);
+    }
+
+    private void createSalesTransactionForOrder(Order order) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        if (salesTransactionRepository.findByOrderId(order.getId()).isPresent()) {
+            return; // tránh tạo trùng do race condition
+        }
+
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            throw new BadRequestException("Không thể tạo doanh thu cho đơn không có món");
+        }
+
+        List<SalesItem> salesItems = new ArrayList<>();
+        BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+        BigDecimal rate = vatRatePercent.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+        BigDecimal netAmount;
+        BigDecimal vatAmount;
+
+        if (priceIncludesVat) {
+            BigDecimal divisor = BigDecimal.ONE.add(rate);
+            netAmount = grossAmount.divide(divisor, 0, RoundingMode.HALF_UP);
+            vatAmount = grossAmount.subtract(netAmount);
+        } else {
+            netAmount = grossAmount;
+            vatAmount = netAmount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
+            grossAmount = netAmount.add(vatAmount);
+        }
+
+        SalesTransaction salesTransaction = SalesTransaction.builder()
+                .order(order)
+                .netAmount(netAmount)
+                .vatRate(vatRatePercent)
+                .vatAmount(vatAmount)
+                .totalAmount(grossAmount)
+                .paymentMethod("PENDING")
+                .cashier(order.getCreatedBy())
+                .build();
+
+        for (OrderItem orderItem : order.getOrderItems()) {
+            SalesItem salesItem = SalesItem.builder()
+                    .salesTransaction(salesTransaction)
+                    .menuItem(orderItem.getMenuItem())
+                    .quantity(orderItem.getQuantity())
+                    .unitPrice(orderItem.getUnitPrice())
+                    .subtotal(orderItem.getSubtotal())
+                    .build();
+            salesItems.add(salesItem);
+        }
+
+        salesTransaction.setSalesItems(salesItems);
+        salesTransactionRepository.save(salesTransaction);
     }
 
     @Override
@@ -865,6 +931,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void broadcastStatus(PaymentStatusDTO statusDTO) {
         messagingTemplate.convertAndSend("/topic/orders-payment", statusDTO);
+        // Public realtime topic for anonymous customers tracking payment status
+        messagingTemplate.convertAndSend("/topic/public-orders-payment", statusDTO);
     }
 
     private PaymentInitDTO tryInitPayosPayment(
