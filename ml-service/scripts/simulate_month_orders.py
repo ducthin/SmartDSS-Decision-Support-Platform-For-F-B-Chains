@@ -1,13 +1,3 @@
-"""
-Generate simulated order/sales data for a date window ending at a chosen day.
-
-Flow per order:
-1) Create order
-2) Move status to PREPARING -> COMPLETED
-3) Mark CASH paid
-4) Backfill timestamps in MySQL to spread data across future days
-"""
-
 from __future__ import annotations
 
 import argparse

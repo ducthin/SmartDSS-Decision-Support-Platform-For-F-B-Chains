@@ -1,0 +1,7 @@
+# Backend .dockerignore
+target/
+*.log
+*.err
+.env
+uploads/
+.mvn/wrapper/maven-wrapper.jar

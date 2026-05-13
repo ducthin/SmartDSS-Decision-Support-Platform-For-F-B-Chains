@@ -1,11 +1,3 @@
-"""
-Fetch real ML training data CSV from SmartDSS backend and save it to data/training_data.csv.
-
-Usage examples:
-  python scripts/fetch_real_training_data.py --token <JWT>
-  python scripts/fetch_real_training_data.py --username manager --password manager123
-"""
-
 from __future__ import annotations
 
 import argparse

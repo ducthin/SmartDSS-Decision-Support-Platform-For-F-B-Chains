@@ -1,22 +1,3 @@
-"""
-generate_dataset.py (v3 - Tự nhiên & Cân bằng)
-================================================
-Dataset 2 năm (2024-2025) phản ánh đúng hành vi F&B thực tế tại Việt Nam.
-
-Thông số đã được tinh chỉnh để:
-  ✅ Doanh thu ngày thường hợp lý (~2-4 triệu)
-  ✅ Doanh thu cuối tuần vừa phải (~4-6 triệu)
-  ✅ Tết là mùa ĐÔNG NHẤT (×2.0-2.3, tức ~7-12 triệu)
-  ✅ Mưa lũ tháng 10 tác động rõ nhưng không loại bỏ khách hoàn toàn
-  ✅ Tháng 6-7 là mùa hè nóng — bán đồ uống lạnh tăng tự nhiên
-  ✅ Không có nhảy vọt bất thường, dữ liệu liên tục tự nhiên
-
-Chạy: python scripts/generate_dataset.py
-
-Gợi ý: Sau khi sinh CSV, huấn luyện với `train_model.py` — script đó dùng **chia tập
-theo thời gian** (hold-out cuối chuỗi) + TimeSeries CV, phù hợp báo cáo nghiêm ngặt.
-"""
-
 import pandas as pd
 import numpy as np
 import os

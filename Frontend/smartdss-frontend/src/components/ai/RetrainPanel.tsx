@@ -30,11 +30,10 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
         </span>
         <div className="flex items-center gap-2">
           {status && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              status.is_retraining ? 'bg-amber-100 text-amber-700'
-              : status.retrain_enabled ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'}`}>
-              {status.is_retraining ? '⏳ Retraining...' : status.retrain_enabled ? '✅ Active' : '⏸ Off'}
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.is_retraining ? 'bg-amber-100 text-amber-700'
+                : status.retrain_enabled ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-500'}`}>
+              {status.is_retraining ? '⏳ Retraining...' : status.retrain_enabled ? ' Active' : '⏸ Off'}
             </span>
           )}
           <button onClick={onRefresh} disabled={loading} className="p-1 rounded-lg text-[rgba(26,14,7,0.35)] hover:bg-[rgba(201,162,122,0.1)] hover:text-[#6b5040] transition-colors">
@@ -78,8 +77,8 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
               <p className={S.val}>
                 {status.current_model_mape_pct != null
                   ? <span className={status.current_model_mape_pct < 15 ? 'text-green-600' : status.current_model_mape_pct < 25 ? 'text-amber-600' : 'text-red-500'}>
-                      {status.current_model_mape_pct.toFixed(1)}%
-                    </span>
+                    {status.current_model_mape_pct.toFixed(1)}%
+                  </span>
                   : <span className="text-[rgba(26,14,7,0.3)] text-xs">—</span>}
               </p>
             </div>
@@ -100,8 +99,7 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
               )}
             </div>
             <button id="btn-trigger-retrain" onClick={onTrigger} disabled={triggering || status.is_retraining}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                triggering || status.is_retraining
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${triggering || status.is_retraining
                   ? 'bg-[rgba(107,80,64,0.06)] text-[rgba(26,14,7,0.3)] cursor-not-allowed'
                   : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
               <RefreshCw size={12} className={triggering || status.is_retraining ? 'animate-spin' : ''} />

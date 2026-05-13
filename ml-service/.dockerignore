@@ -1,0 +1,9 @@
+# ML Service .dockerignore
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+artifacts/
+data/
+*.log

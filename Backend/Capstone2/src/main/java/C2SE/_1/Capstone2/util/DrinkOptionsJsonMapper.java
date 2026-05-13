@@ -13,10 +13,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Serializes drink size/topping options to/from JSON stored on menu and order line columns.
- * Uses a dedicated {@link ObjectMapper} because Spring Boot 4 may not expose {@code ObjectMapper} as a bean by default.
- */
 @Component
 public class DrinkOptionsJsonMapper {
 

@@ -100,8 +100,8 @@ export default function AIPredictionPage() {
             <span className="text-xs font-normal bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] px-2 py-0.5 rounded-full">ML</span>
             {retrainStatus?.current_model_mape_pct != null && (
               <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${retrainStatus.current_model_mape_pct < 15 ? 'bg-green-100 text-green-700'
-                  : retrainStatus.current_model_mape_pct < 25 ? 'bg-amber-100 text-amber-700'
-                    : 'bg-red-100 text-red-700'}`}>
+                : retrainStatus.current_model_mape_pct < 25 ? 'bg-amber-100 text-amber-700'
+                  : 'bg-red-100 text-red-700'}`}>
                 MAPE {retrainStatus.current_model_mape_pct.toFixed(1)}%
               </span>
             )}
@@ -115,8 +115,8 @@ export default function AIPredictionPage() {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 text-sm py-2 rounded-lg font-medium transition-all ${tab === t.id
-                ? 'bg-white text-[#6b5040] shadow-sm border border-[rgba(107,80,64,0.1)]'
-                : 'text-[rgba(26,14,7,0.45)] hover:text-[#6b5040]'}`}>
+              ? 'bg-white text-[#6b5040] shadow-sm border border-[rgba(107,80,64,0.1)]'
+              : 'text-[rgba(26,14,7,0.45)] hover:text-[#6b5040]'}`}>
             {t.label}
           </button>
         ))}
@@ -133,7 +133,7 @@ export default function AIPredictionPage() {
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
               {/* Date */}
               <div className="flex-1">
-                <label className="block text-xs font-medium text-[rgba(26,14,7,0.55)] mb-1">📅 Ngày dự báo</label>
+                <label className="block text-xs font-medium text-[rgba(26,14,7,0.55)] mb-1">Ngày dự báo</label>
                 <div className="flex items-center gap-2 border border-[rgba(107,80,64,0.15)] rounded-xl px-3 py-2 bg-[rgba(253,247,240,0.5)] focus-within:border-[#c9a27a] transition-colors">
                   <Calendar size={14} className="text-[rgba(107,80,64,0.4)] shrink-0" />
                   <input id="ai-date" type="date" value={selectedDate}
@@ -151,8 +151,8 @@ export default function AIPredictionPage() {
                   return (
                     <button key={l} onClick={() => { setSelectedDate(iso); setPrediction(null); }}
                       className={`text-xs px-2.5 py-2 rounded-lg border transition-colors ${selectedDate === iso
-                          ? 'bg-[#6b5040] text-white border-[#6b5040]'
-                          : 'bg-white text-[rgba(26,14,7,0.55)] border-[rgba(107,80,64,0.15)] hover:border-[#c9a27a]'}`}>
+                        ? 'bg-[#6b5040] text-white border-[#6b5040]'
+                        : 'bg-white text-[rgba(26,14,7,0.55)] border-[rgba(107,80,64,0.15)] hover:border-[#c9a27a]'}`}>
                       {l}
                     </button>
                   );
@@ -169,7 +169,7 @@ export default function AIPredictionPage() {
                 </label>
                 <button id="btn-ai-analyse" onClick={handleAnalyse} disabled={loading}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all whitespace-nowrap ${loading ? 'bg-[rgba(107,80,64,0.08)] text-[rgba(26,14,7,0.3)] cursor-not-allowed'
-                      : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
+                    : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
                   <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                   {loading ? 'Đang phân tích...' : 'Phân tích'}
                 </button>
@@ -240,7 +240,7 @@ export default function AIPredictionPage() {
             </div>
             <button onClick={handleExport} disabled={exporting}
               className={`h-10 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${exporting ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
               <Download size={14} />
               {exporting ? 'Đang xuất...' : 'Tải CSV'}
             </button>

@@ -215,12 +215,12 @@ function MenuCard({ item, onAdd }: { item: MenuItemDTO; onAdd: (item: MenuItemDT
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {item.badgeBestSeller && (
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--coffee-primary)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-              ⭐ Best seller
+              Best seller
             </span>
           )}
           {item.badgeNew && (
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--coffee-accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-              🆕 Mới
+              Mới
             </span>
           )}
         </div>
@@ -681,9 +681,9 @@ export default function PublicMenuPage() {
       }
     };
 
-    poll().catch(() => {});
+    poll().catch(() => { });
     const timer = window.setInterval(() => {
-      poll().catch(() => {});
+      poll().catch(() => { });
     }, intervalMs);
 
     return () => {
@@ -886,11 +886,10 @@ export default function PublicMenuPage() {
                 <button
                   type="button"
                   onClick={() => setActiveCategoryId('ALL')}
-                  className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                    activeCategoryId === 'ALL'
+                  className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${activeCategoryId === 'ALL'
                       ? 'bg-[var(--coffee-primary)] text-white'
                       : 'text-[rgba(26,14,7,0.72)] hover:bg-[rgba(107,80,64,0.07)] hover:text-[var(--coffee-primary)]'
-                  }`}
+                    }`}
                 >
                   🍽️ Tất cả ({menuItems.length})
                 </button>
@@ -901,11 +900,10 @@ export default function PublicMenuPage() {
                       key={cat.id}
                       type="button"
                       onClick={() => setActiveCategoryId(cat.id)}
-                      className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                        activeCategoryId === cat.id
+                      className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${activeCategoryId === cat.id
                           ? 'bg-[var(--coffee-primary)] text-white'
                           : 'text-[rgba(26,14,7,0.72)] hover:bg-[rgba(107,80,64,0.07)] hover:text-[var(--coffee-primary)]'
-                      }`}
+                        }`}
                     >
                       {getCategoryEmoji(cat.name)} {cat.name}
                       <span className={`ml-1.5 text-[11px] ${activeCategoryId === cat.id ? 'text-white/70' : 'text-[rgba(26,14,7,0.4)]'}`}>
@@ -924,11 +922,10 @@ export default function PublicMenuPage() {
                 <button
                   type="button"
                   onClick={() => setActiveCategoryId('ALL')}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    activeCategoryId === 'ALL'
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${activeCategoryId === 'ALL'
                       ? 'bg-[var(--coffee-primary)] text-white shadow-md'
                       : 'border border-[rgba(107,80,64,0.2)] bg-white text-[var(--coffee-primary)]'
-                  }`}
+                    }`}
                 >
                   🍽️ Tất cả
                 </button>
@@ -937,11 +934,10 @@ export default function PublicMenuPage() {
                     key={cat.id}
                     type="button"
                     onClick={() => setActiveCategoryId(cat.id)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                      activeCategoryId === cat.id
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${activeCategoryId === cat.id
                         ? 'bg-[var(--coffee-primary)] text-white shadow-md'
                         : 'border border-[rgba(107,80,64,0.2)] bg-white text-[var(--coffee-primary)]'
-                    }`}
+                      }`}
                   >
                     {getCategoryEmoji(cat.name)} {cat.name}
                   </button>
@@ -1059,11 +1055,11 @@ export default function PublicMenuPage() {
               {cartLines.map((line, idx) => (
                 <div key={`${line.menuItemId}-${line.selectedSizeCode || 'nosize'}-${idx}`} className="rounded-xl border p-3">
                   <div className="text-sm font-semibold">{line.name}{line.selectedSizeLabel ? ` (${line.selectedSizeLabel})` : ''}</div>
-                    {line.selectedToppingLabels && line.selectedToppingLabels.length > 0 && (
-                      <div className="mt-1 text-xs text-gray-500">
-                        Topping: {line.selectedToppingLabels.join(', ')}
-                      </div>
-                    )}
+                  {line.selectedToppingLabels && line.selectedToppingLabels.length > 0 && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      Topping: {line.selectedToppingLabels.join(', ')}
+                    </div>
+                  )}
                   {line.itemNote ? (
                     <div className="mt-1 text-xs text-violet-800">
                       Ghi chú món: {line.itemNote}
@@ -1231,70 +1227,68 @@ export default function PublicMenuPage() {
             <div className="space-y-4 overflow-y-auto px-5 py-4">
               {configItem.drinkSizes && configItem.drinkSizes.length > 0 && (
                 <div>
-                <p className="mb-2 text-sm font-semibold">Size</p>
-                <div className="space-y-2">
-                  {configItem.drinkSizes.map((size) => (
-                    <label
-                      key={size.code}
-                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
-                        configSizeCode === size.code
-                          ? 'border-[var(--coffee-primary)] bg-[rgba(107,80,64,0.06)]'
-                          : 'border-gray-200'
-                      }`}
-                    >
-                      <span className="font-medium">{size.label || size.code}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">
-                          +{formatPrice(toSafeNumber(size.priceExtra))}
+                  <p className="mb-2 text-sm font-semibold">Size</p>
+                  <div className="space-y-2">
+                    {configItem.drinkSizes.map((size) => (
+                      <label
+                        key={size.code}
+                        className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${configSizeCode === size.code
+                            ? 'border-[var(--coffee-primary)] bg-[rgba(107,80,64,0.06)]'
+                            : 'border-gray-200'
+                          }`}
+                      >
+                        <span className="font-medium">{size.label || size.code}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            +{formatPrice(toSafeNumber(size.priceExtra))}
+                          </span>
+                          <input
+                            type="radio"
+                            name="size-choice"
+                            checked={configSizeCode === size.code}
+                            onChange={() => setConfigSizeCode(size.code)}
+                          />
                         </span>
-                        <input
-                          type="radio"
-                          name="size-choice"
-                          checked={configSizeCode === size.code}
-                          onChange={() => setConfigSizeCode(size.code)}
-                        />
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {configItem.drinkToppings && configItem.drinkToppings.length > 0 && (
                 <div>
-                <p className="mb-2 text-sm font-semibold">Topping</p>
-                <div className="space-y-2">
-                  {configItem.drinkToppings.map((tp, idx) => (
-                    <label
-                      key={getToppingCode(tp) || `topping-${idx}`}
-                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
-                        configToppingCodes.includes(getToppingCode(tp))
-                          ? 'border-[var(--coffee-primary)] bg-[rgba(107,80,64,0.06)]'
-                          : 'border-gray-200'
-                      }`}
-                    >
-                      <span className="font-medium">{getToppingLabel(tp)}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">
-                          +{formatPrice(toSafeNumber(tp.price))}
+                  <p className="mb-2 text-sm font-semibold">Topping</p>
+                  <div className="space-y-2">
+                    {configItem.drinkToppings.map((tp, idx) => (
+                      <label
+                        key={getToppingCode(tp) || `topping-${idx}`}
+                        className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${configToppingCodes.includes(getToppingCode(tp))
+                            ? 'border-[var(--coffee-primary)] bg-[rgba(107,80,64,0.06)]'
+                            : 'border-gray-200'
+                          }`}
+                      >
+                        <span className="font-medium">{getToppingLabel(tp)}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            +{formatPrice(toSafeNumber(tp.price))}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={configToppingCodes.includes(getToppingCode(tp))}
+                            onChange={(e) => {
+                              const code = getToppingCode(tp);
+                              if (!code) return;
+                              setConfigToppingCodes((prev) =>
+                                e.target.checked
+                                  ? [...prev, code]
+                                  : prev.filter((x) => x !== code),
+                              );
+                            }}
+                          />
                         </span>
-                        <input
-                          type="checkbox"
-                          checked={configToppingCodes.includes(getToppingCode(tp))}
-                          onChange={(e) => {
-                            const code = getToppingCode(tp);
-                            if (!code) return;
-                            setConfigToppingCodes((prev) =>
-                              e.target.checked
-                                ? [...prev, code]
-                                : prev.filter((x) => x !== code),
-                            );
-                          }}
-                        />
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -1365,22 +1359,20 @@ export default function PublicMenuPage() {
               <button
                 type="button"
                 onClick={() => setOnlinePaymentMethod('COD')}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  onlinePaymentMethod === 'COD'
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${onlinePaymentMethod === 'COD'
                     ? 'bg-[var(--coffee-primary)] text-white'
                     : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 COD
               </button>
               <button
                 type="button"
                 onClick={() => setOnlinePaymentMethod('TRANSFER')}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  onlinePaymentMethod === 'TRANSFER'
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${onlinePaymentMethod === 'TRANSFER'
                     ? 'bg-[var(--coffee-primary)] text-white'
                     : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 Chuyển khoản
               </button>
@@ -1419,7 +1411,7 @@ export default function PublicMenuPage() {
                             className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                             onClick={() => {
                               const text = onlineQr.transferContent;
-                              navigator.clipboard?.writeText?.(text).then(() => toast.success('Đã copy nội dung CK')).catch(() => {});
+                              navigator.clipboard?.writeText?.(text).then(() => toast.success('Đã copy nội dung CK')).catch(() => { });
                             }}
                           >
                             Copy
@@ -1463,7 +1455,7 @@ export default function PublicMenuPage() {
                           className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                           onClick={() => {
                             const text = `BILL-${onlinePaymentOrder.id}`;
-                            navigator.clipboard?.writeText?.(text).then(() => toast.success('Đã copy nội dung CK')).catch(() => {});
+                            navigator.clipboard?.writeText?.(text).then(() => toast.success('Đã copy nội dung CK')).catch(() => { });
                           }}
                         >
                           Copy

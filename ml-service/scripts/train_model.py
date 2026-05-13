@@ -1,19 +1,3 @@
-"""
-train_model.py
-==============
-Huấn luyện mô hình dự báo doanh thu + số đơn (SmartDSS).
-
-Đánh giá **theo thời gian** (nghiêm ngặt hơn shuffle ngẫu nhiên):
-  - Hold-out cuối chuỗi: mô hình chỉ được huấn luyện trên quá khứ, test trên các ngày
-    gần nhất → tránh leakage giữa sales_1_day_ago / sales_7_days_ago và target.
-  - TimeSeriesSplit trên tập train: báo cáo MAE trung bình ± độ lệch qua các fold.
-
-Chạy: python scripts/train_model.py
-       python scripts/train_model.py --test-ratio 0.12 --min-test-days 60
-
-Output: artifacts/model.joblib
-"""
-
 from __future__ import annotations
 
 import argparse

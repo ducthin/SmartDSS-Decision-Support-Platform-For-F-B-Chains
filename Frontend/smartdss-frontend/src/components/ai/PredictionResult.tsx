@@ -5,19 +5,19 @@ import { formatCurrency } from '@/utils/helpers';
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 
 const CONF_STYLE = {
-  high:   'bg-green-100 text-green-800 border-green-200',
+  high: 'bg-green-100 text-green-800 border-green-200',
   medium: 'bg-amber-100 text-amber-800 border-amber-200',
-  low:    'bg-red-100 text-red-800 border-red-200',
+  low: 'bg-red-100 text-red-800 border-red-200',
 };
 
 function confLabel(score: number) {
   if (score >= 0.75) return { label: 'Cao', pct: Math.round(score * 100), style: CONF_STYLE.high };
-  if (score >= 0.45) return { label: 'TB',  pct: Math.round(score * 100), style: CONF_STYLE.medium };
+  if (score >= 0.45) return { label: 'TB', pct: Math.round(score * 100), style: CONF_STYLE.medium };
   return { label: 'Thấp', pct: Math.round(score * 100), style: CONF_STYLE.low };
 }
 
 function dayVN(d: string) {
-  return ['CN','T2','T3','T4','T5','T6','T7'][new Date(d+'T00:00:00').getDay()];
+  return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(d + 'T00:00:00').getDay()];
 }
 
 interface Props { prediction: AIPrediction; date: string; }
@@ -37,7 +37,7 @@ export default function PredictionResult({ prediction, date }: Props) {
         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${conf.style}`}>
           Tin cậy: {conf.label} {conf.pct}%
         </span>
-        {isFuture && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">📅 Tương lai</span>}
+        {isFuture && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">Tương lai</span>}
         {prediction.prediction_kind === 'eod_adjusted' && (
           <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 border border-teal-200">🔄 Hậu chỉnh EOD</span>
         )}

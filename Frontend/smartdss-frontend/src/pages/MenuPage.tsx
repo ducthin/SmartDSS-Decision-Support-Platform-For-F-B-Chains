@@ -289,11 +289,11 @@ export default function MenuPage() {
           <div className="flex flex-wrap gap-4 border-t border-[rgba(107,80,64,0.08)] pt-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={!!form.badgeNew} onChange={(e) => setForm({ ...form, badgeNew: e.target.checked })} className="rounded border-[rgba(107,80,64,0.3)]" />
-              <span className="text-sm text-[rgba(26,14,7,0.7)]">Món mới (⭐ menu QR)</span>
+              <span className="text-sm text-[rgba(26,14,7,0.7)]">Món mới (menu QR)</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={!!form.badgeBestSeller} onChange={(e) => setForm({ ...form, badgeBestSeller: e.target.checked })} className="rounded border-[rgba(107,80,64,0.3)]" />
-              <span className="text-sm text-[rgba(26,14,7,0.7)]">Best seller (🏆 menu QR)</span>
+              <span className="text-sm text-[rgba(26,14,7,0.7)]">Best seller (menu QR)</span>
             </label>
           </div>
           <div className="flex items-center gap-2 border-t border-[rgba(107,80,64,0.08)] pt-3">
