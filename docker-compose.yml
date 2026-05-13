@@ -82,6 +82,8 @@ services:
       APP_TIMEZONE: Asia/Ho_Chi_Minh
       SHOW_SQL: "false"
       SPRING_DEVTOOLS_RESTART_ENABLED: "false"
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-false}
+      APP_SEED_RESET_MENU: ${APP_SEED_RESET_MENU:-false}
 
       # ML Service — gọi nội bộ qua Docker network
       ML_SERVICE_URL: http://ml-service:8000
