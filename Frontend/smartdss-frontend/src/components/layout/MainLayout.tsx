@@ -22,11 +22,58 @@ type QrOrderFeedItem = {
   createdAt: string;
 };
 
+let alertAudioContext: AudioContext | null = null;
+let alertSoundBuffer: AudioBuffer | null = null;
+let alertSoundUrl: string | null = null;
+
+function getAlertAudioContext() {
+  if (alertAudioContext) return alertAudioContext;
+  const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return null;
+  alertAudioContext = new AudioCtx();
+  return alertAudioContext;
+}
+
+async function unlockAlertAudio() {
+  const ctx = getAlertAudioContext();
+  if (!ctx) return false;
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
+  }
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + 0.03);
+  return ctx.state === 'running';
+}
+
+async function loadAlertSound(url: string | null) {
+  if (!url) {
+    alertSoundUrl = null;
+    alertSoundBuffer = null;
+    return;
+  }
+  if (alertSoundUrl === url && alertSoundBuffer) return;
+
+  const ctx = getAlertAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const cacheBustedUrl = `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const res = await fetch(cacheBustedUrl, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Cannot load alert sound: ${res.status}`);
+  const data = await res.arrayBuffer();
+  alertSoundBuffer = await ctx.decodeAudioData(data.slice(0));
+  alertSoundUrl = url;
+}
+
 function playBeep(durationMs = 220, frequency = 880, volume = 0.08) {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = alertAudioContext;
+    if (!ctx || ctx.state !== 'running') return;
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
     oscillator.type = 'sine';
@@ -37,7 +84,6 @@ function playBeep(durationMs = 220, frequency = 880, volume = 0.08) {
     oscillator.start();
     setTimeout(() => {
       oscillator.stop();
-      ctx.close();
     }, durationMs);
   } catch {
     // ignore
@@ -62,11 +108,13 @@ export default function MainLayout() {
   const lastFeedbackAlertIdRef = useRef<number | null>(null);
   const lastQrOrderIdRef = useRef<number | null>(null);
   const [notiEnabled, setNotiEnabled] = useState(() => localStorage.getItem(STAFF_NOTI_PREF_KEY) === '1');
+  const [audioReady, setAudioReady] = useState(false);
   const [showQrOrderFeed, setShowQrOrderFeed] = useState(false);
   const [qrOrderFeed, setQrOrderFeed] = useState<QrOrderFeedItem[]>([]);
   const notificationSupported = useMemo(() => typeof window !== 'undefined' && 'Notification' in window, []);
   const permission = useMemo(() => (notificationSupported ? Notification.permission : 'denied') as NotificationPermission, [notificationSupported]);
-  const shouldShowEnable = (canReceiveStaffCalls || canReceiveQrOrderAlerts) && notificationSupported && (!notiEnabled || permission !== 'granted');
+  const shouldShowEnable = (canReceiveStaffCalls || canReceiveQrOrderAlerts)
+    && (!audioReady || (notificationSupported && (!notiEnabled || permission !== 'granted')));
 
   useEffect(() => {
     if (!canReceiveStaffCalls) return;
@@ -82,13 +130,21 @@ export default function MainLayout() {
       return;
     }
     try {
+      const audioUnlocked = await unlockAlertAudio();
+      setAudioReady(audioUnlocked);
       // Must be triggered by user gesture in most browsers.
       const result = await Notification.requestPermission();
       if (result === 'granted') {
         localStorage.setItem(STAFF_NOTI_PREF_KEY, '1');
         setNotiEnabled(true);
-        playAlertBeep(); // also "unlock" sound with a gesture
+        if (audioUnlocked) {
+          const soundRes = await settingsService.getStaffCallSound();
+          await loadAlertSound(resolveBackendUrl(soundRes.data.data.soundUrl));
+          playConfiguredAlertSound();
+        }
         toast.success('Đã bật thông báo');
+      } else if (audioUnlocked) {
+        toast.success('Đã bật âm thanh, nhưng trình duyệt chưa cho phép thông báo nổi');
       } else {
         toast.error('Bạn đã từ chối quyền thông báo');
       }
@@ -99,14 +155,22 @@ export default function MainLayout() {
 
   const playConfiguredAlertSound = useCallback(() => {
     settingsService.getStaffCallSound()
-      .then((res) => {
+      .then(async (res) => {
         const url = resolveBackendUrl(res.data.data.soundUrl);
+        await loadAlertSound(url);
         if (!url) {
           playAlertBeep();
           return;
         }
-        const audio = new Audio(`${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`);
-        void audio.play().catch(() => playAlertBeep());
+        const ctx = alertAudioContext;
+        if (!ctx || ctx.state !== 'running' || !alertSoundBuffer) {
+          playAlertBeep();
+          return;
+        }
+        const source = ctx.createBufferSource();
+        source.buffer = alertSoundBuffer;
+        source.connect(ctx.destination);
+        source.start();
       })
       .catch(() => playAlertBeep());
   }, []);
@@ -236,13 +300,13 @@ export default function MainLayout() {
           <div className="px-5 pt-4">
             <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(201,162,122,0.35)] bg-[rgba(201,162,122,0.08)] px-4 py-3">
               <div className="text-sm text-[#6b5040]">
-                Bật thông báo để nhận yêu cầu "Gọi nhân viên" và đơn QR mới (có âm thanh).
+                Bật thông báo / âm thanh để nhận yêu cầu "Gọi nhân viên" và đơn QR mới.
               </div>
               <button
                 onClick={enableNotifications}
                 className="shrink-0 rounded-lg bg-[#6b5040] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#1a0e07]"
               >
-                Bật thông báo
+                Bật thông báo / âm thanh
               </button>
             </div>
           </div>
