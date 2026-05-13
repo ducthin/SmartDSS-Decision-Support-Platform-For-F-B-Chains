@@ -149,10 +149,6 @@ services:
     build:
       context: ./Frontend/smartdss-frontend
       dockerfile: Dockerfile
-      args:
-        # VITE_ vars được embed vào JS lúc build — phải có domain thật ở đây
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_WS_URL: ${VITE_WS_URL}
     container_name: smartdss-frontend
     restart: unless-stopped
     depends_on:
