@@ -48,7 +48,7 @@ services:
     networks:
       - smartdss-net
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      test: ["CMD-SHELL", "python -c \"import json, urllib.request; data=json.load(urllib.request.urlopen('http://localhost:8000/health')); raise SystemExit(0 if data.get('model_loaded') else 1)\""]
       interval: 30s
       timeout: 10s
       retries: 3
