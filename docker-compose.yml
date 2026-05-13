@@ -82,6 +82,7 @@ services:
       APP_TIMEZONE: Asia/Ho_Chi_Minh
       SHOW_SQL: "false"
       SPRING_DEVTOOLS_RESTART_ENABLED: "false"
+      UPLOAD_DIR: /app/uploads
       APP_SEED_ENABLED: ${APP_SEED_ENABLED:-false}
       APP_SEED_RESET_MENU: ${APP_SEED_RESET_MENU:-false}
 

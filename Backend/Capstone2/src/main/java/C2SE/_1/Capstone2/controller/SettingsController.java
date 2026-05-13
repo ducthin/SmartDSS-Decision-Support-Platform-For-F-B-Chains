@@ -34,7 +34,10 @@ public class SettingsController {
             "audio/mp3",
             "audio/wav",
             "audio/x-wav",
-            "audio/ogg"
+            "audio/ogg",
+            "audio/mp4",
+            "audio/aac",
+            "audio/webm"
     );
     private static final long MAX_SOUND_BYTES = 5L * 1024 * 1024; // 5MB
 
@@ -102,7 +105,17 @@ public class SettingsController {
             ext = original.substring(dot).toLowerCase();
         }
         if (ext.isBlank()) {
-            ext = contentType.contains("wav") ? ".wav" : ".mp3";
+            if (contentType.contains("wav")) {
+                ext = ".wav";
+            } else if (contentType.contains("ogg")) {
+                ext = ".ogg";
+            } else if (contentType.contains("webm")) {
+                ext = ".webm";
+            } else if (contentType.contains("mp4") || contentType.contains("aac")) {
+                ext = ".m4a";
+            } else {
+                ext = ".mp3";
+            }
         }
 
         Path uploadDir = Paths.get("uploads", "sounds");

@@ -64,8 +64,6 @@ export default function MainLayout() {
   const [notiEnabled, setNotiEnabled] = useState(() => localStorage.getItem(STAFF_NOTI_PREF_KEY) === '1');
   const [showQrOrderFeed, setShowQrOrderFeed] = useState(false);
   const [qrOrderFeed, setQrOrderFeed] = useState<QrOrderFeedItem[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const notificationSupported = useMemo(() => typeof window !== 'undefined' && 'Notification' in window, []);
   const permission = useMemo(() => (notificationSupported ? Notification.permission : 'denied') as NotificationPermission, [notificationSupported]);
   const shouldShowEnable = (canReceiveStaffCalls || canReceiveQrOrderAlerts) && notificationSupported && (!notiEnabled || permission !== 'granted');
@@ -77,18 +75,6 @@ export default function MainLayout() {
       setNotiEnabled(true);
     }
   }, [canReceiveStaffCalls, permission]);
-
-  useEffect(() => {
-    if (!canReceiveStaffCalls) return;
-    settingsService.getStaffCallSound()
-      .then(res => {
-        const url = resolveBackendUrl(res.data.data.soundUrl);
-        audioRef.current = url ? new Audio(url) : null;
-      })
-      .catch(() => {
-        audioRef.current = null;
-      });
-  }, [canReceiveStaffCalls]);
 
   const enableNotifications = async () => {
     if (!notificationSupported) {
@@ -111,6 +97,20 @@ export default function MainLayout() {
     }
   };
 
+  const playConfiguredAlertSound = useCallback(() => {
+    settingsService.getStaffCallSound()
+      .then((res) => {
+        const url = resolveBackendUrl(res.data.data.soundUrl);
+        if (!url) {
+          playAlertBeep();
+          return;
+        }
+        const audio = new Audio(`${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`);
+        void audio.play().catch(() => playAlertBeep());
+      })
+      .catch(() => playAlertBeep());
+  }, []);
+
   const handleStaffCall = useCallback((data?: StaffCall) => {
     if (!canReceiveStaffCalls) return;
     if (!data?.id) return;
@@ -118,12 +118,7 @@ export default function MainLayout() {
     lastCallIdRef.current = data.id;
     const msg = data.message?.trim();
     toast(msg ? `[${data.tableName}] ${msg}` : `${data.tableName} đang gọi nhân viên`);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      void audioRef.current.play().catch(() => playAlertBeep());
-    } else {
-      playAlertBeep();
-    }
+    playConfiguredAlertSound();
 
     if (notiEnabled && notificationSupported && Notification.permission === 'granted') {
       try {
@@ -134,7 +129,7 @@ export default function MainLayout() {
         // ignore
       }
     }
-  }, [canReceiveStaffCalls, notiEnabled, notificationSupported]);
+  }, [canReceiveStaffCalls, notiEnabled, notificationSupported, playConfiguredAlertSound]);
 
   const handleFeedbackAlert = useCallback((data?: FeedbackAlert) => {
     if (!canReceiveFeedbackAlerts) return;
@@ -181,12 +176,7 @@ export default function MainLayout() {
     const body = detail ? `${headline}\n${detail}` : headline;
 
     toast.success(body, { duration: 5500 });
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      void audioRef.current.play().catch(() => playAlertBeep());
-    } else {
-      playAlertBeep();
-    }
+    playConfiguredAlertSound();
     setQrOrderFeed((prev) => [
       {
         id: data.id,
@@ -204,7 +194,7 @@ export default function MainLayout() {
         // ignore
       }
     }
-  }, [canReceiveQrOrderAlerts, notiEnabled, notificationSupported]);
+  }, [canReceiveQrOrderAlerts, notiEnabled, notificationSupported, playConfiguredAlertSound]);
 
   const handleInvoiceRequest = useCallback((data?: QrInvoiceResponse) => {
     if (!canReceiveInvoiceRequests || !data?.requestId) return;
