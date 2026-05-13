@@ -4,6 +4,8 @@ __pycache__/
 *.pyc
 *.pyo
 .env
-artifacts/
-data/
+artifacts/*
+!artifacts/model.joblib
+data/*
+!data/training_data.csv
 *.log
