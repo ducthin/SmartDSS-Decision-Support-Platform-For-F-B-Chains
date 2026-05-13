@@ -18,6 +18,9 @@ FROM eclipse-temurin:24-jre-alpine AS runtime
 
 WORKDIR /app
 
+# Cài curl để healthcheck hoạt động
+RUN apk add --no-cache curl
+
 # Tạo thư mục uploads
 RUN mkdir -p /app/uploads
 
