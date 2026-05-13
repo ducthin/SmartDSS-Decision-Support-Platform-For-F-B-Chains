@@ -6,7 +6,8 @@ import api from './api';
  * All endpoints here are public (no JWT required)
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? rawApiUrl.replace(/\/api\/v1\/?$/, '');
 
 // ─── Types (mirroring backend DTOs) ────────────────────────────────────────
 
