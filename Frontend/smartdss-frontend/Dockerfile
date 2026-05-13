@@ -13,8 +13,10 @@ COPY . .
 # Nhận ARG để embed vào build
 ARG VITE_API_URL
 ARG VITE_WS_URL
-ENV VITE_API_URL=${VITE_API_URL}
-ENV VITE_WS_URL=${VITE_WS_URL}
+
+# Ghi trực tiếp ra file .env để đảm bảo Vite 100% nhận được biến
+RUN echo "VITE_API_URL=${VITE_API_URL}" > .env && \
+    echo "VITE_WS_URL=${VITE_WS_URL}" >> .env
 
 RUN npm run build
 
