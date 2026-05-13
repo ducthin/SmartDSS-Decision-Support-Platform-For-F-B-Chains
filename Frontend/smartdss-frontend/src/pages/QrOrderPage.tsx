@@ -151,15 +151,13 @@ export default function QrOrderPage() {
     loadData();
   }, [loadData]);
 
-  // Khởi tạo prevOrderStatusRef khi orders load lần đầu
   useEffect(() => {
-    setOrders((prev) => {
-      const map: Record<number, string> = {};
-      prev.forEach((o) => { map[o.id] = o.status; });
-      prevOrderStatusRef.current = map;
-      return prev;
+    const map: Record<number, string> = {};
+    orders.forEach((order) => {
+      map[order.id] = order.status;
     });
-  }, []);
+    prevOrderStatusRef.current = map;
+  }, [orders]);
 
   useEffect(() => {
     const savedPhone = localStorage.getItem(QR_CUSTOMER_PHONE_KEY);
@@ -192,20 +190,23 @@ export default function QrOrderPage() {
     (data?: Order) => {
       if (data && data.id && table && data.tableNumber === table.name) {
         const normalizedPhone = normalizeCustomerPhone(customerPhone);
-        if (!CUSTOMER_PHONE_REGEX.test(normalizedPhone) || data.customerPhone !== normalizedPhone) {
+        const matchesPhone = CUSTOMER_PHONE_REGEX.test(normalizedPhone) && data.customerPhone === normalizedPhone;
+        const matchesSession = !!clientSessionId && data.qrClientSessionId === clientSessionId;
+        if (!matchesPhone && !matchesSession) {
           return;
         }
         setOrders((prev) => {
           const exists = prev.find((o) => o.id === data.id);
-          const prevStatus = prevOrderStatusRef.current[data.id];
+          const prevStatus = prevOrderStatusRef.current[data.id] || exists?.status;
 
-          // Phát hiện chuyển trạng thái → thông báo khách hàng
-          if (prevStatus && prevStatus !== data.status) {
+          if (prevStatus !== data.status) {
             if (data.status === 'COMPLETED') {
               const itemNames = (data.orderItems || []).map((oi) => oi.menuItemName).filter((n): n is string => !!n);
               setOrderReadyNotif({ orderId: data.id, itemNames });
-            } else if (data.status === 'PREPARING' && prevStatus === 'PENDING') {
+            } else if (data.status === 'PREPARING') {
               setPreparingNotif({ orderId: data.id });
+            } else if (data.status === 'CANCELLED') {
+              toast.error(`Đơn #${data.id} đã được hủy`, { duration: 6000 });
             }
           }
 
@@ -222,7 +223,7 @@ export default function QrOrderPage() {
         loadOrders();
       }
     },
-    [loadOrders, table, tab, customerPhone],
+    [loadOrders, table, tab, customerPhone, clientSessionId],
   );
 
   useEffect(() => {

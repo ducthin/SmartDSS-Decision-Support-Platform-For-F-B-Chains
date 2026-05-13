@@ -68,7 +68,7 @@ export default function MainLayout() {
 
   const notificationSupported = useMemo(() => typeof window !== 'undefined' && 'Notification' in window, []);
   const permission = useMemo(() => (notificationSupported ? Notification.permission : 'denied') as NotificationPermission, [notificationSupported]);
-  const shouldShowEnable = canReceiveStaffCalls && notificationSupported && (!notiEnabled || permission !== 'granted');
+  const shouldShowEnable = (canReceiveStaffCalls || canReceiveQrOrderAlerts) && notificationSupported && (!notiEnabled || permission !== 'granted');
 
   useEffect(() => {
     if (!canReceiveStaffCalls) return;
@@ -118,18 +118,18 @@ export default function MainLayout() {
     lastCallIdRef.current = data.id;
     const msg = data.message?.trim();
     toast(msg ? `[${data.tableName}] ${msg}` : `${data.tableName} đang gọi nhân viên`);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      void audioRef.current.play().catch(() => playAlertBeep());
+    } else {
+      playAlertBeep();
+    }
 
     if (notiEnabled && notificationSupported && Notification.permission === 'granted') {
       try {
         new Notification('Gọi nhân viên', {
           body: msg ? `${data.tableName}: ${msg}` : `${data.tableName} đang gọi nhân viên`,
         });
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          void audioRef.current.play().catch(() => playAlertBeep());
-        } else {
-          playAlertBeep();
-        }
       } catch {
         // ignore
       }
@@ -181,6 +181,12 @@ export default function MainLayout() {
     const body = detail ? `${headline}\n${detail}` : headline;
 
     toast.success(body, { duration: 5500 });
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      void audioRef.current.play().catch(() => playAlertBeep());
+    } else {
+      playAlertBeep();
+    }
     setQrOrderFeed((prev) => [
       {
         id: data.id,
@@ -194,12 +200,6 @@ export default function MainLayout() {
     if (notiEnabled && notificationSupported && Notification.permission === 'granted') {
       try {
         new Notification('Đơn mới từ khách QR', { body });
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          void audioRef.current.play().catch(() => playAlertBeep());
-        } else {
-          playAlertBeep();
-        }
       } catch {
         // ignore
       }
@@ -246,7 +246,7 @@ export default function MainLayout() {
           <div className="px-5 pt-4">
             <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(201,162,122,0.35)] bg-[rgba(201,162,122,0.08)] px-4 py-3">
               <div className="text-sm text-[#6b5040]">
-                Bật thông báo để nhận yêu cầu "Gọi nhân viên" (có âm thanh).
+                Bật thông báo để nhận yêu cầu "Gọi nhân viên" và đơn QR mới (có âm thanh).
               </div>
               <button
                 onClick={enableNotifications}
