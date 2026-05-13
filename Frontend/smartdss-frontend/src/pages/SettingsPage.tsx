@@ -17,7 +17,7 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
   const [savingLocation, setSavingLocation] = useState(false);
-  const [loyaltyPointsPerTenThousand, setLoyaltyPointsPerTenThousand] = useState('1');
+
   const [verifyingLocation, setVerifyingLocation] = useState(false);
   const [lastVerifiedAt, setLastVerifiedAt] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -48,12 +48,6 @@ export default function SettingsPage() {
         setLocationForm({ latitude: '', longitude: '', address: '' });
       })
       .finally(() => setLocationLoading(false));
-
-    settingsService.getLoyaltyPolicy()
-      .then((res) => {
-        setLoyaltyPointsPerTenThousand(String(res.data.data.pointsPerTenThousandVnd ?? 1));
-      })
-      .catch(() => setLoyaltyPointsPerTenThousand('1'));
   }, []);
 
   const fetchStoreLocation = async (silent = false) => {

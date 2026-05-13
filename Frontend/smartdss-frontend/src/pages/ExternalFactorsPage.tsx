@@ -97,16 +97,6 @@ const defaultLoyaltyTiers: LoyaltyTier[] = [
   { code: 'VANG', name: 'Vàng', displayOrder: 3, minOrders: 10, minSpent: 1500000, voucherEnabled: true, discountPercent: 10, maxDiscountAmount: 100000, active: true },
 ];
 
-const emptyTierPolicy: LoyaltyTierPolicy = {
-  bacMinOrders: 5,
-  bacMinSpent: 500000,
-  bacDiscountPercent: 5,
-  bacMaxDiscountAmount: 50000,
-  vangMinOrders: 10,
-  vangMinSpent: 1500000,
-  vangDiscountPercent: 10,
-  vangMaxDiscountAmount: 100000,
-};
 
 export default function ExternalFactorsPage() {
   const location = useLocation();
