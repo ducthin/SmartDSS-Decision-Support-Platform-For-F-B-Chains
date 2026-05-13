@@ -1,0 +1,36 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - feature/ducthin/ver4  # Đổi nhánh này thành nhánh bạn muốn kích hoạt tự động
+
+jobs:
+  deploy:
+    name: Deploy to VPS via SSH
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # port: 22 # Bỏ comment nếu VPS của bạn dùng port SSH khác 22
+          script: |
+            # 1. Chuyển đến thư mục chứa project
+            cd ~/SmartDSS-Decision-Support-Platform-For-F-B-Chains
+            
+            # 2. Xóa các thay đổi local có thể gây xung đột và kéo code mới nhất
+            git reset --hard HEAD
+            git clean -fd
+            git pull origin feature/ducthin/ver4
+            
+            # 3. Dừng và xóa các container cũ (Tùy chọn: bạn có thể không cần stop nếu muốn zero-downtime nhẹ, nhưng với docker-compose build thì an toàn nhất là up -d --build)
+            # 4. Build lại toàn bộ image mới (tái tạo lại môi trường)
+            docker compose up -d --build
+            
+            # 5. Dọn dẹp các image "rác" (Dangling images) không còn dùng để giải phóng ổ cứng VPS
+            docker image prune -f
