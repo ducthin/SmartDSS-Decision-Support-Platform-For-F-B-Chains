@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Coffee } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import '@/styles/coffee-theme.css';
 import { qrService } from '@/services/qrService';
 import { publicConfigService } from '@/services/publicConfigService';
@@ -546,18 +546,6 @@ export default function QrOrderPage() {
         />
       )}
 
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          className: '!rounded-xl !text-sm',
-          style: {
-            background: '#fffaf4',
-            color: '#3e2a1f',
-            border: '1px solid rgba(111,78,55,0.12)',
-            boxShadow: '0 18px 40px -28px rgba(62,42,31,0.45)',
-          },
-        }}
-      />
       <DrinkCustomizeModal
         open={!!drinkModal}
         item={drinkModal?.item ?? null}

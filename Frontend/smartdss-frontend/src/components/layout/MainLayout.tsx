@@ -112,9 +112,13 @@ export default function MainLayout() {
   const [showQrOrderFeed, setShowQrOrderFeed] = useState(false);
   const [qrOrderFeed, setQrOrderFeed] = useState<QrOrderFeedItem[]>([]);
   const notificationSupported = useMemo(() => typeof window !== 'undefined' && 'Notification' in window, []);
-  const permission = useMemo(() => (notificationSupported ? Notification.permission : 'denied') as NotificationPermission, [notificationSupported]);
+  const [permission, setPermission] = useState<NotificationPermission>(
+    () => (notificationSupported ? Notification.permission : 'denied'),
+  );
+  // Chỉ hiện banner khi user CHƯA bật hoặc browser thu hồi permission.
+  // Không dùng audioReady vì nó luôn reset về false sau mỗi lần reload.
   const shouldShowEnable = (canReceiveStaffCalls || canReceiveQrOrderAlerts)
-    && (!audioReady || (notificationSupported && (!notiEnabled || permission !== 'granted')));
+    && (!notiEnabled || (notificationSupported && permission !== 'granted'));
 
   useEffect(() => {
     if (!canReceiveStaffCalls) return;
@@ -124,6 +128,26 @@ export default function MainLayout() {
     }
   }, [canReceiveStaffCalls, permission]);
 
+  // Auto-unlock AudioContext sau lần click đầu tiên của user (browser policy).
+  // Chỉ chạy khi đã bật thông báo trước đó và permission còn hợp lệ.
+  useEffect(() => {
+    if (!notiEnabled || permission !== 'granted' || audioReady) return;
+    const tryUnlock = async () => {
+      const unlocked = await unlockAlertAudio();
+      if (unlocked) {
+        setAudioReady(true);
+        try {
+          const soundRes = await settingsService.getStaffCallSound();
+          await loadAlertSound(resolveBackendUrl(soundRes.data.data.soundUrl));
+        } catch {
+          // ignore — fallback beep vẫn hoạt động
+        }
+      }
+    };
+    document.addEventListener('click', tryUnlock, { once: true });
+    return () => document.removeEventListener('click', tryUnlock);
+  }, [notiEnabled, permission, audioReady]);
+
   const enableNotifications = async () => {
     if (!notificationSupported) {
       toast.error('Thiết bị không hỗ trợ thông báo');
@@ -132,8 +156,8 @@ export default function MainLayout() {
     try {
       const audioUnlocked = await unlockAlertAudio();
       setAudioReady(audioUnlocked);
-      // Must be triggered by user gesture in most browsers.
       const result = await Notification.requestPermission();
+      setPermission(result); // cập nhật reactive ngay lập tức
       if (result === 'granted') {
         localStorage.setItem(STAFF_NOTI_PREF_KEY, '1');
         setNotiEnabled(true);

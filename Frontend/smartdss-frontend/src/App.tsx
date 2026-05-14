@@ -79,7 +79,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
-        <Toaster position="top-right" />
+        <Toaster position="top-center" />
       </AuthProvider>
     </BrowserRouter>
   );

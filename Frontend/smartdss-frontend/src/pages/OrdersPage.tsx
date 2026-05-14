@@ -1491,17 +1491,38 @@ function OrderListView() {
                         }
 
                         return (
-                          <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-5 wrap-break-word text-sky-900">
-                            {deliveryAddress ? (
+                          <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-5 wrap-break-word text-sky-900 space-y-1.5">
+                            {(parsed?.customer || order.customerPhone) && (
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                {parsed?.customer && (
+                                  <span>
+                                    <span className="font-semibold">Khách:</span>{' '}
+                                    {parsed.customer}
+                                  </span>
+                                )}
+                                {order.customerPhone && (
+                                  <span>
+                                    <span className="font-semibold">SĐT:</span>{' '}
+                                    <a
+                                      href={`tel:${order.customerPhone}`}
+                                      className="text-sky-700 underline underline-offset-2 hover:text-sky-900"
+                                    >
+                                      {order.customerPhone}
+                                    </a>
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {deliveryAddress && (
                               <div>
                                 <span className="font-semibold">Địa chỉ giao:</span> {deliveryAddress}
                               </div>
-                            ) : null}
-                            {customerNote ? (
-                              <div className="mt-2">
+                            )}
+                            {customerNote && (
+                              <div>
                                 <span className="font-semibold">Ghi chú:</span> {customerNote}
                               </div>
-                            ) : null}
+                            )}
                           </div>
                         );
                       })()

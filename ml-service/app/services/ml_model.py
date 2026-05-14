@@ -42,14 +42,55 @@ class MLService:
         self.load_model()
 
     def _confidence_from_bundle(self) -> float:
-        """Map test-time MAPE to a bounded confidence score."""
+        """
+        Tính confidence theo 2 tầng:
+
+        Tầng 1 — CV MAE trên tập train (ổn định, không bị ảnh hưởng bởi
+                  distribution shift giữa data tổng hợp và data thật):
+            relative_cv_error = cv_mae / median_revenue_train
+            base_confidence   = 1 - relative_cv_error
+            Ví dụ: cv_mae=76k, median=700k → error=10.9% → base=89%
+
+        Tầng 2 — Penalty nếu test R2 âm (phát hiện distribution shift rõ):
+            R2 >= 0  : không penalty (model vẫn tốt hơn đoán trung bình)
+            R2 < 0   : penalty tối đa 15% (model bị lệch nhiều trên data thật)
+
+        Kết quả clamp vào [0.50, 0.94].
+        """
         bundle = self._bundle_meta
         if not isinstance(bundle, dict):
-            return 0.85
-        mape = bundle.get("test_mape_revenue_pct")
-        if mape is None:
-            return 0.85
-        return float(max(0.42, min(0.94, 1.0 - (float(mape) / 130.0))))
+            return 0.80
+
+        # ── Tầng 1: CV MAE ────────────────────────────────────────────────────
+        cv_mae      = bundle.get("cv_mae_revenue_mean")
+        train_mae   = bundle.get("train_mae_revenue")   # fallback
+        # Ước tính median revenue từ train MAE (in-sample MAE thường = ~5-8% median)
+        # Dùng test_mae làm proxy nếu không có thông tin trực tiếp
+        test_mae    = bundle.get("test_mae_revenue", bundle.get("training_mae_revenue"))
+
+        if cv_mae is not None and cv_mae > 0:
+            # Ước tính typical revenue: nếu train MAPE ~5% thì train_mae = 5% * median
+            train_mape  = bundle.get("train_mape_revenue_pct")
+            if train_mape and float(train_mape) > 0:
+                estimated_median = float(train_mae) / (float(train_mape) / 100.0)
+                relative_error   = float(cv_mae) / max(estimated_median, 1.0)
+            else:
+                # Fallback: giả sử typical revenue ~700k
+                relative_error = float(cv_mae) / 700_000.0
+            base = float(max(0.0, 1.0 - relative_error))
+        else:
+            base = 0.72   # không có CV info → moderate default
+
+        # ── Tầng 2: Penalty nếu distribution shift (R2 test âm) ──────────────
+        r2 = bundle.get("test_r2_revenue", bundle.get("training_r2_revenue"))
+        if r2 is not None:
+            r2 = float(r2)
+            if r2 < 0:
+                # R2 âm = model tệ hơn trung bình trên test → penalty tối đa 15%
+                penalty = min(0.15, abs(r2) * 0.03)
+                base -= penalty
+
+        return float(round(max(0.50, min(0.94, base)), 4))
 
     def load_model(self):
         """Load the trained model bundle once on service startup."""
