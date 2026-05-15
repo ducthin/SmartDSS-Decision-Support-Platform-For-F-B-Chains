@@ -71,8 +71,8 @@ export default function EventModal({ isEditing, form, onChange, onSave, onClose 
           </div>
           <div>
             <label className={LABEL_CLS}>Giảm giá theo sự kiện (%)</label>
-            <input type="number" min={0} max={100} step={0.1} value={form.discountPercent ?? 0}
-              onChange={(e) => onChange({ ...form, discountPercent: Number(e.target.value) || 0 })} className={INPUT_CLS} />
+            <input type="number" min={0} max={100} step={0.1} value={form.discountPercent}
+              onChange={(e) => onChange({ ...form, discountPercent: e.target.value === '' ? '' : Number(e.target.value) })} className={INPUT_CLS} />
           </div>
           <div>
             <label className={LABEL_CLS}>Ghi chú</label>

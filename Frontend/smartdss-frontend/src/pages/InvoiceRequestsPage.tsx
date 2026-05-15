@@ -23,9 +23,15 @@ function openBlob(blob: Blob, filename: string, download = false) {
 }
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  PENDING:   { label: 'Chờ xử lý', cls: 'bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] border border-[rgba(201,162,122,0.3)]' },
-  DONE:      { label: 'Hoàn tất',  cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-  CANCELLED: { label: 'Đã hủy',   cls: 'bg-rose-50 text-rose-600 border border-rose-200' },
+  REQUESTED: { label: 'Chờ xử lý', cls: 'bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] border border-[rgba(201,162,122,0.3)]' },
+  READY:     { label: 'Đã xuất',   cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  SENT:      { label: 'Đã gửi',    cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
+};
+
+const DELIVERY_MAP: Record<string, string> = {
+  EMAIL: 'Qua Email',
+  DIRECT: 'Trực tiếp',
+  COUNTER: 'Tại quầy',
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -68,8 +74,8 @@ export default function InvoiceRequestsPage() {
         row.companyName || '',
         row.email || '',
         row.phone || '',
-        row.deliveryMethod || '',
-        row.status || '',
+        DELIVERY_MAP[row.deliveryMethod] || row.deliveryMethod || '',
+        STATUS_MAP[row.status]?.label || row.status || '',
       ].join(' ').toLowerCase();
       return searchText.includes(keyword);
     });
@@ -184,7 +190,7 @@ export default function InvoiceRequestsPage() {
                       <div className="text-[rgba(26,14,7,0.75)]">{row.email || '—'}</div>
                       <div className="text-xs text-[rgba(26,14,7,0.45)]">{row.phone || '—'}</div>
                     </td>
-                    <td className="px-4 py-3.5 text-[rgba(26,14,7,0.65)]">{row.deliveryMethod}</td>
+                    <td className="px-4 py-3.5 text-[rgba(26,14,7,0.65)]">{DELIVERY_MAP[row.deliveryMethod] || row.deliveryMethod}</td>
                     <td className="px-4 py-3.5"><StatusBadge status={row.status} /></td>
                     <td className="px-4 py-3.5 pr-5 text-right">
                       <div className="flex items-center justify-end gap-2">

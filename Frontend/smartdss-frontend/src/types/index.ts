@@ -336,7 +336,7 @@ export interface MenuItem {
 export interface MenuItemForm {
   name: string;
   description: string;
-  price: number;
+  price: number | string;
   imageUrl?: string;
   available: boolean;
   categoryId: number;
@@ -372,7 +372,7 @@ export interface Recipe {
 export interface RecipeForm {
   menuItemId: number;
   ingredientId: number;
-  quantity: number;
+  quantity: number | string;
 }
 
 // Inventory
@@ -393,7 +393,7 @@ export interface Inventory {
 
 export interface InventoryTransactionForm {
   inventoryId: number;
-  quantity: number;
+  quantity: number | string;
   unitPrice?: number;
   reason: string;
 }
@@ -411,8 +411,8 @@ export interface InventoryTransactionHistory {
 export interface InventoryItemForm {
   ingredientName: string;
   unit: string;
-  quantity: number;
-  minimumStock: number;
+  quantity: number | string;
+  minimumStock: number | string;
   unitCost?: number;
   marketUnitPrice?: number;
   marketPriceSource?: string;
@@ -870,7 +870,7 @@ export interface EventForm {
   location: string;
   expectedImpact: ImpactLevel;
   notes: string;
-  discountPercent?: number;
+  discountPercent?: number | string;
   active: boolean;
 }
 
@@ -895,7 +895,7 @@ export interface HolidayCalendarForm {
   holidayType: HolidayType;
   recurring: boolean;
   description: string;
-  discountPercent?: number;
+  discountPercent?: number | string;
 }
 
 // Voucher & Loyalty
@@ -925,13 +925,13 @@ export interface VoucherForm {
   name: string;
   description?: string;
   discountType: VoucherDiscountType;
-  discountValue: number;
-  minOrderAmount?: number;
-  maxDiscountAmount?: number;
+  discountValue: number | string;
+  minOrderAmount?: number | string;
+  maxDiscountAmount?: number | string;
   validFrom?: string;
   validTo?: string;
   active: boolean;
-  usageLimit?: number;
+  usageLimit?: number | string;
   customerPhone?: string;
 }
 
@@ -965,11 +965,11 @@ export interface LoyaltyTier {
   code: string;
   name: string;
   displayOrder: number;
-  minOrders: number;
-  minSpent: number;
+  minOrders: number | string;
+  minSpent: number | string;
   voucherEnabled: boolean;
-  discountPercent: number;
-  maxDiscountAmount: number;
+  discountPercent: number | string;
+  maxDiscountAmount: number | string;
   active: boolean;
 }
 

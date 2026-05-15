@@ -401,8 +401,8 @@ export default function TableSettlementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Thanh toán theo bàn</h1>
-          <p className="text-sm text-gray-500 mt-1">Chọn bàn có đơn hoàn thành chưa thanh toán để thu tiền nhanh tại quầy POS.</p>
+          <h1 className="text-2xl font-bold text-[#1a0e07] flex items-center gap-2"><Wallet size={24} className="text-[#c9a27a]" /> Thanh toán theo bàn</h1>
+          <p className="text-sm text-[rgba(26,14,7,0.45)] mt-1">Chọn bàn có đơn hoàn thành chưa thanh toán để thu tiền nhanh tại quầy POS.</p>
         </div>
         <button
           type="button"
@@ -411,7 +411,7 @@ export default function TableSettlementPage() {
               // no-op
             });
           }}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[rgba(107,80,64,0.18)] text-[rgba(26,14,7,0.7)] hover:bg-[rgba(107,80,64,0.06)] transition-colors"
         >
           <RefreshCw size={16} /> Làm mới
         </button>
@@ -428,15 +428,15 @@ export default function TableSettlementPage() {
       )}
 
       {loadingTableSummaries ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">Đang tải danh sách bàn...</div>
+        <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-8 text-center text-[rgba(26,14,7,0.45)] shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">Đang tải danh sách bàn...</div>
       ) : tableSummaries.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">Hiện chưa có bàn nào đang có order cần theo dõi.</div>
+        <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-8 text-center text-[rgba(26,14,7,0.4)] shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">Hiện chưa có bàn nào đang có order cần theo dõi.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {tableSummaries.map((summary) => (
             <div
               key={summary.tableNumber}
-              className="rounded-xl border border-gray-200 p-4 bg-white cursor-pointer hover:border-blue-300 hover:shadow-sm transition"
+              className="rounded-xl border border-[rgba(107,80,64,0.12)] p-4 bg-white cursor-pointer hover:border-[#c9a27a] hover:bg-[rgba(253,247,240,0.5)] hover:shadow-sm transition shadow-[0_2px_12px_-4px_rgba(26,14,7,0.04)]"
               role="button"
               tabIndex={0}
               onClick={() => {
@@ -454,13 +454,13 @@ export default function TableSettlementPage() {
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-gray-800 flex items-center gap-1">
+                <p className="font-semibold text-[#1a0e07] flex items-center gap-1">
                   {summary.tableNumber}
-                  <span className="text-xs text-blue-600 inline-flex items-center gap-0.5 font-medium">
+                  <span className="text-xs text-[#6b5040] inline-flex items-center gap-0.5 font-medium">
                     Chi tiết <ChevronRight size={14} />
                   </span>
                 </p>
-                <span className="text-xs text-gray-500">{new Date(summary.latestOrderAt).toLocaleString('vi-VN')}</span>
+                <span className="text-xs text-[rgba(26,14,7,0.45)]">{new Date(summary.latestOrderAt).toLocaleString('vi-VN')}</span>
               </div>
 
               <div className="flex flex-wrap gap-1 mb-3 text-xs">
@@ -469,10 +469,10 @@ export default function TableSettlementPage() {
                 {summary.completedUnpaidCount > 0 && <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">Chưa thanh toán: {summary.completedUnpaidCount}</span>}
               </div>
 
-              <div className="text-sm text-gray-700 mb-2">
-                Cần thu: <span className="font-semibold text-gray-900">{formatCurrency(summary.completedUnpaidTotal)}</span>
+              <div className="text-sm text-[rgba(26,14,7,0.7)] mb-2">
+                Cần thu: <span className="font-semibold text-[#1a0e07]">{formatCurrency(summary.completedUnpaidTotal)}</span>
               </div>
-              <div className="text-xs text-gray-500 mb-3">
+              <div className="text-xs text-[rgba(26,14,7,0.45)] mb-3">
                 Đơn chưa thanh toán: {summary.completedUnpaidOrderIds.length > 0 ? summary.completedUnpaidOrderIds.join(', ') : 'Không có'}
               </div>
 
@@ -483,7 +483,7 @@ export default function TableSettlementPage() {
                   openCashConfirm(summary);
                 }}
                 disabled={summary.completedUnpaidCount === 0 || payingTable === summary.tableNumber}
-                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 mb-2"
+                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#6b5040] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 transition-all mb-2"
               >
                 <Wallet size={16} />
                 {payingTable === summary.tableNumber ? 'Đang thu tiền...' : 'Tiền mặt'}
@@ -498,7 +498,7 @@ export default function TableSettlementPage() {
                   });
                 }}
                 disabled={summary.completedUnpaidCount === 0}
-                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-[#c9a27a] bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] text-sm font-medium hover:bg-[rgba(201,162,122,0.25)] transition-all disabled:opacity-50"
               >
                 <QrCode size={16} /> QR thanh toán
               </button>
@@ -542,7 +542,7 @@ export default function TableSettlementPage() {
                   });
                 }}
                 disabled={payingTable === cashConfirmContext.summary.tableNumber}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-60 transition-all"
               >
                 <Wallet size={16} /> {payingTable === cashConfirmContext.summary.tableNumber ? 'Đang xử lý...' : 'Xác nhận thu tiền'}
               </button>
@@ -589,7 +589,7 @@ export default function TableSettlementPage() {
                   quickCashFromDetail();
                 }}
                 disabled={detailTable.completedUnpaidCount === 0 || payingTable === detailTable.tableNumber}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#6b5040] text-white hover:brightness-110 disabled:opacity-60 transition-all"
               >
                 <Wallet size={16} /> {payingTable === detailTable.tableNumber ? 'Đang thu tiền...' : 'Thu tiền mặt nhanh'}
               </button>
@@ -602,7 +602,7 @@ export default function TableSettlementPage() {
                   });
                 }}
                 disabled={detailTable.completedUnpaidCount === 0}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-[#c9a27a] bg-[rgba(201,162,122,0.15)] text-[#7a5c3e] hover:bg-[rgba(201,162,122,0.25)] transition-all disabled:opacity-60"
               >
                 <QrCode size={16} /> Mở QR thanh toán
               </button>
@@ -610,7 +610,7 @@ export default function TableSettlementPage() {
               <button
                 type="button"
                 onClick={printTemporaryBill}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[rgba(107,80,64,0.1)] text-[#6b5040] hover:bg-[rgba(107,80,64,0.15)] transition-all disabled:opacity-60"
               >
                 <Printer size={16} /> In tạm tính
               </button>

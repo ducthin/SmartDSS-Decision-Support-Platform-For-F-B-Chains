@@ -859,7 +859,7 @@ export default function ShiftsPage() {
               </select>
               <input type="date" value={assignmentForm.shiftDate} onChange={(e) => setAssignmentForm((p) => ({ ...p, shiftDate: e.target.value }))} className="rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
               <input value={assignmentForm.note} onChange={(e) => setAssignmentForm((p) => ({ ...p, note: e.target.value }))} placeholder="Ghi chú" className="col-span-2 rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition" />
-              <button onClick={handleCreateAssignment} disabled={savingAssignment || activeTemplates.length === 0} className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
+              <button onClick={handleCreateAssignment} disabled={savingAssignment || activeTemplates.length === 0} className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-[#6b5040] text-white px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all">
                 <Plus size={16} /> {savingAssignment ? 'Đang lưu...' : 'Phân ca'}
               </button>
             </div>

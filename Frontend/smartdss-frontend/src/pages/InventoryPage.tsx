@@ -11,12 +11,12 @@ import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export default function InventoryPage() {
-  const emptyItemForm: InventoryItemForm = { ingredientName: '', unit: '', quantity: 0, minimumStock: 0 };
+  const emptyItemForm: InventoryItemForm = { ingredientName: '', unit: '', quantity: '', minimumStock: '' };
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'add' | 'deduct'>('add');
-  const [form, setForm] = useState<InventoryTransactionForm>({ inventoryId: 0, quantity: 0, reason: '' });
+  const [form, setForm] = useState<InventoryTransactionForm>({ inventoryId: 0, quantity: '', reason: '' });
   const [showItemModal, setShowItemModal] = useState(false);
   const [itemMode, setItemMode] = useState<'create' | 'edit'>('create');
   const [itemForm, setItemForm] = useState<InventoryItemForm>(emptyItemForm);
@@ -63,12 +63,12 @@ export default function InventoryPage() {
 
   const openModal = (type: 'add' | 'deduct', inv: Inventory) => {
     setModalType(type);
-    setForm({ inventoryId: inv.id, quantity: 0, reason: '' });
+    setForm({ inventoryId: inv.id, quantity: '', reason: '' });
     setShowModal(true);
   };
 
   const handleSubmit = async () => {
-    if (form.quantity <= 0) return toast.error('Số lượng phải > 0');
+    if (form.quantity === '' || Number(form.quantity) <= 0) return toast.error('Số lượng phải > 0');
     setSaving(true);
     try {
       if (modalType === 'add') {
@@ -109,8 +109,8 @@ export default function InventoryPage() {
   const handleItemSubmit = async () => {
     if (!itemForm.ingredientName.trim()) return toast.error('Tên nguyên liệu không được để trống');
     if (!itemForm.unit.trim()) return toast.error('Đơn vị không được để trống');
-    if (itemForm.quantity < 0) return toast.error('Tồn kho phải >= 0');
-    if (itemForm.minimumStock < 0) return toast.error('Mức tối thiểu phải >= 0');
+    if (itemForm.quantity === '' || Number(itemForm.quantity) < 0) return toast.error('Tồn kho phải >= 0');
+    if (itemForm.minimumStock === '' || Number(itemForm.minimumStock) < 0) return toast.error('Mức tối thiểu phải >= 0');
 
     setItemSaving(true);
     try {
@@ -323,8 +323,8 @@ export default function InventoryPage() {
         <div className="space-y-4">
           <div>
             <label className={labelCls}>Số lượng <span className="text-rose-500">*</span></label>
-            <input type="number" value={form.quantity || ''}
-              onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? 0 : Number(e.target.value) })}
+            <input type="number" value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
               className={inputCls} min={1} />
           </div>
           <div>
@@ -365,7 +365,7 @@ export default function InventoryPage() {
             <div>
               <label className={labelCls}>Mức tối thiểu <span className="text-rose-500">*</span></label>
               <input type="number" min={0} value={itemForm.minimumStock}
-                onChange={(e) => setItemForm({ ...itemForm, minimumStock: Number(e.target.value) })}
+                onChange={(e) => setItemForm({ ...itemForm, minimumStock: e.target.value === '' ? '' : Number(e.target.value) })}
                 className={inputCls} />
             </div>
           </div>
@@ -374,7 +374,7 @@ export default function InventoryPage() {
               {itemMode === 'create' ? 'Tồn kho ban đầu' : 'Điều chỉnh tồn kho hiện tại'} <span className="text-rose-500">*</span>
             </label>
             <input type="number" min={0} value={itemForm.quantity}
-              onChange={(e) => setItemForm({ ...itemForm, quantity: Number(e.target.value) })}
+              onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
               className={inputCls} />
           </div>
           <div className="flex justify-end gap-3 pt-1">

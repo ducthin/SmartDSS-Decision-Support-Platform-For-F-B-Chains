@@ -82,3 +82,16 @@ export function formatOrderItemExtras(item: {
   }
   return parts.length ? ` (${parts.join(' · ')})` : '';
 }
+
+export function formatOrderCreator(order: { createdByName?: string; tableNumber?: string }): string {
+  if (order.createdByName && order.createdByName.trim() !== '') {
+    return order.createdByName;
+  }
+  if (order.tableNumber === 'ONLINE') {
+    return 'Khách đặt Online';
+  }
+  if (order.tableNumber && order.tableNumber !== 'POS') {
+    return 'Khách quét QR';
+  }
+  return 'Khách tự đặt';
+}

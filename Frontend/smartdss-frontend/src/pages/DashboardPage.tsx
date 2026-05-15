@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, TrendingUp, Package, AlertTriangle, Clock, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-import { calculateVatBreakdown, getRoleKey, formatCurrency } from '@/utils/helpers';
+import { calculateVatBreakdown, getRoleKey, formatCurrency, formatOrderCreator } from '@/utils/helpers';
 import { orderService } from '@/services/orderService';
 import { reportService } from '@/services/reportService';
 import { inventoryService } from '@/services/inventoryService';
@@ -278,7 +278,7 @@ function DashboardContent() {
                   <td className="px-5 py-3.5">
                     <span className="font-mono text-xs font-semibold text-[var(--coffee-primary)]">#{order.id}</span>
                   </td>
-                  <td className="px-3 py-3.5 text-[rgba(26,14,7,0.75)]">{order.createdByName ?? 'N/A'}</td>
+                  <td className="px-3 py-3.5 text-[rgba(26,14,7,0.75)]">{formatOrderCreator(order)}</td>
                   <td className="px-3 py-3.5">
                     {(() => {
                       const tax = calculateVatBreakdown(order.totalAmount ?? 0, taxPolicy.vatRatePercent, taxPolicy.priceIncludesVat);

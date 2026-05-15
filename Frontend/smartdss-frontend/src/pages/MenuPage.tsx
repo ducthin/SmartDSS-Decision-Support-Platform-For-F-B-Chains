@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const emptyForm: MenuItemForm = {
   name: '',
   description: '',
-  price: 0,
+  price: '',
   imageUrl: '',
   available: true,
   categoryId: 0,
@@ -94,7 +94,7 @@ export default function MenuPage() {
   const handleSave = async () => {
     if (!canManageMenu) return toast.error('Bạn không có quyền thêm/sửa/xóa menu');
     if (!form.name.trim()) return toast.error('Tên món không được trống');
-    if (form.price <= 0) return toast.error('Giá phải > 0');
+    if (form.price === '' || Number(form.price) <= 0) return toast.error('Giá phải > 0');
     if (!form.categoryId) return toast.error('Chọn danh mục');
     if (form.drink && (!form.drinkSizes || form.drinkSizes.length === 0)) {
       return toast.error('Đồ uống cần ít nhất một size (kích cỡ)');
@@ -263,7 +263,7 @@ export default function MenuPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[rgba(26,14,7,0.6)] mb-1">Giá (VND) <span className="text-red-500">*</span></label>
-              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value === '' ? '' : Number(e.target.value) })}
                 className="w-full px-3 py-2 border border-[rgba(107,80,64,0.15)] rounded-xl focus:ring-2 focus:ring-[rgba(201,162,122,0.3)] focus:border-[#c9a27a] outline-none transition" />
             </div>
             <div>

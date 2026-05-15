@@ -72,23 +72,23 @@ type VoucherState = {
 
 const emptyEventForm: EventForm = {
   name: '', description: '', eventType: 'FESTIVAL', startDate: '', endDate: '',
-  location: '', expectedImpact: 'MEDIUM', notes: '', discountPercent: 0, active: true,
+  location: '', expectedImpact: 'MEDIUM', notes: '', discountPercent: '', active: true,
 };
 const emptyHolidayForm: HolidayCalendarForm = {
-  name: '', holidayDate: '', holidayType: 'PUBLIC_HOLIDAY', recurring: false, description: '', discountPercent: 0,
+  name: '', holidayDate: '', holidayType: 'PUBLIC_HOLIDAY', recurring: false, description: '', discountPercent: '',
 };
 const emptyVoucherForm: VoucherForm = {
   code: '',
   name: '',
   description: '',
   discountType: 'PERCENT',
-  discountValue: 10,
-  minOrderAmount: 0,
-  maxDiscountAmount: undefined,
+  discountValue: '',
+  minOrderAmount: '',
+  maxDiscountAmount: '',
   validFrom: undefined,
   validTo: undefined,
   active: true,
-  usageLimit: undefined,
+  usageLimit: '',
 };
 
 const defaultLoyaltyTiers: LoyaltyTier[] = [
@@ -1202,7 +1202,7 @@ export default function ExternalFactorsPage() {
                               type="number"
                               min={0}
                               value={tier.minOrders}
-                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minOrders: Number(e.target.value) || 0 })}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minOrders: e.target.value === '' ? '' : Number(e.target.value) })}
                               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                             />
                           </label>
@@ -1213,7 +1213,7 @@ export default function ExternalFactorsPage() {
                               min={0}
                               step={10000}
                               value={tier.minSpent}
-                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minSpent: Number(e.target.value) || 0 })}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { minSpent: e.target.value === '' ? '' : Number(e.target.value) })}
                               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                             />
                           </label>
@@ -1240,7 +1240,7 @@ export default function ExternalFactorsPage() {
                               max={100}
                               step={0.1}
                               value={tier.discountPercent}
-                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { discountPercent: Number(e.target.value) || 0 })}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { discountPercent: e.target.value === '' ? '' : Number(e.target.value) })}
                               disabled={!tier.voucherEnabled}
                               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                             />
@@ -1252,7 +1252,7 @@ export default function ExternalFactorsPage() {
                               min={0}
                               step={10000}
                               value={tier.maxDiscountAmount}
-                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { maxDiscountAmount: Number(e.target.value) || 0 })}
+                              onChange={(e) => updateLoyaltyTier(editingTierIndex, { maxDiscountAmount: e.target.value === '' ? '' : Number(e.target.value) })}
                               disabled={!tier.voucherEnabled}
                               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                             />

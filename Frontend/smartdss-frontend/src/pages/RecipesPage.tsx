@@ -8,7 +8,7 @@ import Modal from '@/components/ui/Modal';
 import { getApiErrorMessage } from '@/utils/helpers';
 import Pagination from '@/components/ui/Pagination';
 
-const emptyForm: RecipeForm = { menuItemId: 0, ingredientId: 0, quantity: 0 };
+const emptyForm: RecipeForm = { menuItemId: 0, ingredientId: 0, quantity: '' };
 const GROUPS_PER_PAGE = 15;
 
 const inputCls =
@@ -96,7 +96,7 @@ export default function RecipesPage() {
   const handleSave = async () => {
     if (!form.menuItemId) return toast.error('Chọn món');
     if (!form.ingredientId) return toast.error('Chọn nguyên liệu');
-    if (form.quantity <= 0) return toast.error('Số lượng phải > 0');
+    if (form.quantity === '' || Number(form.quantity) <= 0) return toast.error('Số lượng phải > 0');
     setSaving(true);
     try {
       if (editing) {
@@ -312,7 +312,7 @@ export default function RecipesPage() {
             <input
               type="number"
               value={form.quantity}
-              onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
               className={inputCls}
               min={0.01}
               step={0.01}

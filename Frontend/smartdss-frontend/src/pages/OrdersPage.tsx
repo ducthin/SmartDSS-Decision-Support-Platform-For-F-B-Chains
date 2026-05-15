@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { StatusBadge } from './DashboardPage';
 import type { Order } from '@/types';
 import { ORDER_STATUS } from '@/utils/constants';
-import { calculateVatBreakdown, getApiErrorMessage, formatCurrency, drinkCartLineKey, unitPriceWithDrinkOptions, formatOrderItemExtras } from '@/utils/helpers';
+import { calculateVatBreakdown, getApiErrorMessage, formatCurrency, drinkCartLineKey, unitPriceWithDrinkOptions, formatOrderItemExtras, formatOrderCreator } from '@/utils/helpers';
 import DrinkCustomizeModal from '@/components/DrinkCustomizeModal';
 import Pagination from '@/components/ui/Pagination';
 import { useOrderSocket } from '@/hooks/useOrderSocket';
@@ -1780,7 +1780,7 @@ function OrderListView() {
             <div className="grid grid-cols-2 gap-2 text-gray-600">
               <p>Mã đơn: <span className="font-medium text-gray-800">#{billOrder.id}</span></p>
               <p>Bàn: <span className="font-medium text-gray-800">{billOrder.tableNumber || 'POS'}</span></p>
-              <p>Thu ngân: <span className="font-medium text-gray-800">{billOrder.createdByName || 'N/A'}</span></p>
+              <p>Thu ngân: <span className="font-medium text-gray-800">{formatOrderCreator(billOrder)}</span></p>
               <p>Giờ: <span className="font-medium text-gray-800">{new Date(billOrder.createdAt).toLocaleString('vi-VN')}</span></p>
               {paymentStatusByOrder[billOrder.id]?.status === 'PAID' && (
                 <>
@@ -1921,7 +1921,7 @@ function buildBillHtml(order: Order, taxPolicy: TaxPolicy, paid: PaymentStatus):
   <div class="meta">
     <div>Mã đơn: #${order.id}</div>
     <div>Bàn: ${escapeHtml(order.tableNumber || 'POS')}</div>
-    <div>Thu ngân: ${escapeHtml(order.createdByName || 'N/A')}</div>
+    <div>Thu ngân: ${escapeHtml(formatOrderCreator(order))}</div>
     <div>Giờ: ${new Date(order.createdAt).toLocaleString('vi-VN')}</div>
     <div>Thanh toán: ${paid.paymentMethod === 'QR' ? 'Chuyển khoản (QR)' : 'COD (tiền mặt)'}</div>
   </div>
