@@ -63,7 +63,8 @@ def chronological_holdout(
     n_test = max(min_test_days, int(round(n * test_ratio)))
     n_test = min(n_test, n - 1)  # giữ ít nhất 1 mẫu train
     if n_test < 1:
-        raise ValueError("Dataset quá nhỏ để chia hold-out.")
+        print(f"Lỗi: Tập dữ liệu quá nhỏ (chỉ có {n} ngày). Cần ít nhất khoảng 50 ngày để train và test!")
+        sys.exit(1)
     train_df = df.iloc[: n - n_test].copy()
     test_df = df.iloc[n - n_test :].copy()
     return train_df, test_df
@@ -98,22 +99,30 @@ def time_series_cv_mae(
 
 def train(test_ratio: float, min_test_days: int, cv_splits: int) -> None:
     if not DATA_PATH.exists():
-        print(f"❌ Không tìm thấy: {DATA_PATH}")
-        print("   Chạy trước: python scripts/generate_dataset.py")
-        return
+        print(f"Lỗi: Không tìm thấy file dữ liệu: {DATA_PATH}. Hãy vào tab Xuất CSV để lấy dữ liệu trước!")
+        sys.exit(1)
 
-    df = pd.read_csv(DATA_PATH)
+    try:
+        df = pd.read_csv(DATA_PATH)
+    except Exception as e:
+        print(f"Lỗi đọc CSV: {e}")
+        sys.exit(1)
+
+    if df.empty:
+        print("Lỗi: File CSV dữ liệu đang trống rỗng!")
+        sys.exit(1)
+
     if "date" not in df.columns:
-        print("❌ CSV cần có cột 'date' (YYYY-MM-DD) để chia tập theo thời gian.")
-        return
+        print("Lỗi: CSV cần có cột 'date' (YYYY-MM-DD) để chia tập theo thời gian.")
+        sys.exit(1)
 
     df["date"] = pd.to_datetime(df["date"])
     missing = [c for c in FEATURES + [TARGET_REVENUE, TARGET_ORDERS] if c not in df.columns]
     if missing:
-        print(f"❌ Thiếu cột: {missing}")
-        return
+        print(f"Lỗi: Thiếu cột: {missing}")
+        sys.exit(1)
 
-    print(f"✅ Đọc dataset: {len(df)} dòng  ({DATA_PATH})")
+    print(f"Đọc dataset: {len(df)} dòng  ({DATA_PATH})")
 
     train_df, test_df = chronological_holdout(df, test_ratio=test_ratio, min_test_days=min_test_days)
     print("\n── Chia dữ liệu (chronological hold-out, không shuffle) ──")

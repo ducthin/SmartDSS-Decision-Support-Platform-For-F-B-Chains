@@ -210,8 +210,13 @@ def run_retrain(triggered_by: str = "scheduler") -> dict:
         success, _, output_log = _run_train_subprocess()
 
         if not success:
-            _record_history(started_at, triggered_by, success=False, note="Train script lỗi")
-            return {"success": False, "message": "Train script thất bại. Xem log server."}
+            err_msg = "Train script lỗi"
+            if output_log:
+                lines = [L.strip() for L in output_log.split("\n") if L.strip()]
+                if lines:
+                    err_msg = lines[-1][:80] # Lấy dòng lỗi cuối cùng
+            _record_history(started_at, triggered_by, success=False, note=f"Lỗi: {err_msg}")
+            return {"success": False, "message": f"Train thất bại. Lỗi: {err_msg}"}
 
         new_mape = _read_mape_from_bundle(MODEL_PATH)
 
