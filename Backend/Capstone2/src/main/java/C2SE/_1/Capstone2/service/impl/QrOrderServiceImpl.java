@@ -600,7 +600,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                     </table>
                     <table class="totals">
                       <tr><td>Tạm tính</td><td class="right">%s</td></tr>
-                      <tr><td>%s</td><td class="right">-%s</td></tr>
+                      <tr><td>%s</td><td class="right">%s</td></tr>
                       %s
                       <tr><td style="color:#6b7280;font-size:12px;">Giá trị trước thuế</td><td class="right" style="color:#6b7280;font-size:12px;">%s</td></tr>
                       <tr><td style="color:#6b7280;font-size:12px;padding-bottom:10px;">Thuế GTGT (%s%%)</td><td class="right" style="color:#6b7280;font-size:12px;padding-bottom:10px;">%s</td></tr>

@@ -28,8 +28,9 @@ public class InvoicePdfServiceImpl implements InvoicePdfService {
     private void registerVietnameseFont(PdfRendererBuilder builder) {
         for (String path : new String[] {
                 "C:/Windows/Fonts/arial.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Supplemental/Arial.ttf"
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", // Debian/Ubuntu
+                "/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf", // Alpine Linux
+                "/System/Library/Fonts/Supplemental/Arial.ttf" // macOS
         }) {
             File font = new File(path);
             if (font.exists()) {
