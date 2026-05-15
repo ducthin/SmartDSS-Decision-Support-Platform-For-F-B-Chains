@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY app ./app
+COPY scripts ./scripts
 COPY artifacts ./seed-artifacts
 COPY data ./seed-data
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
