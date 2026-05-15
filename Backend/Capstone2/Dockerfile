@@ -18,7 +18,7 @@ FROM eclipse-temurin:24-jre-alpine AS runtime
 
 WORKDIR /app
 
-# Cài curl để healthcheck hoạt động và font chữ cho PDF
+# Cài curl để healthcheck hoạt động và ttf-dejavu để dự phòng
 RUN apk add --no-cache curl fontconfig ttf-dejavu
 
 # Tạo thư mục uploads

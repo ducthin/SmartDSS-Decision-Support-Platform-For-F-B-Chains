@@ -26,10 +26,24 @@ public class InvoicePdfServiceImpl implements InvoicePdfService {
     }
 
     private void registerVietnameseFont(PdfRendererBuilder builder) {
+        // Cách 1: Ưu tiên load font nhúng sẵn trong thư mục resources/fonts/ của project (Best Practice)
+        try {
+            java.io.InputStream is = getClass().getResourceAsStream("/fonts/Roboto-Regular.ttf");
+            if (is != null) {
+                File tempFont = File.createTempFile("Roboto-Regular", ".ttf");
+                tempFont.deleteOnExit();
+                java.nio.file.Files.copy(is, tempFont.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                builder.useFont(tempFont, "Arial");
+                return;
+            }
+        } catch (Exception e) {
+            // Bỏ qua và dùng fallback bên dưới
+        }
+
+        // Cách 2: Fallback tìm font trên hệ điều hành
         for (String path : new String[] {
                 "C:/Windows/Fonts/arial.ttf",
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", // Debian/Ubuntu
-                "/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf", // Alpine Linux
                 "/System/Library/Fonts/Supplemental/Arial.ttf" // macOS
         }) {
             File font = new File(path);
