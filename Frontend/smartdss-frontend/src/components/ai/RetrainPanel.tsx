@@ -107,9 +107,28 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
             </button>
           </div>
 
-          {triggerMsg && (
+          {status.is_retraining ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 overflow-hidden relative">
+              <div className="flex justify-between items-center mb-2 relative z-10">
+                <span className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                  <RefreshCw size={14} className="animate-spin text-amber-600" /> Đang huấn luyện AI...
+                </span>
+                <span className="text-xs text-amber-700">Vui lòng chờ (tối đa 10 phút)</span>
+              </div>
+              <div className="h-1.5 bg-amber-200/50 rounded-full overflow-hidden relative z-10">
+                <div className="h-full bg-amber-500 rounded-full w-1/2 animate-[progress_1.5s_ease-in-out_infinite_alternate]" />
+              </div>
+              {/* Animation keyframes in tailwind/css are required, but inline will work for fallback if standard classes missing */}
+              <style>{`
+                @keyframes progress {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(200%); }
+                }
+              `}</style>
+            </div>
+          ) : triggerMsg ? (
             <p className="text-xs text-[#6b5040] bg-[rgba(201,162,122,0.08)] rounded-lg px-3 py-1.5 border border-[rgba(107,80,64,0.1)]">{triggerMsg}</p>
-          )}
+          ) : null}
 
           {/* History */}
           {status.history.length > 0 && (

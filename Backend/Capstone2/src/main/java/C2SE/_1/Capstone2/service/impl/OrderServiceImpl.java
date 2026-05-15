@@ -10,6 +10,7 @@ import C2SE._1.Capstone2.exception.InsufficientStockException;
 import C2SE._1.Capstone2.exception.ResourceNotFoundException;
 import C2SE._1.Capstone2.mapper.OrderMapper;
 import C2SE._1.Capstone2.repository.*;
+import C2SE._1.Capstone2.service.AIPredictionService;
 import C2SE._1.Capstone2.service.CustomerLoyaltyAccountService;
 import C2SE._1.Capstone2.service.OrderDiscountService;
 import C2SE._1.Capstone2.service.OrderService;
@@ -50,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final DrinkOrderPricingHelper drinkOrderPricingHelper;
     private final OrderDiscountService orderDiscountService;
     private final CustomerLoyaltyAccountService customerLoyaltyAccountService;
+    private final AIPredictionService aiPredictionService;
     @Value("${app.tax.vat.rate-percent:8}")
     private BigDecimal vatRatePercent;
     @Value("${app.tax.vat.price-includes-vat:true}")
@@ -122,8 +124,8 @@ public class OrderServiceImpl implements OrderService {
         Page<Order> page = orderId != null
                 ? orderRepository.searchByStatusAndIdAndSource(orderStatus, orderId, normalizedSource, pageable)
                 : ("ALL".equals(normalizedSource)
-                    ? orderRepository.findByStatus(orderStatus, pageable)
-                    : orderRepository.findByStatusAndSource(orderStatus, normalizedSource, pageable));
+                        ? orderRepository.findByStatus(orderStatus, pageable)
+                        : orderRepository.findByStatusAndSource(orderStatus, normalizedSource, pageable));
         return PageResponse.of(page, orderMapper.toDTOList(page.getContent()));
     }
 
@@ -173,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = Order.builder()
                 .status(OrderStatus.PENDING)
                 .note(orderDTO.getNote())
-            .customerPhone(normalizeCustomerPhone(orderDTO.getCustomerPhone()))
+                .customerPhone(normalizeCustomerPhone(orderDTO.getCustomerPhone()))
                 .createdBy(user)
                 .totalAmount(BigDecimal.ZERO)
                 .build();
@@ -212,11 +214,12 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal subtotalAmount = totalAmount;
         OrderDiscountService.DiscountResult discountResult = orderDiscountService.calculate(
-            subtotalAmount,
-            orderDTO.getVoucherCode(),
-            order.getCustomerPhone(),
-            LocalDate.now());
-        BigDecimal finalTotalAmount = subtotalAmount.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
+                subtotalAmount,
+                orderDTO.getVoucherCode(),
+                order.getCustomerPhone(),
+                LocalDate.now());
+        BigDecimal finalTotalAmount = subtotalAmount.subtract(discountResult.totalDiscountAmount())
+                .max(BigDecimal.ZERO);
 
         order.setOrderItems(orderItems);
         order.setSubtotalAmount(subtotalAmount);
@@ -319,6 +322,9 @@ public class OrderServiceImpl implements OrderService {
                     savedOrder.getTotalAmount());
             savedOrder.setLoyaltyPointsEarned(earnedPoints);
             savedOrder = orderRepository.save(savedOrder);
+
+            // Thông báo cho ML Service biết có thêm 1 đơn hàng mới
+            aiPredictionService.notifyOrderCompleted(1);
         }
 
         OrderDTO result = orderMapper.toDTO(savedOrder);
@@ -341,7 +347,8 @@ public class OrderServiceImpl implements OrderService {
         for (RoleName role : roles) {
             String required = "ROLE_" + role.name();
             boolean match = auth.getAuthorities().stream().anyMatch(a -> required.equals(a.getAuthority()));
-            if (match) return;
+            if (match)
+                return;
         }
 
         throw new AccessDeniedException("Access denied");
@@ -360,7 +367,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void createSalesTransactionFromOrder(Order order) {
-        // Đơn online có thể đã được tạo SalesTransaction khi khởi tạo QR trước khi order chuyển COMPLETED.
+        // Đơn online có thể đã được tạo SalesTransaction khi khởi tạo QR trước khi
+        // order chuyển COMPLETED.
         if (salesTransactionRepository.findByOrderId(order.getId()).isPresent()) {
             return;
         }
@@ -421,24 +429,24 @@ public class OrderServiceImpl implements OrderService {
                 if (inventory.getQuantity().compareTo(totalDeduction) < 0) {
                     throw new InsufficientStockException(
                             "Insufficient stock for ingredient: " + recipe.getIngredient().getName()
-                            + ". Available: " + inventory.getQuantity()
-                            + ", Required: " + totalDeduction);
+                                    + ". Available: " + inventory.getQuantity()
+                                    + ", Required: " + totalDeduction);
                 }
 
                 inventory.setQuantity(inventory.getQuantity().subtract(totalDeduction));
                 inventoryRepository.save(inventory);
 
                 BigDecimal unitPrice = inventory.getUnitCost() == null
-                    ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-                    : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
+                        ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                        : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
                 BigDecimal totalAmount = totalDeduction.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 
                 InventoryTransaction transaction = InventoryTransaction.builder()
                         .inventory(inventory)
                         .type(TransactionType.DEDUCT)
                         .quantity(totalDeduction)
-                    .unitPrice(unitPrice)
-                    .totalAmount(totalAmount)
+                        .unitPrice(unitPrice)
+                        .totalAmount(totalAmount)
                         .reason("Order #" + order.getId() + " reserved (PREPARING)")
                         .build();
                 inventoryTransactionRepository.save(transaction);
@@ -462,16 +470,16 @@ public class OrderServiceImpl implements OrderService {
                 inventoryRepository.save(inventory);
 
                 BigDecimal unitPrice = inventory.getUnitCost() == null
-                    ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-                    : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
+                        ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                        : inventory.getUnitCost().setScale(2, RoundingMode.HALF_UP);
                 BigDecimal totalAmount = totalRestore.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 
                 InventoryTransaction transaction = InventoryTransaction.builder()
                         .inventory(inventory)
                         .type(TransactionType.ADD)
                         .quantity(totalRestore)
-                    .unitPrice(unitPrice)
-                    .totalAmount(totalAmount)
+                        .unitPrice(unitPrice)
+                        .totalAmount(totalAmount)
                         .reason("Order #" + order.getId() + " cancelled (release reserved)")
                         .build();
                 inventoryTransactionRepository.save(transaction);

@@ -239,7 +239,7 @@ def run_retrain(triggered_by: str = "scheduler") -> dict:
             }
         else:
             log.warning("[Retrain] ⚠ Model mới không đủ tốt hơn. %s. Giữ model cũ.", deploy_note)
-            _record_history(started_at, triggered_by, success=False, note=f"Không deploy: {deploy_note}", mape=new_mape)
+            _record_history(started_at, triggered_by, success=True, note=f"Hoàn thành, giữ mô hình cũ: {deploy_note}", mape=new_mape)
             # Vẫn reset timer ngày (đã train thành công, chỉ không deploy)
             with retrain_state._lock:
                 retrain_state.last_retrain_at = _now_local()

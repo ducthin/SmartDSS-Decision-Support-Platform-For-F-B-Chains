@@ -6,4 +6,9 @@ import java.time.LocalDate;
 
 public interface AIPredictionService {
     AIPredictionResponseDTO getPrediction(LocalDate targetDate, boolean compareLlm);
+    
+    /**
+     * Thông báo cho ML Service biết có đơn hàng mới hoàn thành để cộng dồn vào bộ đếm Auto-Retrain
+     */
+    void notifyOrderCompleted(int orderCount);
 }

@@ -113,6 +113,25 @@ public class AIPredictionServiceImpl implements AIPredictionService {
     }
 
     @Override
+    public void notifyOrderCompleted(int orderCount) {
+        if (orderCount <= 0) return;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Integer> body = Map.of("order_count", orderCount);
+            HttpEntity<Map<String, Integer>> entity = new HttpEntity<>(body, headers);
+
+            mlServiceRestTemplate.postForEntity(
+                    mlServiceUrl + "/api/v1/admin/retrain/notify-orders",
+                    entity,
+                    Void.class);
+            log.info("[AIPrediction] Da thong bao {} don hang moi cho ML Service (Auto-Retrain)", orderCount);
+        } catch (Exception e) {
+            log.warn("[AIPrediction] Khong the bao don hang cho ML Service (co the dang tat): {}", e.getMessage());
+        }
+    }
+
+    @Override
     public AIPredictionResponseDTO getPrediction(LocalDate targetDate, boolean compareLlm) {
         log.info("[AIPrediction] Thu thap du lieu cho ngay: {} compareLlm={}", targetDate, compareLlm);
         ZoneId zone = appZone();

@@ -44,9 +44,10 @@ export default function AIPredictionPage() {
 
   useEffect(() => {
     fetchRetrain();
-    const id = setInterval(fetchRetrain, 30_000);
+    const pollInterval = retrainStatus?.is_retraining ? 3000 : 30000;
+    const id = setInterval(fetchRetrain, pollInterval);
     return () => clearInterval(id);
-  }, [fetchRetrain]);
+  }, [fetchRetrain, retrainStatus?.is_retraining]);
 
   const handleAnalyse = () => {
     setLoading(true); setError(null); setPrediction(null);
