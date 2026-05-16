@@ -42,13 +42,13 @@ BUNDLE_VERSION = "1.1.0"
 
 
 def mape_pct(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """MAPE (%); bỏ qua giá trị ~0 (ở đây revenue/orders đều > 0)."""
+    """WMAPE (Weighted MAPE %); Ổn định hơn MAPE rất nhiều cho tập dữ liệu có giá trị nhỏ."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
-    mask = np.abs(y_true) > 1e-6
-    if not np.any(mask):
+    sum_true = np.sum(y_true)
+    if sum_true < 1e-6:
         return float("nan")
-    return float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100.0)
+    return float(np.sum(np.abs(y_true - y_pred)) / sum_true * 100.0)
 
 
 def rmse(y_true, y_pred) -> float:

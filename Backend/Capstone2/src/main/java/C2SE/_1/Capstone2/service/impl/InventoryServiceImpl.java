@@ -19,6 +19,8 @@ import C2SE._1.Capstone2.mapper.InventoryMapper;
 import C2SE._1.Capstone2.repository.IngredientRepository;
 import C2SE._1.Capstone2.repository.InventoryRepository;
 import C2SE._1.Capstone2.repository.InventoryTransactionRepository;
+import C2SE._1.Capstone2.repository.MenuItemRepository;
+import C2SE._1.Capstone2.repository.RecipeRepository;
 import C2SE._1.Capstone2.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +43,8 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final IngredientRepository ingredientRepository;
     private final InventoryMapper inventoryMapper;
+    private final RecipeRepository recipeRepository;
+    private final MenuItemRepository menuItemRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -82,7 +86,7 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         inventory.setQuantity(inventory.getQuantity().add(dto.getQuantity()));
-        inventoryRepository.save(inventory);
+        Inventory savedInventory = inventoryRepository.save(inventory);
 
         BigDecimal txUnitPrice = inputUnitPrice != null ? inputUnitPrice : normalizeMoney(inventory.getUnitCost());
 
@@ -96,7 +100,10 @@ public class InventoryServiceImpl implements InventoryService {
                 .build();
         inventoryTransactionRepository.save(transaction);
 
-        return inventoryMapper.toDTO(inventory);
+        // Tự động mở lại các món bị tắt do hết nguyên liệu này khi kho đã đủ
+        autoReopenMenuItemsIfStockSufficient(savedInventory);
+
+        return inventoryMapper.toDTO(savedInventory);
     }
 
     @Override
@@ -320,5 +327,28 @@ public class InventoryServiceImpl implements InventoryService {
                 .marketPriceSource(inventory.getMarketPriceSource())
                 .marketPriceUpdatedAt(inventory.getMarketPriceUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Sau khi nhập kho nguyên liệu, tự động mở lại các món bị tắt (available=false)
+     * nếu giờ đây tất cả nguyên liệu của món đó đều đủ hàng.
+     * Điều kiện mở lại: không còn nguyên liệu nào trong công thức có tồn kho <= 0.
+     */
+    private void autoReopenMenuItemsIfStockSufficient(Inventory replenishedInventory) {
+        Long ingredientId = replenishedInventory.getIngredient().getId();
+
+        // Lấy tất cả menuItem dùng nguyên liệu vừa được nhập kho
+        List<Long> candidateIds = recipeRepository.findMenuItemIdsByIngredientId(ingredientId);
+        if (candidateIds.isEmpty()) return;
+
+        // Lọc các món thực sự đủ điều kiện mở lại:
+        // countInsufficientIngredients = 0 nghĩa là tất cả nguyên liệu đều có hàng
+        List<Long> toReopen = candidateIds.stream()
+                .filter(menuItemId -> recipeRepository.countInsufficientIngredients(menuItemId) == 0)
+                .toList();
+
+        if (!toReopen.isEmpty()) {
+            menuItemRepository.bulkSetAvailable(toReopen);
+        }
     }
 }

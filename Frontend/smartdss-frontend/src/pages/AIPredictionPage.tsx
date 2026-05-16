@@ -109,7 +109,7 @@ export default function AIPredictionPage() {
               <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${retrainStatus.current_model_mape_pct < 15 ? 'bg-green-100 text-green-700'
                 : retrainStatus.current_model_mape_pct < 25 ? 'bg-amber-100 text-amber-700'
                   : 'bg-red-100 text-red-700'}`}>
-                MAPE {retrainStatus.current_model_mape_pct.toFixed(1)}%
+                WMAPE {retrainStatus.current_model_mape_pct.toFixed(1)}%
               </span>
             )}
           </h1>

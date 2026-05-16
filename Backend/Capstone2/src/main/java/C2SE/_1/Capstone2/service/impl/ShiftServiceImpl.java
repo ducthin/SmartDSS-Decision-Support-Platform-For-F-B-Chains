@@ -846,9 +846,8 @@ public class ShiftServiceImpl implements ShiftService {
         if (attendance == null || attendance.getCheckInAt() == null || attendance.getCheckOutAt() == null) {
             return null;
         }
-        long minutes = Duration.between(attendance.getCheckInAt(), attendance.getCheckOutAt()).toMinutes();
-        int safeBreak = breakMinutes == null ? 0 : Math.max(0, breakMinutes);
-        return Math.max(0, minutes - safeBreak);
+        // Phút công = thời gian thực tế từ check-in đến check-out (không trừ giờ nghỉ)
+        return Math.max(0, Duration.between(attendance.getCheckInAt(), attendance.getCheckOutAt()).toMinutes());
     }
 
     private Long calculateLateMinutes(ShiftAttendance attendance, LocalDateTime scheduledStartAt) {

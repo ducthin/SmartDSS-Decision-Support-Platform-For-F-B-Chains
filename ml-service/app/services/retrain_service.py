@@ -50,6 +50,17 @@ def _utcnow() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
+def _read_mape_from_bundle(path: Path) -> Optional[float]:
+    """Đọc MAPE test từ file model.joblib."""
+    try:
+        bundle = joblib.load(path)
+        if isinstance(bundle, dict):
+            return bundle.get("test_mape_revenue_pct")
+    except Exception as exc:
+        log.warning("[Retrain] Không đọc được MAPE từ bundle: %s", exc)
+    return None
+
+
 class RetrainState:
     """
     Trạng thái toàn cục của hệ thống auto-retrain.
@@ -71,8 +82,10 @@ class RetrainState:
         # Lịch sử các lần retrain (giữ 20 bản gần nhất)
         self.retrain_history: list[dict] = []
 
-        # MAPE của model đang chạy (None nếu chưa biết)
-        self.current_model_mape: Optional[float] = None
+        # MAPE của model đang chạy — đọc từ model.joblib nếu đã tồn tại
+        self.current_model_mape: Optional[float] = (
+            _read_mape_from_bundle(MODEL_PATH) if MODEL_PATH.exists() else None
+        )
 
         # Lý do lần kích hoạt retrain gần nhất
         self.last_trigger_reason: Optional[str] = None
@@ -177,16 +190,6 @@ def _run_train_subprocess() -> tuple[bool, Optional[float], str]:
         log.exception("[Retrain] Lỗi khi chạy subprocess: %s", exc)
         return False, None, str(exc)
 
-
-def _read_mape_from_bundle(path: Path) -> Optional[float]:
-    """Đọc MAPE test từ file model.joblib."""
-    try:
-        bundle = joblib.load(path)
-        if isinstance(bundle, dict):
-            return bundle.get("test_mape_revenue_pct")
-    except Exception as exc:
-        log.warning("[Retrain] Không đọc được MAPE từ bundle: %s", exc)
-    return None
 
 
 def run_retrain(triggered_by: str = "scheduler") -> dict:

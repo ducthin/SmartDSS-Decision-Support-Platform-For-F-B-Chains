@@ -4,6 +4,7 @@ import C2SE._1.Capstone2.entity.MenuItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,4 +32,14 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
                           @Param("categoryId") Long categoryId,
                           @Param("available") Boolean available,
                           Pageable pageable);
+
+    /** Bulk set available=false cho danh sách món (khi kho hết nguyên liệu) */
+    @Modifying
+    @Query("UPDATE MenuItem m SET m.available = false WHERE m.id IN :ids AND m.available = true")
+    int bulkSetUnavailable(@Param("ids") Collection<Long> ids);
+
+    /** Bulk set available=true cho danh sách món (khi kho đã có hàng trở lại) */
+    @Modifying
+    @Query("UPDATE MenuItem m SET m.available = true WHERE m.id IN :ids AND m.available = false")
+    int bulkSetAvailable(@Param("ids") Collection<Long> ids);
 }

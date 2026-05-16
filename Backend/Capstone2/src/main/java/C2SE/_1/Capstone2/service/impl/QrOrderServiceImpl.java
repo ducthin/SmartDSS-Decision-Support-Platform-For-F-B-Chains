@@ -383,13 +383,18 @@ public class QrOrderServiceImpl implements QrOrderService {
 
     private void validateInventoryAvailability(List<OrderItem> orderItems) {
         Map<Long, BigDecimal> requiredByIngredient = new HashMap<>();
+        // Map ingredientId -> tên các món trong đơn bị ảnh hưởng (để báo lỗi chi tiết)
+        Map<Long, List<String>> menuItemNamesByIngredient = new HashMap<>();
 
         for (OrderItem orderItem : orderItems) {
+            String menuItemName = orderItem.getMenuItem().getName();
             List<Recipe> recipes = recipeRepository.findByMenuItemId(orderItem.getMenuItem().getId());
             for (Recipe recipe : recipes) {
+                Long ingId = recipe.getIngredient().getId();
                 BigDecimal required = recipe.getQuantity()
                         .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
-                requiredByIngredient.merge(recipe.getIngredient().getId(), required, BigDecimal::add);
+                requiredByIngredient.merge(ingId, required, BigDecimal::add);
+                menuItemNamesByIngredient.computeIfAbsent(ingId, k -> new ArrayList<>()).add(menuItemName);
             }
         }
 
@@ -401,13 +406,23 @@ public class QrOrderServiceImpl implements QrOrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory", "ingredientId", ingredientId));
 
             if (inventory.getQuantity().compareTo(required) < 0) {
+                // Lấy tất cả menuItemId dùng nguyên liệu này và bulk set available=false
+                List<Long> affectedIds = recipeRepository.findMenuItemIdsByIngredientId(ingredientId);
+                if (!affectedIds.isEmpty()) {
+                    menuItemRepository.bulkSetUnavailable(affectedIds);
+                }
+
+                // Lấy tên các món trong đơn bị ảnh hưởng để thông báo rõ ràng
+                List<String> affectedMenuNames = menuItemNamesByIngredient.getOrDefault(ingredientId, List.of());
+                String affectedStr = affectedMenuNames.isEmpty() ? "một hoặc nhiều món" : String.join(", ", affectedMenuNames);
                 throw new InsufficientStockException(
-                        "Insufficient stock for ingredient: " + inventory.getIngredient().getName()
-                                + ". Available: " + inventory.getQuantity()
-                                + ", Required: " + required);
+                        "Quán tạm hết nguyên liệu \"" + inventory.getIngredient().getName()
+                        + "\", không thể chuẩn bị: " + affectedStr
+                        + ". Vui lòng chọn món khác hoặc thử lại sau.");
             }
         }
     }
+
 
     private String normalizeCustomerPhone(String customerPhone) {
         if (customerPhone == null) {

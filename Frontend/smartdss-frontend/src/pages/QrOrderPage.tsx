@@ -431,8 +431,20 @@ export default function QrOrderPage() {
       setShowCart(false);
       setTab('orders');
       void loadOrders();
-    } catch {
-      toast.error('Lỗi đặt hàng, vui lòng thử lại');
+    } catch (err: unknown) {
+      // Lấy thông báo lỗi chi tiết từ server (ví dụ: "Quán tạm hết nguyên liệu X...")
+      let errMsg = 'Lỗi đặt hàng, vui lòng thử lại';
+      const apiErr = err as { response?: { data?: { message?: string } } };
+      const serverMsg = apiErr?.response?.data?.message;
+      if (serverMsg) {
+        errMsg = serverMsg;
+        // Nếu lỗi liên quan đến hết hàng → reload menu để cập nhật trạng thái
+        if (serverMsg.includes('hết') || serverMsg.includes('hết hàng') || serverMsg.includes('không còn phục vụ')) {
+          void loadData();
+        }
+      }
+      toast.error(errMsg, { duration: 6000 });
+
     } finally {
       setSubmitting(false);
     }

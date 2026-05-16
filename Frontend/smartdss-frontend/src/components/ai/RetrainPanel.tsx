@@ -31,8 +31,8 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
         <div className="flex items-center gap-2">
           {status && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.is_retraining ? 'bg-amber-100 text-amber-700'
-                : status.retrain_enabled ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-500'}`}>
+              : status.retrain_enabled ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-500'}`}>
               {status.is_retraining ? '⏳ Retraining...' : status.retrain_enabled ? ' Active' : '⏸ Off'}
             </span>
           )}
@@ -73,12 +73,12 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
               </div>
             </div>
             <div className={S.card}>
-              <p className={S.label}>MAPE</p>
+              <p className={S.label}>WMAPE</p>
               <p className={S.val}>
                 {status.current_model_mape_pct != null
                   ? <span className={status.current_model_mape_pct < 15 ? 'text-green-600' : status.current_model_mape_pct < 25 ? 'text-amber-600' : 'text-red-500'}>
-                    {status.current_model_mape_pct.toFixed(1)}%
-                  </span>
+                      {status.current_model_mape_pct.toFixed(1)}%
+                    </span>
                   : <span className="text-[rgba(26,14,7,0.3)] text-xs">—</span>}
               </p>
             </div>
@@ -86,79 +86,80 @@ export default function RetrainPanel({ status, loading, error, triggerMsg, trigg
               <p className={S.label}>Chu kỳ</p>
               <p className={S.val}>{status.config.interval_days}d / {status.config.order_threshold.toLocaleString()}đ</p>
             </div>
-          </div>
+        </div>
 
-          {/* Actions row */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-xs text-[rgba(26,14,7,0.38)] space-y-0.5">
-              {status.last_trigger_reason && (
-                <span className="flex items-center gap-1"><Activity size={11} className="text-[#c9a27a]" />{status.last_trigger_reason}</span>
-              )}
-              {status.last_checked_at && (
-                <span className="block">Check: {new Date(status.last_checked_at).toLocaleTimeString('vi-VN')} · mỗi {status.config.check_interval_minutes}ph</span>
-              )}
-            </div>
-            <button id="btn-trigger-retrain" onClick={onTrigger} disabled={triggering || status.is_retraining}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${triggering || status.is_retraining
-                  ? 'bg-[rgba(107,80,64,0.06)] text-[rgba(26,14,7,0.3)] cursor-not-allowed'
-                  : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
-              <RefreshCw size={12} className={triggering || status.is_retraining ? 'animate-spin' : ''} />
-              {status.is_retraining ? 'Đang train...' : 'Retrain ngay'}
-            </button>
-          </div>
+      {/* Actions row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-[rgba(26,14,7,0.38)] space-y-0.5">
+          {status.last_trigger_reason && (
+            <span className="flex items-center gap-1"><Activity size={11} className="text-[#c9a27a]" />{status.last_trigger_reason}</span>
+          )}
+          {status.last_checked_at && (
+            <span className="block">Check: {new Date(status.last_checked_at).toLocaleTimeString('vi-VN')} · mỗi {status.config.check_interval_minutes}ph</span>
+          )}
+        </div>
+        <button id="btn-trigger-retrain" onClick={onTrigger} disabled={triggering || status.is_retraining}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${triggering || status.is_retraining
+            ? 'bg-[rgba(107,80,64,0.06)] text-[rgba(26,14,7,0.3)] cursor-not-allowed'
+            : 'bg-[#6b5040] text-white hover:brightness-110 active:scale-95'}`}>
+          <RefreshCw size={12} className={triggering || status.is_retraining ? 'animate-spin' : ''} />
+          {status.is_retraining ? 'Đang train...' : 'Retrain ngay'}
+        </button>
+      </div>
 
-          {status.is_retraining ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 overflow-hidden relative">
-              <div className="flex justify-between items-center mb-2 relative z-10">
-                <span className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
-                  <RefreshCw size={14} className="animate-spin text-amber-600" /> Đang huấn luyện AI...
-                </span>
-                <span className="text-xs text-amber-700">Vui lòng chờ (tối đa 10 phút)</span>
-              </div>
-              <div className="h-1.5 bg-amber-200/50 rounded-full overflow-hidden relative z-10">
-                <div className="h-full bg-amber-500 rounded-full w-1/2 animate-[progress_1.5s_ease-in-out_infinite_alternate]" />
-              </div>
-              {/* Animation keyframes in tailwind/css are required, but inline will work for fallback if standard classes missing */}
-              <style>{`
+      {status.is_retraining ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 overflow-hidden relative">
+          <div className="flex justify-between items-center mb-2 relative z-10">
+            <span className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+              <RefreshCw size={14} className="animate-spin text-amber-600" /> Đang huấn luyện AI...
+            </span>
+            <span className="text-xs text-amber-700">Vui lòng chờ (tối đa 10 phút)</span>
+          </div>
+          <div className="h-1.5 bg-amber-200/50 rounded-full overflow-hidden relative z-10">
+            <div className="h-full bg-amber-500 rounded-full w-1/2 animate-[progress_1.5s_ease-in-out_infinite_alternate]" />
+          </div>
+          {/* Animation keyframes in tailwind/css are required, but inline will work for fallback if standard classes missing */}
+          <style>{`
                 @keyframes progress {
                   0% { transform: translateX(-100%); }
                   100% { transform: translateX(200%); }
                 }
               `}</style>
-            </div>
-          ) : triggerMsg ? (
-            <p className="text-xs text-[#6b5040] bg-[rgba(201,162,122,0.08)] rounded-lg px-3 py-1.5 border border-[rgba(107,80,64,0.1)]">{triggerMsg}</p>
-          ) : null}
+        </div>
+      ) : triggerMsg ? (
+        <p className="text-xs text-[#6b5040] bg-[rgba(201,162,122,0.08)] rounded-lg px-3 py-1.5 border border-[rgba(107,80,64,0.1)]">{triggerMsg}</p>
+      ) : null}
 
-          {/* History */}
-          {status.history.length > 0 && (
-            <div>
-              <button onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center gap-1 text-xs text-[rgba(26,14,7,0.4)] hover:text-[#6b5040] transition-colors">
-                {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                Lịch sử ({status.history.length} lần)
-              </button>
-              {showHistory && (
-                <div className="mt-2 space-y-1 max-h-44 overflow-y-auto">
-                  {[...status.history].reverse().map((item, i) => (
-                    <div key={i} className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs ${item.success ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
-                      {item.success ? <CheckCircle2 size={12} className="mt-0.5 text-green-500 shrink-0" /> : <XCircle size={12} className="mt-0.5 text-red-400 shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between gap-1">
-                          <span className={item.success ? 'text-green-800 font-medium' : 'text-red-700 font-medium'}>{item.success ? 'Thành công' : 'Thất bại'}</span>
-                          <span className="text-[rgba(26,14,7,0.35)] shrink-0">{new Date(item.started_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <p className="text-[rgba(26,14,7,0.45)] truncate">{item.note}</p>
-                        {item.mape_pct != null && <span className="text-[rgba(26,14,7,0.3)]">MAPE: {item.mape_pct}%</span>}
-                      </div>
+      {/* History */}
+      {status.history.length > 0 && (
+        <div>
+          <button onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center gap-1 text-xs text-[rgba(26,14,7,0.4)] hover:text-[#6b5040] transition-colors">
+            {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            Lịch sử ({status.history.length} lần)
+          </button>
+          {showHistory && (
+            <div className="mt-2 space-y-1 max-h-44 overflow-y-auto">
+              {[...status.history].reverse().map((item, i) => (
+                <div key={i} className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs ${item.success ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                  {item.success ? <CheckCircle2 size={12} className="mt-0.5 text-green-500 shrink-0" /> : <XCircle size={12} className="mt-0.5 text-red-400 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between gap-1">
+                      <span className={item.success ? 'text-green-800 font-medium' : 'text-red-700 font-medium'}>{item.success ? 'Thành công' : 'Thất bại'}</span>
+                      <span className="text-[rgba(26,14,7,0.35)] shrink-0">{new Date(item.started_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                  ))}
+                    <p className="text-[rgba(26,14,7,0.45)] truncate">{item.note}</p>
+                    {item.mape_pct != null && <span className="text-[rgba(26,14,7,0.3)]">WMAPE: {item.mape_pct}%</span>}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
-        </>
+        </div>
       )}
-    </div>
+    </>
+  )
+}
+    </div >
   );
 }
