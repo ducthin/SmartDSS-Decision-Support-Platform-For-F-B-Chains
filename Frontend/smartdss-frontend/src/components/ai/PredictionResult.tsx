@@ -2,7 +2,10 @@ import { TrendingUp, ShoppingBag, Package, Clock, MessageSquare } from 'lucide-r
 import type { AIPrediction } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 const CONF_STYLE = {
   high: 'bg-green-100 text-green-800 border-green-200',

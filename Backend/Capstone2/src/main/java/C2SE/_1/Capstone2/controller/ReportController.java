@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/reports")
@@ -71,7 +72,7 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(required = false) Integer areaDensityScore) {
         List<MlTrainingDataRowDTO> rows = reportService.getMlTrainingData(fromDate, toDate, areaDensityScore);
-        String fileName = "training_data_real_" + LocalDate.now() + ".csv";
+        String fileName = "training_data_real_" + TimeUtil.todayVN() + ".csv";
         String csv = buildMlTrainingCsv(rows);
 
         return ResponseEntity.ok()

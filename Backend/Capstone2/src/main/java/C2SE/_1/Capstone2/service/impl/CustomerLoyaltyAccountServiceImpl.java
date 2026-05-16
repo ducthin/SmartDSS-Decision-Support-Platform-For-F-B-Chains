@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -148,7 +149,7 @@ public class CustomerLoyaltyAccountServiceImpl implements CustomerLoyaltyAccount
         account.setTotalPointsEarned(currentTotalPoints + pointsAwarded);
         account.setTotalOrders(currentTotalOrders + 1);
         account.setTotalSpent(currentSpent.add(safeOrderAmount));
-        account.setLastOrderAt(LocalDateTime.now());
+        account.setLastOrderAt(TimeUtil.nowVN());
         refreshMonthlyTier(account);
 
         customerLoyaltyAccountRepository.save(account);
@@ -181,7 +182,7 @@ public class CustomerLoyaltyAccountServiceImpl implements CustomerLoyaltyAccount
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtil.nowVN();
         LocalDateTime from = now.minusDays(30);
         long monthlyOrders = orderRepository.countCompletedByPhoneInRange(account.getPhone(), from, now);
         BigDecimal monthlySpent = orderRepository.sumCompletedAmountByPhoneInRange(account.getPhone(), from, now);

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -81,7 +82,7 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
         }
 
         // Basic anti-spam: cooldown by table+phone, cap per day by phone and cap per minute by table.
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtil.nowVN();
         String customerPhone = dto.getCustomerPhone().trim();
         if (customerFeedbackRepository.existsByTableNameAndCustomerPhoneAndCreatedAtAfter(
                 table.getName(), customerPhone, now.minusMinutes(feedbackCooldownMinutes))) {
@@ -126,7 +127,7 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
             long lowRatingCount = customerFeedbackRepository.countLowRatingByTableInWindow(
                     savedDto.getTableName(),
                     lowRatingThreshold,
-                    LocalDateTime.now().minusMinutes(alertWindowMinutes)
+                    TimeUtil.nowVN().minusMinutes(alertWindowMinutes)
             );
             String level = lowRatingCount >= criticalLowRatingCount ? "CRITICAL" : "HIGH";
             FeedbackAlertDTO alert = FeedbackAlertDTO.builder()
@@ -185,7 +186,7 @@ public class CustomerFeedbackServiceImpl implements CustomerFeedbackService {
     @Override
     @Transactional(readOnly = true)
     public FeedbackStatsDTO getFeedbackStats() {
-        LocalDateTime startToday = LocalDate.now().atStartOfDay();
+        LocalDateTime startToday = TimeUtil.todayVN().atStartOfDay();
         LocalDateTime endToday = startToday.plusDays(1).minusNanos(1);
         return FeedbackStatsDTO.builder()
                 .total(customerFeedbackRepository.count())

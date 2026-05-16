@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +71,7 @@ public class TableBookingServiceImpl implements TableBookingService {
 
     private void validateBookingDateTime(LocalDate date, LocalTime time) {
         LocalDateTime bookingAt = LocalDateTime.of(date, time);
-        if (bookingAt.isBefore(LocalDateTime.now().minusMinutes(5))) {
+        if (bookingAt.isBefore(TimeUtil.nowVN().minusMinutes(5))) {
             throw new BadRequestException("Thời gian đặt bàn phải ở hiện tại hoặc tương lai");
         }
     }

@@ -8,8 +8,14 @@ import { mlAdminService, type RetrainStatus } from '@/services/mlAdminService';
 import RetrainPanel from '@/components/ai/RetrainPanel';
 import PredictionResult from '@/components/ai/PredictionResult';
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
-function daysAgoISO(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0]; }
+function localDateISO(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+function todayISO() { return localDateISO(new Date()); }
+function daysAgoISO(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return localDateISO(d); }
 function dayVN(d: string) { return ['Chủ nhật', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(d + 'T00:00:00').getDay()]; }
 
 type ActiveTab = 'predict' | 'retrain' | 'export';
@@ -148,7 +154,7 @@ export default function AIPredictionPage() {
               <div className="flex gap-1.5">
                 {[{ l: 'Hôm nay', d: 0 }, { l: 'Ngày mai', d: 1 }, { l: '+7', d: 7 }].map(({ l, d }) => {
                   const dt = new Date(); dt.setDate(dt.getDate() + d);
-                  const iso = dt.toISOString().split('T')[0];
+                  const iso = localDateISO(dt);
                   return (
                     <button key={l} onClick={() => { setSelectedDate(iso); setPrediction(null); }}
                       className={`text-xs px-2.5 py-2 rounded-lg border transition-colors ${selectedDate === iso

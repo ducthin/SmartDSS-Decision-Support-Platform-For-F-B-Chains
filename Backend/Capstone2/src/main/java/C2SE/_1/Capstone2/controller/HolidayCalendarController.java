@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/holidays")
@@ -68,7 +69,7 @@ public class HolidayCalendarController {
     public ResponseEntity<ApiResponse<Integer>> syncFromCalendarific(
             @RequestParam(defaultValue = "0") int year) {
         if (year <= 0) {
-            year = java.time.LocalDate.now().getYear();
+            year = TimeUtil.todayVN().getYear();
         }
         int count = holidayCalendarService.syncFromCalendarific(year);
         return ResponseEntity.ok(ApiResponse.success(count, "Đã đồng bộ " + count + " ngày lễ từ Calendarific"));

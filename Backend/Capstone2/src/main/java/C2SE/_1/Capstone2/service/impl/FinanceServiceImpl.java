@@ -43,6 +43,7 @@ import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -140,7 +141,7 @@ public class FinanceServiceImpl implements FinanceService {
                 .category(category)
                 .type(category.getType())
                 .amount(normalizeMoney(dto.getAmount()))
-                .occurredAt(dto.getOccurredAt() == null ? LocalDateTime.now() : dto.getOccurredAt())
+                .occurredAt(dto.getOccurredAt() == null ? TimeUtil.nowVN() : dto.getOccurredAt())
                 .note(normalizeNote(dto.getNote()))
                 .sourceType(normalizeSource(dto.getSourceType(), 30))
                 .sourceRefId(normalizeSource(dto.getSourceRefId(), 60))
@@ -159,7 +160,7 @@ public class FinanceServiceImpl implements FinanceService {
         transaction.setCategory(category);
         transaction.setType(category.getType());
         transaction.setAmount(normalizeMoney(dto.getAmount()));
-        transaction.setOccurredAt(dto.getOccurredAt() == null ? LocalDateTime.now() : dto.getOccurredAt());
+        transaction.setOccurredAt(dto.getOccurredAt() == null ? TimeUtil.nowVN() : dto.getOccurredAt());
         transaction.setNote(normalizeNote(dto.getNote()));
         transaction.setSourceType(normalizeSource(dto.getSourceType(), 30));
         transaction.setSourceRefId(normalizeSource(dto.getSourceRefId(), 60));
@@ -227,7 +228,7 @@ public class FinanceServiceImpl implements FinanceService {
                 .category(category)
                 .type(FinanceType.INCOME)
                 .amount(normalizedAmount)
-                .occurredAt(occurredAt == null ? LocalDateTime.now() : occurredAt)
+                .occurredAt(occurredAt == null ? TimeUtil.nowVN() : occurredAt)
                 .note("Tự động ghi nhận thu từ thanh toán đơn #" + orderId)
                 .sourceType(AUTO_INCOME_SOURCE_TYPE)
                 .sourceRefId(sourceRefId)
@@ -311,7 +312,7 @@ public class FinanceServiceImpl implements FinanceService {
     @Override
     @Transactional(readOnly = true)
     public CashClosingDTO previewCashClosing(LocalDate businessDate, BigDecimal openingBalance) {
-        LocalDate targetDate = businessDate == null ? LocalDate.now() : businessDate;
+        LocalDate targetDate = businessDate == null ? TimeUtil.todayVN() : businessDate;
         CashClosing existing = cashClosingRepository.findByBusinessDate(targetDate).orElse(null);
 
         BigDecimal resolvedOpeningBalance = openingBalance != null
@@ -348,7 +349,7 @@ public class FinanceServiceImpl implements FinanceService {
 
     @Override
     public CashClosingDTO closeCashDay(CashClosingCreateDTO dto) {
-        LocalDate targetDate = dto.getBusinessDate() == null ? LocalDate.now() : dto.getBusinessDate();
+        LocalDate targetDate = dto.getBusinessDate() == null ? TimeUtil.todayVN() : dto.getBusinessDate();
         CashClosing existing = cashClosingRepository.findByBusinessDate(targetDate).orElse(null);
 
         BigDecimal openingBalance = dto.getOpeningBalance() != null
@@ -376,7 +377,7 @@ public class FinanceServiceImpl implements FinanceService {
         closing.setVariance(variance);
         closing.setNote(normalizeNote(dto.getNote()));
         closing.setClosedBy(resolveCurrentUser());
-        closing.setClosedAt(LocalDateTime.now());
+        closing.setClosedAt(TimeUtil.nowVN());
 
         return toCashClosingDTO(cashClosingRepository.save(closing));
     }
@@ -610,7 +611,7 @@ public class FinanceServiceImpl implements FinanceService {
     }
 
     private DateRange resolveDateRange(LocalDate fromDate, LocalDate toDate) {
-        LocalDate resolvedTo = toDate != null ? toDate : LocalDate.now();
+        LocalDate resolvedTo = toDate != null ? toDate : TimeUtil.todayVN();
         LocalDate resolvedFrom = fromDate != null ? fromDate : resolvedTo.minusDays(29);
         if (resolvedFrom.isAfter(resolvedTo)) {
             LocalDate temp = resolvedFrom;

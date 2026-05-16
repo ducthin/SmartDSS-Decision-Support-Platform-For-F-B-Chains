@@ -23,6 +23,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -136,7 +137,7 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
                     .recommendation(recommendation(level))
                     .source("OpenStreetMap/Overpass")
                     .sourceType(SOURCE_REALTIME)
-                    .analyzedAt(LocalDateTime.now())
+                    .analyzedAt(TimeUtil.nowVN())
                     .build();
 
             updateCache(location, dto);
@@ -225,17 +226,17 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
         }
 
         LocalDateTime expireAt = localCachedAt.plusSeconds(Math.max(cacheSeconds, 0));
-        if (expireAt.isBefore(LocalDateTime.now())) return null;
+        if (expireAt.isBefore(TimeUtil.nowVN())) return null;
         AreaBusynessDTO dto = cloneDto(localCached);
         dto.setSourceType(SOURCE_CACHE);
         dto.setSource(localCached.getSource() + " (cache)");
-        dto.setAnalyzedAt(LocalDateTime.now());
+        dto.setAnalyzedAt(TimeUtil.nowVN());
         return dto;
     }
 
     private synchronized void updateCache(StoreLocationDTO location, AreaBusynessDTO dto) {
         cachedResult = cloneDto(dto);
-        cachedAt = LocalDateTime.now();
+        cachedAt = TimeUtil.nowVN();
         cachedLatitude = location.getLatitude();
         cachedLongitude = location.getLongitude();
     }
@@ -286,13 +287,13 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
         LocalDateTime openedAt = circuitOpenedAt;
         if (openedAt == null) return false;
         long openSeconds = Math.max(circuitOpenSeconds, DEFAULT_CIRCUIT_OPEN_SECONDS);
-        return openedAt.plusSeconds(openSeconds).isAfter(LocalDateTime.now());
+        return openedAt.plusSeconds(openSeconds).isAfter(TimeUtil.nowVN());
     }
 
     private synchronized void recordFailure() {
         consecutiveFailures++;
         if (consecutiveFailures >= CIRCUIT_THRESHOLD) {
-            circuitOpenedAt = LocalDateTime.now();
+            circuitOpenedAt = TimeUtil.nowVN();
         }
     }
 
@@ -306,7 +307,7 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
             AreaBusynessDTO dto = cloneDto(cachedResult);
             dto.setSource(source + " (using-cache)");
             dto.setSourceType(SOURCE_CACHE);
-            dto.setAnalyzedAt(LocalDateTime.now());
+            dto.setAnalyzedAt(TimeUtil.nowVN());
             return dto;
         }
         return AreaBusynessDTO.builder()
@@ -323,7 +324,7 @@ public class AreaBusynessServiceImpl implements AreaBusynessService {
                 .recommendation("Chưa lấy được dữ liệu khu vực theo thời gian thực. Vị trí quán vẫn đã lưu bình thường, vui lòng thử làm mới lại sau.")
                 .source(source)
                 .sourceType(SOURCE_FALLBACK)
-                .analyzedAt(LocalDateTime.now())
+                .analyzedAt(TimeUtil.nowVN())
                 .build();
     }
 

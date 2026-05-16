@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     @Transactional(readOnly = true)
     public WeatherDataDTO getTodayWeather() {
-        return weatherDataRepository.findByRecordDate(LocalDate.now())
+        return weatherDataRepository.findByRecordDate(TimeUtil.todayVN())
                 .map(weatherDataMapper::toDTO)
                 .orElse(null);
     }
@@ -78,7 +79,7 @@ public class WeatherServiceImpl implements WeatherService {
             JsonNode wind = root.path("wind");
             JsonNode rain = root.path("rain");
 
-            LocalDate today = LocalDate.now();
+            LocalDate today = TimeUtil.todayVN();
             WeatherData weatherData = weatherDataRepository.findByRecordDate(today)
                     .orElse(WeatherData.builder().recordDate(today).build());
 

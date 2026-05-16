@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClient;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -63,7 +64,7 @@ public class HolidayCalendarServiceImpl implements HolidayCalendarService {
     @Override
     @Transactional(readOnly = true)
     public List<HolidayCalendarDTO> getUpcomingHolidays() {
-        return holidayCalendarMapper.toDTOList(holidayCalendarRepository.findUpcoming(LocalDate.now()));
+        return holidayCalendarMapper.toDTOList(holidayCalendarRepository.findUpcoming(TimeUtil.todayVN()));
     }
 
     @Override

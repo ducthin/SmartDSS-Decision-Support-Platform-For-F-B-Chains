@@ -41,7 +41,12 @@ const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
   SERVICE_ORDER: 'Order & bưng bê',
 };
 
-const toDateInput = (date: Date) => date.toISOString().split('T')[0];
+const toDateInput = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 function formatDateTime(value?: string) {
   if (!value) return '—';

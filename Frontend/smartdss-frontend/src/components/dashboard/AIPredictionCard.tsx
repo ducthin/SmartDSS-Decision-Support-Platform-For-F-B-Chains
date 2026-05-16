@@ -21,7 +21,11 @@ function confidenceLabel(score: number) {
 }
 
 function todayISO() {
-  return new Date().toISOString().split('T')[0]; // yyyy-MM-dd
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`; // yyyy-MM-dd (local timezone)
 }
 
 export default function AIPredictionCard({ visible }: Props) {

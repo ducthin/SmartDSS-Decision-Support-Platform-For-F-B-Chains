@@ -149,28 +149,38 @@ export default function MainLayout() {
   }, [notiEnabled, permission, audioReady]);
 
   const enableNotifications = async () => {
-    if (!notificationSupported) {
-      toast.error('Thiết bị không hỗ trợ thông báo');
-      return;
-    }
     try {
       const audioUnlocked = await unlockAlertAudio();
       setAudioReady(audioUnlocked);
+      
+      if (audioUnlocked) {
+        localStorage.setItem(STAFF_NOTI_PREF_KEY, '1');
+        setNotiEnabled(true);
+        try {
+          const soundRes = await settingsService.getStaffCallSound();
+          await loadAlertSound(resolveBackendUrl(soundRes.data.data.soundUrl));
+          playConfiguredAlertSound();
+        } catch {
+          // fallback to beep
+          playAlertBeep();
+        }
+      }
+
+      if (!notificationSupported) {
+        toast.success(audioUnlocked ? 'Đã bật âm thanh (Thông báo nổi không được hỗ trợ trên thiết bị này)' : 'Thiết bị không hỗ trợ thông báo');
+        return;
+      }
+
       const result = await Notification.requestPermission();
       setPermission(result); // cập nhật reactive ngay lập tức
       if (result === 'granted') {
         localStorage.setItem(STAFF_NOTI_PREF_KEY, '1');
         setNotiEnabled(true);
-        if (audioUnlocked) {
-          const soundRes = await settingsService.getStaffCallSound();
-          await loadAlertSound(resolveBackendUrl(soundRes.data.data.soundUrl));
-          playConfiguredAlertSound();
-        }
-        toast.success('Đã bật thông báo');
+        toast.success('Đã bật thông báo và âm thanh');
       } else if (audioUnlocked) {
         toast.success('Đã bật âm thanh, nhưng trình duyệt chưa cho phép thông báo nổi');
       } else {
-        toast.error('Bạn đã từ chối quyền thông báo');
+        toast.error('Bạn đã từ chối quyền thông báo nổi');
       }
     } catch {
       toast.error('Không thể bật thông báo');

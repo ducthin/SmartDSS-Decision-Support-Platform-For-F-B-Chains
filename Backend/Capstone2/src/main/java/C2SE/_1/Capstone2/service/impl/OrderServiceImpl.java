@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -217,7 +218,7 @@ public class OrderServiceImpl implements OrderService {
                 subtotalAmount,
                 orderDTO.getVoucherCode(),
                 order.getCustomerPhone(),
-                LocalDate.now());
+                TimeUtil.todayVN());
         BigDecimal finalTotalAmount = subtotalAmount.subtract(discountResult.totalDiscountAmount())
                 .max(BigDecimal.ZERO);
 
@@ -248,7 +249,7 @@ public class OrderServiceImpl implements OrderService {
                     safeSubtotal,
                     voucherCode,
                     normalizeCustomerPhone(customerPhone),
-                    LocalDate.now());
+                    TimeUtil.todayVN());
             BigDecimal finalAmount = safeSubtotal.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
             return QrDiscountPreviewDTO.builder()
                     .subtotalAmount(safeSubtotal)
@@ -267,7 +268,7 @@ public class OrderServiceImpl implements OrderService {
                     safeSubtotal,
                     null,
                     normalizeCustomerPhone(customerPhone),
-                    LocalDate.now());
+                    TimeUtil.todayVN());
             BigDecimal finalAmount = safeSubtotal.subtract(calendarOnly.totalDiscountAmount()).max(BigDecimal.ZERO);
             return QrDiscountPreviewDTO.builder()
                     .subtotalAmount(safeSubtotal)

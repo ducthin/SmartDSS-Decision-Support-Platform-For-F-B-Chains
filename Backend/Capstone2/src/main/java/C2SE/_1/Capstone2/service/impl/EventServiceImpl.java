@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +74,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public List<EventDTO> getUpcomingEvents() {
-        return eventMapper.toDTOList(eventRepository.findUpcoming(LocalDate.now()));
+        return eventMapper.toDTOList(eventRepository.findUpcoming(TimeUtil.todayVN()));
     }
 
     @Override

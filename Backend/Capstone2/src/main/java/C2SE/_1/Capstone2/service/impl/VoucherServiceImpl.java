@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,7 @@ public class VoucherServiceImpl implements VoucherService {
     public List<VoucherDTO> getAvailablePersonalVouchers(String phone) {
         String normalizedPhone = normalizePhone(phone);
         return voucherMapper.toDTOList(
-                voucherRepository.findAvailablePersonalVouchers(List.of(normalizedPhone), LocalDateTime.now())
+                voucherRepository.findAvailablePersonalVouchers(List.of(normalizedPhone), TimeUtil.nowVN())
         );
     }
 

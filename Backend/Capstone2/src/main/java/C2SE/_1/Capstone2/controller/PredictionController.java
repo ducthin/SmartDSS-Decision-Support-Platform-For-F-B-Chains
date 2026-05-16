@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/predictions")
@@ -24,7 +25,7 @@ public class PredictionController {
     public ResponseEntity<AIPredictionResponseDTO> getDailyPrediction(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false, defaultValue = "false") boolean compareLlm) {
-        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        LocalDate targetDate = (date != null) ? date : TimeUtil.todayVN();
         log.info("[PredictionController] Dự báo cho ngày: {} compareLlm={}", targetDate, compareLlm);
         return ResponseEntity.ok(aiPredictionService.getPrediction(targetDate, compareLlm));
     }

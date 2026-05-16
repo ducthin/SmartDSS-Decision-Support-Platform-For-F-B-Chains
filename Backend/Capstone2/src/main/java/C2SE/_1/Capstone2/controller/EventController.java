@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/events")
@@ -51,7 +52,7 @@ public class EventController {
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<EventDTO>>> getActiveEvents(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(ApiResponse.success(eventService.getActiveEventsByDate(date != null ? date : LocalDate.now())));
+        return ResponseEntity.ok(ApiResponse.success(eventService.getActiveEventsByDate(date != null ? date : TimeUtil.todayVN())));
     }
 
     @GetMapping("/upcoming")

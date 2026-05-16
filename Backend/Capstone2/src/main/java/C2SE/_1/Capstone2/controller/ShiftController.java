@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/shifts")
@@ -160,7 +161,7 @@ public class ShiftController {
             @RequestParam(required = false) ShiftType shiftType) {
         List<ShiftWorkSummaryDTO> rows = shiftService.getWorkSummary(fromDate, toDate, userId, shiftType);
         String csv = buildWorkSummaryCsv(rows);
-        String fileName = "shift_work_summary_" + LocalDate.now() + ".csv";
+        String fileName = "shift_work_summary_" + TimeUtil.todayVN() + ".csv";
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")

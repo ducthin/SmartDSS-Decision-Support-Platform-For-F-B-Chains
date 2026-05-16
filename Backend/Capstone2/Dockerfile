@@ -38,4 +38,5 @@ USER spring
 ENTRYPOINT ["java", \
   "-Djava.security.egd=file:/dev/./urandom", \
   "-Dspring.devtools.restart.enabled=false", \
+  "-Duser.timezone=Asia/Ho_Chi_Minh", \
   "-jar", "app.jar"]

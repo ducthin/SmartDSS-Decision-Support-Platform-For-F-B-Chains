@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -63,7 +64,7 @@ public class OrderDiscountService {
     private DiscountResult calculateInternal(BigDecimal subtotal, String rawVoucherCode, String customerPhone, LocalDate orderDate, boolean consumeVoucher) {
         BigDecimal safeSubtotal = money(subtotal == null ? BigDecimal.ZERO : subtotal.max(BigDecimal.ZERO));
 
-        CalendarDiscount calendarDiscount = resolveCalendarDiscount(orderDate == null ? LocalDate.now() : orderDate);
+        CalendarDiscount calendarDiscount = resolveCalendarDiscount(orderDate == null ? TimeUtil.todayVN() : orderDate);
         BigDecimal calendarDiscountAmount = percentAmount(safeSubtotal, calendarDiscount.discountPercent());
         BigDecimal baseAfterCalendar = safeSubtotal.subtract(calendarDiscountAmount).max(BigDecimal.ZERO);
 
@@ -122,7 +123,7 @@ public class OrderDiscountService {
             return new VoucherDiscount(List.of(), BigDecimal.ZERO);
         }
         String normalizedCustomerPhone = normalizePhone(customerPhone);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtil.nowVN();
         BigDecimal runningBase = baseAfterCalendar;
         BigDecimal totalDiscountAmount = BigDecimal.ZERO;
         List<Voucher> toConsume = new ArrayList<>();

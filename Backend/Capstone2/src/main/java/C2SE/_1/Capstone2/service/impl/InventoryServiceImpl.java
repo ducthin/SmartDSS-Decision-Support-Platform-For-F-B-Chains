@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -150,7 +151,7 @@ public class InventoryServiceImpl implements InventoryService {
             .unitCost(normalizeMoney(dto.getUnitCost()))
             .marketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()))
             .marketPriceSource(normalizeSource(dto.getMarketPriceSource()))
-            .marketPriceUpdatedAt(dto.getMarketUnitPrice() != null ? LocalDateTime.now() : null)
+            .marketPriceUpdatedAt(dto.getMarketUnitPrice() != null ? TimeUtil.nowVN() : null)
                 .build();
         Inventory savedInventory = inventoryRepository.save(inventory);
         return inventoryMapper.toDTO(savedInventory);
@@ -183,10 +184,10 @@ public class InventoryServiceImpl implements InventoryService {
         if (dto.getMarketUnitPrice() != null) {
             inventory.setMarketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()));
             inventory.setMarketPriceSource(normalizeSource(dto.getMarketPriceSource()));
-            inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+            inventory.setMarketPriceUpdatedAt(TimeUtil.nowVN());
         } else if (dto.getMarketPriceSource() != null && !dto.getMarketPriceSource().isBlank()) {
             inventory.setMarketPriceSource(normalizeSource(dto.getMarketPriceSource()));
-            inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+            inventory.setMarketPriceUpdatedAt(TimeUtil.nowVN());
         }
         Inventory savedInventory = inventoryRepository.save(inventory);
 
@@ -201,7 +202,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         inventory.setMarketUnitPrice(normalizeMoney(dto.getMarketUnitPrice()));
         inventory.setMarketPriceSource(normalizeSource(dto.getSource()));
-        inventory.setMarketPriceUpdatedAt(LocalDateTime.now());
+        inventory.setMarketPriceUpdatedAt(TimeUtil.nowVN());
 
         return inventoryMapper.toDTO(inventoryRepository.save(inventory));
     }

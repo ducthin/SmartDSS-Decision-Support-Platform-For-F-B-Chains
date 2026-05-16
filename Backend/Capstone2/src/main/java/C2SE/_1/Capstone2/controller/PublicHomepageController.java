@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @RestController
 @RequestMapping("/api/v1/public/home")
@@ -46,9 +47,9 @@ public class PublicHomepageController {
 
     @GetMapping("/promotions")
     public ResponseEntity<ApiResponse<List<PublicPromotionDTO>>> getPromotions() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = TimeUtil.todayVN();
         LocalDate toDate = today.plusDays(30);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtil.nowVN();
 
         List<PublicPromotionDTO> items = new ArrayList<>();
 
@@ -125,7 +126,7 @@ public class PublicHomepageController {
         if (normalizedPhone == null) {
             return ResponseEntity.ok(ApiResponse.success(List.of()));
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtil.nowVN();
         List<String> phoneCandidates = phoneLookupCandidates(normalizedPhone);
         List<PublicPersonalVoucherDTO> data = voucherRepository.findAvailablePersonalVouchers(phoneCandidates, now).stream()
                 .map(v -> PublicPersonalVoucherDTO.builder()

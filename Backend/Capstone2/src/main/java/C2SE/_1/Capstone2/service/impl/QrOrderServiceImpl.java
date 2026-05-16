@@ -36,6 +36,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import C2SE._1.Capstone2.util.TimeUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -95,7 +96,7 @@ public class QrOrderServiceImpl implements QrOrderService {
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getMenuForTable(String qrToken) {
         validateAndGetTable(qrToken);
-        LocalDate today = LocalDate.now();
+        LocalDate today = TimeUtil.todayVN();
         List<Long> bestSellingIds = orderItemRepository.findBestSellingMenuItemIdsByOrderQuantity(
                 OrderStatus.COMPLETED,
                 today.minusDays(30).atStartOfDay(),
@@ -121,7 +122,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                 safeSubtotal,
                 null,
                 null,
-                LocalDate.now());
+                TimeUtil.todayVN());
         OrderDiscountService.DiscountResult discountResult = calendarOnlyResult;
         String voucherError = null;
 
@@ -131,7 +132,7 @@ public class QrOrderServiceImpl implements QrOrderService {
                         safeSubtotal,
                         voucherCode,
                         normalizeCustomerPhoneForPreview(customerPhone),
-                        LocalDate.now());
+                        TimeUtil.todayVN());
             } catch (BadRequestException ex) {
                 discountResult = calendarOnlyResult;
                 voucherError = ex.getMessage();
@@ -208,7 +209,7 @@ public class QrOrderServiceImpl implements QrOrderService {
             subtotalAmount,
             qrOrderDTO.getVoucherCode(),
             order.getCustomerPhone(),
-            LocalDate.now());
+            TimeUtil.todayVN());
         BigDecimal finalTotalAmount = subtotalAmount.subtract(discountResult.totalDiscountAmount()).max(BigDecimal.ZERO);
 
         order.setOrderItems(orderItems);
@@ -356,7 +357,7 @@ public class QrOrderServiceImpl implements QrOrderService {
 
         staffCallRepository.findTopByTableNameOrderByCreatedAtDesc(tableName).ifPresent(last -> {
             if (last.getCreatedAt() != null) {
-                Duration since = Duration.between(last.getCreatedAt(), java.time.LocalDateTime.now());
+                Duration since = Duration.between(last.getCreatedAt(), TimeUtil.nowVN());
                 if (since.getSeconds() < 20) {
                     throw new BadRequestException("Bạn vừa gọi nhân viên, vui lòng chờ một chút rồi thử lại");
                 }
@@ -527,7 +528,7 @@ public class QrOrderServiceImpl implements QrOrderService {
         String createdAt = order.getCreatedAt() == null
                 ? ""
                 : order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        String requestedAt = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        String requestedAt = TimeUtil.nowVN().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
 
         BigDecimal grossAmount = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
         BigDecimal netAmount = grossAmount;
