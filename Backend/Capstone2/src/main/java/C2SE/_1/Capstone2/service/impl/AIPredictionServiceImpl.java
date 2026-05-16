@@ -472,6 +472,9 @@ public class AIPredictionServiceImpl implements AIPredictionService {
         }
         return DEFAULT_SALES_FALLBACK;
     }
+        // deleted
+        // deleted
+        // deleted
 
     private InventoryProjectionSummary calculateInventoryProjection(int predictedOrders) {
         Map<String, Double> shortfallMap = new HashMap<>();
@@ -492,21 +495,19 @@ public class AIPredictionServiceImpl implements AIPredictionService {
                 inventoryIngredients.keySet(),
                 inventoryIngredientIdsByName
         );
-        if (avgUsagePerOrder.isEmpty()) {
-            return new InventoryProjectionSummary(shortfallMap, overview, false);
-        }
 
         for (Inventory inv : inventories) {
             Ingredient ing = inv.getIngredient();
             if (ing == null || ing.getId() == null || ing.getName() == null) {
                 continue;
             }
-            BigDecimal avgUsage = avgUsagePerOrder.get(ing.getId());
-            if (avgUsage == null || avgUsage.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
+            BigDecimal avgUsage = avgUsagePerOrder.getOrDefault(ing.getId(), BigDecimal.ZERO);
+            BigDecimal predictedDemand = avgUsage.multiply(BigDecimal.valueOf(predictedOrders));
+            BigDecimal minStock = inv.getMinimumStock() != null ? inv.getMinimumStock() : BigDecimal.ZERO;
+            
+            // Nhu cầu thực tế là mức cao nhất giữa (Dự báo tiêu hao) và (Tồn kho tối thiểu cấu hình)
+            BigDecimal demand = predictedDemand.max(minStock);
 
-            BigDecimal demand = avgUsage.multiply(BigDecimal.valueOf(predictedOrders));
             if (demand.compareTo(BigDecimal.valueOf(0.05)) <= 0) {
                 continue;
             }

@@ -9,15 +9,15 @@ interface Props {
 }
 
 const CONFIDENCE_STYLES = {
-  high:   'bg-green-100 text-green-700',
+  high: 'bg-green-100 text-green-700',
   medium: 'bg-amber-100 text-amber-700',
-  low:    'bg-red-100 text-red-700',
+  low: 'bg-red-100 text-red-700',
 };
 
 function confidenceLabel(score: number) {
-  if (score >= 0.75) return { label: 'Cao',       style: CONFIDENCE_STYLES.high };
+  if (score >= 0.75) return { label: 'Cao', style: CONFIDENCE_STYLES.high };
   if (score >= 0.45) return { label: 'Trung bình', style: CONFIDENCE_STYLES.medium };
-  return                    { label: 'Thấp',       style: CONFIDENCE_STYLES.low };
+  return { label: 'Thấp', style: CONFIDENCE_STYLES.low };
 }
 
 function todayISO() {
@@ -26,8 +26,8 @@ function todayISO() {
 
 export default function AIPredictionCard({ visible }: Props) {
   const [prediction, setPrediction] = useState<AIPrediction | null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(todayISO());
   const [compareLlm, setCompareLlm] = useState(false);
 
@@ -48,10 +48,10 @@ export default function AIPredictionCard({ visible }: Props) {
 
   if (!visible) return null;
 
-  const conf        = prediction ? confidenceLabel(prediction.confidence_score) : null;
-  const isFuture    = selectedDate > todayISO();
-  const isToday     = selectedDate === todayISO();
-  const dateLabel   = isToday ? 'Hôm nay' : isFuture ? `Ngày ${selectedDate} (tương lai)` : `Ngày ${selectedDate}`;
+  const conf = prediction ? confidenceLabel(prediction.confidence_score) : null;
+  const isFuture = selectedDate > todayISO();
+  const isToday = selectedDate === todayISO();
+  const dateLabel = isToday ? 'Hôm nay' : isFuture ? `Ngày ${selectedDate} (tương lai)` : `Ngày ${selectedDate}`;
 
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6">
@@ -98,11 +98,10 @@ export default function AIPredictionCard({ visible }: Props) {
           <button
             onClick={fetchPrediction}
             disabled={loading}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
-              loading
+            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${loading
                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                 : 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700'
-            }`}
+              }`}
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             {loading ? 'Đang phân tích...' : 'Phân tích'}
@@ -189,33 +188,44 @@ export default function AIPredictionCard({ visible }: Props) {
               )}
             </div>
           )}
-
           {/* DSS Inventory */}
-          {Object.keys(prediction.predicted_inventory_demand).length > 0 && (
-            <div className="bg-white rounded-lg border border-amber-200 p-4">
-              <div className="flex items-center gap-2 mb-3 text-amber-600">
-                <Package size={16} />
-                <span className="text-sm font-semibold">Nhập kho (thiếu so tồn)</span>
-                <span className="ml-auto text-xs text-amber-400">Chỉ mức cần nhập thêm</span>
+          <div className={`bg-white rounded-lg border p-4 ${Object.keys(prediction.predicted_inventory_demand || {}).length > 0 ? 'border-amber-200' : 'border-emerald-200'}`}>
+            {Object.keys(prediction.predicted_inventory_demand || {}).length > 0 ? (
+              <>
+                <div className="flex items-center gap-2 mb-3 text-amber-600">
+                  <Package size={16} />
+                  <span className="text-sm font-semibold">Nhập kho (thiếu so tồn)</span>
+                  <span className="ml-auto text-xs text-amber-400">Chỉ mức cần nhập thêm</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.entries(prediction.predicted_inventory_demand).map(([name, qty]) => (
+                    <div
+                      key={name}
+                      className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2"
+                    >
+                      <span className="text-sm text-gray-700">{name}</span>
+                      <span className="text-sm font-bold text-amber-700 ml-2">
+                        {typeof qty === 'number' && !Number.isInteger(qty) ? qty.toFixed(2) : qty}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  * Ước tính tối thiểu dựa trên tỷ lệ bán hàng trung bình. Đối chiếu tồn kho thực tế trước khi đặt hàng.
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-emerald-600">
+                <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <Package size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Tồn kho an toàn</p>
+                  <p className="text-xs text-emerald-500">Đủ nguyên liệu cho {prediction.predicted_orders} đơn dự báo</p>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {Object.entries(prediction.predicted_inventory_demand).map(([name, qty]) => (
-                  <div
-                    key={name}
-                    className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2"
-                  >
-                    <span className="text-sm text-gray-700">{name}</span>
-                    <span className="text-sm font-bold text-amber-700 ml-2">
-                      {typeof qty === 'number' && !Number.isInteger(qty) ? qty.toFixed(2) : qty}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                * Ước tính tối thiểu dựa trên tỷ lệ bán hàng trung bình. Đối chiếu tồn kho thực tế trước khi đặt hàng.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

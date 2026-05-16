@@ -260,11 +260,11 @@ export default function QrOrderPage() {
     const base = !searchQ
       ? filtered
       : filtered.filter(
-      (m) =>
-        m.name.toLowerCase().includes(searchQ) ||
-        (m.description && m.description.toLowerCase().includes(searchQ)) ||
-        m.categoryName.toLowerCase().includes(searchQ),
-    );
+        (m) =>
+          m.name.toLowerCase().includes(searchQ) ||
+          (m.description && m.description.toLowerCase().includes(searchQ)) ||
+          m.categoryName.toLowerCase().includes(searchQ),
+      );
     // Món còn bán lên trên để khách chọn nhanh hơn.
     return [...base].sort((a, b) => {
       if (a.available !== b.available) return a.available ? -1 : 1;
@@ -720,7 +720,7 @@ function OrderReadyBanner({ orderId, itemNames, onClose, onViewOrder }: OrderRea
             <span className="animate-ripple absolute inset-0 m-auto h-14 w-14 rounded-full bg-[rgba(228,172,92,0.3)]" />
             <span className="animate-ripple absolute inset-0 m-auto h-14 w-14 rounded-full bg-[rgba(228,172,92,0.2)]" style={{ animationDelay: '0.5s' }} />
             <div className="animate-pulse-glow relative flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#e4ac5c,#c47d2a)] text-white shadow-lg">
-              <span className="animate-bounce-steam text-3xl">☕</span>
+              <span className="animate-bounce-steam text-3xl"></span>
             </div>
           </div>
 

@@ -339,15 +339,14 @@ export default function MainLayout() {
           <Outlet />
         </main>
         {canReceiveQrOrderAlerts && (
-          <div className="fixed right-4 bottom-4 z-40">
+          <div className="fixed right-4 bottom-4 z-40 flex flex-col items-end">
             {showQrOrderFeed && (
               <div className="mb-2 w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[rgba(107,80,64,0.14)] bg-white shadow-[0_16px_48px_-12px_rgba(26,14,7,0.22)]">
                 {/* Panel header */}
 
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(107,80,64,0.08)]">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">☕</span>
-                    <p className="text-sm font-semibold text-[#1a0e07]">Đơn QR gần đây</p>
+                    <p className="text-sm font-semibold text-[#1a0e07]">Đơn mới</p>
                   </div>
                   <button
                     onClick={() => setQrOrderFeed([])}

@@ -112,30 +112,42 @@ export default function PredictionResult({ prediction, date }: Props) {
       )}
 
       {/* Inventory */}
-      {Object.keys(prediction.predicted_inventory_demand).length > 0 && (
-        <div className="bg-white rounded-xl border border-amber-200 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Package size={14} className="text-amber-600" />
+      <div className={`bg-white rounded-xl border p-4 ${Object.keys(prediction.predicted_inventory_demand || {}).length > 0 ? 'border-amber-200' : 'border-emerald-200'}`}>
+        {Object.keys(prediction.predicted_inventory_demand || {}).length > 0 ? (
+          <>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Package size={14} className="text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#1a0e07]">Gợi ý nhập kho</p>
+                <p className="text-xs text-[rgba(26,14,7,0.4)]">Chỉ hiển thị nguyên liệu cần nhập thêm</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.entries(prediction.predicted_inventory_demand).map(([name, qty]) => (
+                <div key={name} className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg border border-amber-100 px-3 py-2">
+                  <p className="text-xs text-[rgba(26,14,7,0.45)] mb-0.5 truncate">{name}</p>
+                  <p className="text-lg font-bold text-amber-800">
+                    {typeof qty === 'number' && !Number.isInteger(qty) ? qty.toFixed(2) : qty}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[rgba(26,14,7,0.35)] mt-2">⚠️ Mức thiếu ước tính theo {prediction.predicted_orders} đơn dự báo</p>
+          </>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100">
+              <Package size={16} className="text-emerald-500" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#1a0e07]">Gợi ý nhập kho</p>
-              <p className="text-xs text-[rgba(26,14,7,0.4)]">Chỉ hiển thị nguyên liệu cần nhập thêm</p>
+              <p className="text-sm font-semibold text-emerald-700">Tồn kho an toàn</p>
+              <p className="text-xs text-emerald-600/70">Đủ nguyên liệu cho mức dự báo {prediction.predicted_orders} đơn</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {Object.entries(prediction.predicted_inventory_demand).map(([name, qty]) => (
-              <div key={name} className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg border border-amber-100 px-3 py-2">
-                <p className="text-xs text-[rgba(26,14,7,0.45)] mb-0.5 truncate">{name}</p>
-                <p className="text-lg font-bold text-amber-800">
-                  {typeof qty === 'number' && !Number.isInteger(qty) ? qty.toFixed(2) : qty}
-                </p>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-[rgba(26,14,7,0.35)] mt-2">⚠️ Mức thiếu ước tính theo {prediction.predicted_orders} đơn dự báo</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
