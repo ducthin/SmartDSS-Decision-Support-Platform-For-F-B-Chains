@@ -38,9 +38,6 @@ export default function PredictionResult({ prediction, date }: Props) {
           Tin cậy: {conf.label} {conf.pct}%
         </span>
         {isFuture && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">Tương lai</span>}
-        {prediction.prediction_kind === 'eod_adjusted' && (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 border border-teal-200">🔄 Hậu chỉnh EOD</span>
-        )}
       </div>
 
       {prediction.message && (
