@@ -711,52 +711,7 @@ export default function ShiftsPage() {
         })}
       </div>
 
-      <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
-        <div>
-          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Từ ngày</label>
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Đến ngày</label>
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
-        </div>
-        {isManager && (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Nhân viên</label>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
-              >
-                <option value="">Tất cả</option>
-                {staffUsers.map((u) => (
-                  <option key={u.id} value={u.id}>{u.fullName}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Trạng thái ca</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as AssignmentStatusFilter)}
-                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
-              >
-                <option value="ALL">Tất cả</option>
-                <option value="ASSIGNED">ASSIGNED</option>
-                <option value="CHECKED_IN">CHECKED_IN</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="CANCELLED">CANCELLED</option>
-              </select>
-            </div>
-          </>
-        )}
-        {!isManager && (
-          <div className="md:col-span-3 flex items-end text-sm text-[rgba(26,14,7,0.45)]">
-            Tài khoản nhân viên chỉ xem ca/chấm công của chính mình.
-          </div>
-        )}
-      </div>
+
 
       {(myPendingAssignment || myCheckedInAssignment) && (
         <div className="bg-[rgba(201,162,122,0.1)] border border-[rgba(201,162,122,0.3)] rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
@@ -921,6 +876,53 @@ export default function ShiftsPage() {
           </div>
         </div>
       )}
+
+      <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3 shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
+        <div>
+          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Từ ngày</label>
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Đến ngày</label>
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] focus:ring-2 focus:ring-[rgba(201,162,122,0.12)] transition" />
+        </div>
+        {isManager && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Nhân viên</label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
+              >
+                <option value="">Tất cả</option>
+                {staffUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[rgba(26,14,7,0.45)] mb-1">Trạng thái ca</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as AssignmentStatusFilter)}
+                className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="ASSIGNED">ASSIGNED</option>
+                <option value="CHECKED_IN">CHECKED_IN</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+            </div>
+          </>
+        )}
+        {!isManager && (
+          <div className="md:col-span-3 flex items-end text-sm text-[rgba(26,14,7,0.45)]">
+            Tài khoản nhân viên chỉ xem ca/chấm công của chính mình.
+          </div>
+        )}
+      </div>
 
       <div className="bg-white border border-[rgba(107,80,64,0.12)] rounded-xl overflow-hidden shadow-[0_2px_12px_-4px_rgba(26,14,7,0.06)]">
         <div className="px-4 py-3 border-b border-[rgba(107,80,64,0.07)] font-semibold text-[#1a0e07]">Danh sách ca - {SHIFT_TYPE_LABELS[activeShiftType]}</div>
