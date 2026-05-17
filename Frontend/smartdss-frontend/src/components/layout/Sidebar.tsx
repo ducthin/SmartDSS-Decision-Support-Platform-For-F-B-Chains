@@ -25,6 +25,7 @@ const navGroups = [
       { path: '/table-settlement', label: 'Quản lý Bàn', icon: Wallet, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/bookings', label: 'Đặt bàn', icon: CalendarCheck2, roles: ['ADMIN', 'MANAGER'] },
       { path: '/tables', label: 'QR Bàn', icon: QrCode, roles: ['ADMIN', 'MANAGER'] },
+      { path: '/telegram-qr', label: 'QR Telegram', icon: MessageSquareText, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/items', label: 'Menu', icon: Coffee, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
       { path: '/categories', label: 'Danh mục', icon: FolderTree, roles: ['ADMIN', 'MANAGER'] },
       { path: '/recipes', label: 'Công thức', icon: BookOpen, roles: ['ADMIN', 'MANAGER'] },

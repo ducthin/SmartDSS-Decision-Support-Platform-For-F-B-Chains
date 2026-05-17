@@ -90,7 +90,9 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
         if (parts.length < 2 || !parts[1].startsWith("phone_")) {
             log.info("Telegram start without phone payload: {}", text);
             sendTelegramMessage(chatIdFromMessage(message),
-                    "Xin chào! Vui lòng mở lại liên kết từ website/quầy để liên kết số điện thoại và nhận ưu đãi.");
+                    "☕️ <b>Xin chào! Chào mừng bạn đến với " + storeName + "!</b> ☕️\n\n"
+                            + "Để nhận các voucher và ưu đãi dành riêng cho bạn, vui lòng quay lại trang đặt món "
+                            + "(hoặc quét mã QR tại bàn) và ấn nút <b>Mở Telegram để nhận ưu đãi</b> nhé! 👇");
             return;
         }
 
@@ -129,8 +131,10 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
         persistSubscriberWithConflictFallback(subscriber, chatId, phone, username, fullName);
         log.info("Linked Telegram chat {} to phone {}", chatId, phone);
         sendTelegramMessage(chatId,
-                "Đã liên kết Telegram thành công với số " + phone + ".\n"
-                        + "Từ bây giờ " + storeName + " sẽ gửi ưu đãi và voucher mới tại đây.");
+                "🎉 <b>LIÊN KẾT THÀNH CÔNG!</b> 🎉\n\n"
+                        + "Chúc mừng bạn đã liên kết thành công số điện thoại <b>" + phone + "</b> với hệ thống của <b>" + storeName + "</b>.\n\n"
+                        + "🎁 <i>Từ bây giờ, chúng tôi sẽ gửi trực tiếp các mã giảm giá, voucher quà tặng và thông báo ưu đãi mới nhất cho bạn tại đây.</i>\n\n"
+                        + "Chúc bạn có một trải nghiệm thật tuyệt vời!");
     }
 
     private void persistSubscriberWithConflictFallback(
@@ -204,6 +208,7 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("chat_id", chatId.trim());
             payload.put("text", text);
+            payload.put("parse_mode", "HTML");
             payload.put("disable_web_page_preview", true);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

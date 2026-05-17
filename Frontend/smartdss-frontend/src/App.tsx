@@ -32,6 +32,8 @@ const HomePage = lazy(() => import('@/pages/HomePage'));
 const PublicMenuPage = lazy(() => import('@/pages/PublicMenuPage'));
 const NotificationTestPage = lazy(() => import('@/pages/NotificationTestPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
+const TelegramLinkPage = lazy(() => import('@/pages/TelegramLinkPage'));
+const TelegramQrAdminPage = lazy(() => import('@/pages/TelegramQrAdminPage'));
 
 function HomeRoute() {
   const { user } = useAuth();
@@ -53,6 +55,7 @@ function App() {
             <Route path="/menu" element={<PublicMenuPage />} />
             <Route path="/order-tracking" element={<OrderTrackingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/telegram" element={<TelegramLinkPage />} />
             <Route path="/qr/:token" element={<QrOrderPage />} />
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<HomeRoute />} />
@@ -71,6 +74,7 @@ function App() {
               <Route path="/promotions" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
               <Route path="/external-factors" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><ExternalFactorsPage /></ProtectedRoute>} />
               <Route path="/tables" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><TablesPage /></ProtectedRoute>} />
+              <Route path="/telegram-qr" element={<ProtectedRoute roles={['ADMIN', 'MANAGER', 'STAFF']}><TelegramQrAdminPage /></ProtectedRoute>} />
               <Route path="/bookings" element={<ProtectedRoute roles={['ADMIN', 'MANAGER']}><BookingsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute roles={['ADMIN']}><SettingsPage /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute roles={['ADMIN']}><UsersPage /></ProtectedRoute>} />
