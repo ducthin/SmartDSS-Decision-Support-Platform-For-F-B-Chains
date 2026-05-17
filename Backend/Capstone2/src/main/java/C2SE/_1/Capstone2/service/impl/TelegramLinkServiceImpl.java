@@ -81,27 +81,31 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
         if (message == null) {
             message = (Map<String, Object>) payload.get("edited_message");
         }
-        if (message == null) return;
+        if (message == null)
+            return;
 
         String text = String.valueOf(message.getOrDefault("text", "")).trim();
-        if (!text.startsWith("/start")) return;
+        if (!text.startsWith("/start"))
+            return;
 
         String[] parts = text.split("\\s+", 2);
         if (parts.length < 2 || !parts[1].startsWith("phone_")) {
             log.info("Telegram start without phone payload: {}", text);
             sendTelegramMessage(chatIdFromMessage(message),
-                    "☕️ <b>Xin chào! Chào mừng bạn đến với " + storeName + "!</b> ☕️\n\n"
+                    "<b>Xin chào! Chào mừng bạn đến với " + storeName + "!</b>\n\n"
                             + "Để nhận các voucher và ưu đãi dành riêng cho bạn, vui lòng quay lại trang đặt món "
                             + "(hoặc quét mã QR tại bàn) và ấn nút <b>Mở Telegram để nhận ưu đãi</b> nhé! 👇");
             return;
         }
 
         String phone = normalizePhone(parts[1].substring("phone_".length()));
-        if (!StringUtils.hasText(phone)) return;
+        if (!StringUtils.hasText(phone))
+            return;
 
         Map<String, Object> chat = (Map<String, Object>) message.get("chat");
         Map<String, Object> from = (Map<String, Object>) message.get("from");
-        if (chat == null || chat.get("id") == null) return;
+        if (chat == null || chat.get("id") == null)
+            return;
 
         String chatId = String.valueOf(chat.get("id"));
         String username = from == null ? null : stringValue(from.get("username"));
@@ -132,7 +136,8 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
         log.info("Linked Telegram chat {} to phone {}", chatId, phone);
         sendTelegramMessage(chatId,
                 "🎉 <b>LIÊN KẾT THÀNH CÔNG!</b> 🎉\n\n"
-                        + "Chúc mừng bạn đã liên kết thành công số điện thoại <b>" + phone + "</b> với hệ thống của <b>" + storeName + "</b>.\n\n"
+                        + "Chúc mừng bạn đã liên kết thành công số điện thoại <b>" + phone + "</b> với hệ thống của <b>"
+                        + storeName + "</b>.\n\n"
                         + "🎁 <i>Từ bây giờ, chúng tôi sẽ gửi trực tiếp các mã giảm giá, voucher quà tặng và thông báo ưu đãi mới nhất cho bạn tại đây.</i>\n\n"
                         + "Chúc bạn có một trải nghiệm thật tuyệt vời!");
     }
@@ -142,8 +147,7 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
             String chatId,
             String phone,
             String username,
-            String fullName
-    ) {
+            String fullName) {
         try {
             telegramSubscriberRepository.save(subscriber);
             telegramSubscriberRepository.flush();
@@ -175,7 +179,8 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
     }
 
     private String resolveFullName(Map<String, Object> from) {
-        if (from == null) return null;
+        if (from == null)
+            return null;
         String first = stringValue(from.get("first_name"));
         String last = stringValue(from.get("last_name"));
         return (first + " " + last).trim();
@@ -187,16 +192,20 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
 
     private String normalizePhone(String phone) {
         String cleaned = phone == null ? "" : phone.replaceAll("[^0-9+]", "");
-        if (cleaned.startsWith("+84")) return "0" + cleaned.substring(3);
-        if (cleaned.startsWith("84") && cleaned.length() > 9) return "0" + cleaned.substring(2);
+        if (cleaned.startsWith("+84"))
+            return "0" + cleaned.substring(3);
+        if (cleaned.startsWith("84") && cleaned.length() > 9)
+            return "0" + cleaned.substring(2);
         return cleaned;
     }
 
     @SuppressWarnings("unchecked")
     private String chatIdFromMessage(Map<String, Object> message) {
-        if (message == null) return null;
+        if (message == null)
+            return null;
         Map<String, Object> chat = (Map<String, Object>) message.get("chat");
-        if (chat == null || chat.get("id") == null) return null;
+        if (chat == null || chat.get("id") == null)
+            return null;
         return String.valueOf(chat.get("id"));
     }
 
@@ -215,8 +224,7 @@ public class TelegramLinkServiceImpl implements TelegramLinkService {
             notificationRestTemplate.postForEntity(
                     "https://api.telegram.org/bot" + botToken.trim() + "/sendMessage",
                     new HttpEntity<>(payload, headers),
-                    String.class
-            );
+                    String.class);
         } catch (Exception ex) {
             log.warn("Cannot send Telegram start confirmation to {}: {}", chatId, ex.getMessage());
         }

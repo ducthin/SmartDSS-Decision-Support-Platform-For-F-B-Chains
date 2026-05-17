@@ -120,7 +120,6 @@ export default function ReportsPage() {
   const tabs = [
     { key: 'daily', label: 'Doanh thu ngày' },
     { key: 'weekly', label: 'Doanh thu tuần' },
-    { key: 'quality', label: 'Chất lượng train data' },
     { key: 'tax', label: 'Báo cáo thuế' },
     { key: 'best', label: 'Bán chạy nhất' },
     { key: 'low', label: 'Sắp hết hàng' },

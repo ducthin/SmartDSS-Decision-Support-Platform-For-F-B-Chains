@@ -84,9 +84,6 @@ export default function QrOrderPage() {
     images: [],
   });
 
-  /**
-   * Một mã cố định / token bàn — dùng ref để tránh Strict Mode gọi getOrCreate 2 lần tạo 2 ID khác nhau.
-   */
   const qrSessionRef = useRef<{ t: string; id: string } | null>(null);
   const catDropdownRef = useRef<HTMLDivElement | null>(null);
   /** Lưu trạng thái đơn hàng trước đó để phát hiện thay đổi trạng thái */
