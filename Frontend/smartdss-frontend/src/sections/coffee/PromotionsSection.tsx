@@ -72,7 +72,7 @@ export default function PromotionsSection() {
         toast.error('Quán chưa cấu hình Telegram bot');
         return;
       }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.location.href = url;
       toast.success('Mở Telegram thành công, vui lòng bấm Start để nhận ưu đãi');
     } catch {
       toast.error('Không tạo được liên kết Telegram');

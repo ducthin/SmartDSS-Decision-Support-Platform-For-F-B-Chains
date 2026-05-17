@@ -50,7 +50,7 @@ export default function QrTelegramPanel({ customerPhone }: QrTelegramPanelProps)
         toast.error('Quán chưa cấu hình Telegram bot');
         return;
       }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.location.href = url;
       toast.success('Hãy bấm Start trong Telegram để liên kết nhận ưu đãi');
     } catch {
       toast.error('Không tạo được link Telegram');

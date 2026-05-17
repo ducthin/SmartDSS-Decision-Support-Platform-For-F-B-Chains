@@ -909,10 +909,10 @@ export default function ShiftsPage() {
                 className="w-full rounded-xl border border-[rgba(107,80,64,0.15)] px-3 py-2 text-sm outline-none focus:border-[#c9a27a] transition"
               >
                 <option value="ALL">Tất cả</option>
-                <option value="ASSIGNED">ASSIGNED</option>
-                <option value="CHECKED_IN">CHECKED_IN</option>
-                <option value="COMPLETED">COMPLETED</option>
-                <option value="CANCELLED">CANCELLED</option>
+                <option value="ASSIGNED">Đã giao ca</option>
+                <option value="CHECKED_IN">Đã check-in</option>
+                <option value="COMPLETED">Đã hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
               </select>
             </div>
           </>
