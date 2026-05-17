@@ -313,7 +313,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {tab === 'quality' && (
+        {false && tab === 'quality' && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Chất lượng dữ liệu train AI</h2>
